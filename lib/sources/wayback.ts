@@ -95,8 +95,11 @@ export async function searchWayback(query: string): Promise<{
       }),
     );
 
+    const seenHosts = new Set<string>();
     const items: DiscoveredClaim[] = [];
     for (const { host, row } of groups.flat()) {
+      if (seenHosts.has(host)) continue;
+      seenHosts.add(host);
       const original = row.original.startsWith("http") ? row.original : `https://${row.original}`;
       const snapshotUrl = `https://web.archive.org/web/${row.timestamp}/${original}`;
       const title = `Archived page · ${host}`;

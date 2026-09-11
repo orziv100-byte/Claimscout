@@ -18,6 +18,13 @@ type GithubSearch = {
   message?: string;
 };
 
+const AUTOMATION_RE =
+  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto (?:connect|farm|claim))\b/i;
+
+function looksLikeAutomation(text: string): boolean {
+  return AUTOMATION_RE.test(text);
+}
+
 function githubHeaders(): HeadersInit {
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
@@ -32,14 +39,12 @@ export async function searchGitHub(query: string): Promise<{
   items: DiscoveredClaim[];
   error?: string;
 }> {
-  const q = [
-    query.trim() || "airdrop claim",
-    "(airdrop OR faucet OR giveaway OR \"merkle distributor\" OR \"claim portal\")",
-    "NOT \"private key\" NOT mnemonic NOT \"seed phrase\" NOT brainwallet",
-    "in:name,description,readme",
-  ].join(" ");
+  const trimmed = query.trim();
+  const q = /faucet/i.test(trimmed)
+    ? `${trimmed} crypto faucet`
+    : `${trimmed} token airdrop`;
 
-  const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=updated&per_page=12`;
+  const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&per_page=12`;
 
   try {
     const data = await cached(`gh:${q}`, 5 * 60_000, async () => {
@@ -55,6 +60,9 @@ export async function searchGitHub(query: string): Promise<{
     for (const repo of data.items ?? []) {
       const title = repo.full_name;
       const summary = repo.description || "GitHub repository matching a public claim query.";
+      if (looksLikeAutomation(`${title} ${summary}`)) continue;
+      if (/\b(apple airdrop|file transfer|opendrop|localsend)\b/i.test(`${title} ${summary}`)) continue;
+      if (!/\b(token|crypto|merkle|erc-?20|faucet|web3|ethereum|bitcoin|airdrop)\b/i.test(`${title} ${summary}`)) continue;
       const blocked = shouldBlockDiscovery({ title, summary, url: repo.html_url });
       if (blocked.blocked) continue;
       if (!publicOfferHint(`${title} ${summary}`) && !/airdrop|faucet|merkle|claim/i.test(title)) {
