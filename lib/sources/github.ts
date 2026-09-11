@@ -1,0 +1,83 @@
+import { cached, fetchWithTimeout } from "../http";
+import { inferKind, publicOfferHint, shouldBlockDiscovery } from "../safety";
+import type { DiscoveredClaim } from "../types";
+
+type GithubRepo = {
+  id: number;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  stargazers_count: number;
+  owner: { login: string };
+};
+
+type GithubSearch = {
+  items?: GithubRepo[];
+  message?: string;
+};
+
+function githubHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    accept: "application/vnd.github+json",
+  };
+  if (process.env.GITHUB_TOKEN) {
+    headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+  return headers;
+}
+
+export async function searchGitHub(query: string): Promise<{
+  items: DiscoveredClaim[];
+  error?: string;
+}> {
+  const q = [
+    query.trim() || "airdrop claim",
+    "(airdrop OR faucet OR giveaway OR \"merkle distributor\" OR \"claim portal\")",
+    "NOT \"private key\" NOT mnemonic NOT \"seed phrase\" NOT brainwallet",
+    "in:name,description,readme",
+  ].join(" ");
+
+  const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=updated&per_page=12`;
+
+  try {
+    const data = await cached(`gh:${q}`, 5 * 60_000, async () => {
+      const res = await fetchWithTimeout(url, 10000, { headers: githubHeaders() });
+      const json = (await res.json()) as GithubSearch;
+      if (!res.ok) {
+        throw new Error(json.message || `GitHub HTTP ${res.status}`);
+      }
+      return json;
+    });
+
+    const items: DiscoveredClaim[] = [];
+    for (const repo of data.items ?? []) {
+      const title = repo.full_name;
+      const summary = repo.description || "GitHub repository matching a public claim query.";
+      const blocked = shouldBlockDiscovery({ title, summary, url: repo.html_url });
+      if (blocked.blocked) continue;
+      if (!publicOfferHint(`${title} ${summary}`) && !/airdrop|faucet|merkle|claim/i.test(title)) {
+        continue;
+      }
+      items.push({
+        id: `github-${repo.id}`,
+        title,
+        summary,
+        url: repo.html_url,
+        kind: inferKind(`${title} ${summary}`),
+        source: "github",
+        sourceLabel: "GitHub",
+        publishedAt: repo.created_at,
+        legitimacy: repo.stargazers_count >= 50 ? "documented_public" : "unverified",
+        flags:
+          repo.stargazers_count < 5
+            ? ["Low stars — treat as unverified until you read the repo."]
+            : [],
+      });
+    }
+    return { items };
+  } catch (err) {
+    return { items: [], error: err instanceof Error ? err.message : "GitHub search failed" };
+  }
+}
