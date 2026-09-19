@@ -54,7 +54,7 @@ export function LiveSearch({
 
   return (
     <div className="flex flex-col gap-8">
-      <SearchForm defaultQuery={query} />
+      <SearchForm defaultQuery={query} defaultSources={sources} defaultKinds={kinds} />
       {inspect ? <InspectPanel initialUrl={inspect} /> : <InspectPanel />}
       {loading ? (
         <div className="grid gap-3">

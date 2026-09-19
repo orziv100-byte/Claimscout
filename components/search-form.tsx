@@ -16,19 +16,31 @@ const SOURCES = [
   { id: "archive_org", label: "Archive.org" },
   { id: "reddit", label: "Reddit" },
   { id: "bitcointalk", label: "Bitcointalk" },
-];
+] as const;
+
+const SOURCE_IDS = SOURCES.map((s) => s.id);
+
+function selectedIds(raw: string | undefined, allowed: readonly string[], fallback: string[]): string[] {
+  if (!raw?.trim()) return fallback;
+  const next = raw.split(",").map((part) => part.trim()).filter((id) => allowed.includes(id));
+  return next.length ? next : fallback;
+}
 
 export function SearchForm({
   defaultQuery = "",
+  defaultSources,
+  defaultKinds,
   compact = false,
 }: {
   defaultQuery?: string;
+  defaultSources?: string;
+  defaultKinds?: string;
   compact?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(defaultQuery);
-  const [sources, setSources] = useState<string[]>(SOURCES.map((s) => s.id));
-  const [kinds, setKinds] = useState<string[]>([]);
+  const [sources, setSources] = useState<string[]>(() => selectedIds(defaultSources, SOURCE_IDS, [...SOURCE_IDS]));
+  const [kinds, setKinds] = useState<string[]>(() => selectedIds(defaultKinds, CLAIM_KINDS, []));
 
   function toggle(list: string[], value: string, setter: (next: string[]) => void) {
     setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
