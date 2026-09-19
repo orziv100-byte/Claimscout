@@ -37,6 +37,8 @@ yarn-error.log*
 # dual-machine backup config and local snapshot trees
 scripts/dual-machine/config.env
 /poolindex-backups/
+/poolindex-full-review.zip
+/public/poolindex-full-review.zip
 /logs/*
 !/logs/.gitkeep
 /var/results/*
