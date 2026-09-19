@@ -1,11 +1,13 @@
 "use client";
 
 import { CatalogClaimCard, DiscoveredClaimCard } from "@/components/claim-card";
+import { DeepHuntPanel } from "@/components/deep-hunt";
 import { InspectPanel } from "@/components/inspect-panel";
 import { SearchForm } from "@/components/search-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useWallet } from "@/components/wallet-provider";
 import type { SearchResponse } from "@/lib/types";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -24,6 +26,7 @@ export function LiveSearch({
   const [data, setData] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { address } = useWallet();
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -122,6 +125,7 @@ export function LiveSearch({
               </AlertDescription>
             </Alert>
           ) : null}
+          <DeepHuntPanel query={data.query} catalog={data.catalog} discovered={data.discovered} wallet={address} />
           <section className="flex flex-col gap-3">
             <h2 className="font-heading text-2xl">Catalog matches</h2>
             {data.catalog.length ? (

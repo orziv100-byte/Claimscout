@@ -1,7 +1,17 @@
 import { recordMail } from "./beta-store.ts";
 import type { MailMessage } from "./beta-types.ts";
 
-export type MailPurpose = "verify_email" | "reset_password";
+export type MailPurpose =
+  | "verify_email"
+  | "reset_password"
+  | "new_lead"
+  | "new_strong_evidence"
+  | "eligibility_available"
+  | "claim_status_changed"
+  | "claim_window_opened"
+  | "claim_window_closing"
+  | "security_warning"
+  | "deep_hunt_completed";
 
 export type MailPayload = {
   to: string;

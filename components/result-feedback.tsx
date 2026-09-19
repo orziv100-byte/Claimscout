@@ -6,19 +6,25 @@ import { useState } from "react";
 
 const LABELS: Record<(typeof FEEDBACK_TYPES)[number], string> = {
   useful: "Useful",
+  already_knew: "Already Knew",
   not_relevant: "Not Relevant",
+  expired: "Expired",
   broken_link: "Broken Link",
+  suspicious: "Suspicious",
   potential_scam: "Potential Scam",
+  claimed_successfully: "Claimed Successfully",
   report_problem: "Report Problem",
 };
 
 export function ResultFeedback({
   source,
   claimId,
+  leadId,
   url,
 }: {
   source?: string;
   claimId?: string;
+  leadId?: string;
   url?: string;
 }) {
   const [note, setNote] = useState("");
@@ -29,7 +35,7 @@ export function ResultFeedback({
     const res = await fetch("/api/feedback", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ type, note, source, claimId, url }),
+      body: JSON.stringify({ type, note, source, claimId, leadId, url }),
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {

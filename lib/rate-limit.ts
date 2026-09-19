@@ -6,13 +6,14 @@ const buckets = new Map<string, Bucket>();
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterSec: number };
 
-export type ExpensiveEndpoint = "search" | "verify" | "archive" | "onchain";
+export type ExpensiveEndpoint = "search" | "verify" | "archive" | "onchain" | "hunt";
 
 const EXPENSIVE_LIMITS: Record<ExpensiveEndpoint, { user: number; ip: number; windowMs: number }> = {
   search: { user: 20, ip: 40, windowMs: 10 * 60 * 1000 },
   verify: { user: 20, ip: 40, windowMs: 10 * 60 * 1000 },
   archive: { user: 30, ip: 60, windowMs: 10 * 60 * 1000 },
   onchain: { user: 20, ip: 40, windowMs: 10 * 60 * 1000 },
+  hunt: { user: 40, ip: 80, windowMs: 10 * 60 * 1000 },
 };
 
 export function rateLimit(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitResult {

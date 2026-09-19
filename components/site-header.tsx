@@ -14,6 +14,7 @@ import { useState } from "react";
 const NAV = [
   { href: "/", label: "Index" },
   { href: "/discover", label: "Live scan" },
+  { href: "/hunts", label: "Hunts" },
   { href: "/catalog", label: "Catalog" },
   { href: "/wallet", label: "Wallet check" },
   { href: "/upgrade", label: "Poolindex Pro" },

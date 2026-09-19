@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       note: typeof body.note === "string" ? body.note : "",
       source: typeof body.source === "string" ? body.source : "",
       claimId: typeof body.claimId === "string" ? body.claimId : "",
+      leadId: typeof body.leadId === "string" ? body.leadId : "",
       url: typeof body.url === "string" ? body.url : "",
     });
     return NextResponse.json({ ok: true, feedback: publicFeedback(row), version: APP_VERSION });

@@ -9,6 +9,17 @@ type Summary = {
   version: string;
   ops: { scansEnabled: boolean; maintenanceMode: boolean; betaStage: 1 | 2 | 3; reason: string };
   resource: { level: string; message: string; ramUsedPct: number; ramAvailableMb: number; load1: number; cpuCount: number };
+  hunts?: {
+    active: number;
+    queued: number;
+    paused: number;
+    failed: number;
+    completed: number;
+    sourcesChecked: number;
+    leadsCreated: number;
+    hunts: Array<{ id: string; userId: string; query: string; status: string; stage: string; leadCount: number }>;
+  };
+  sourceFeedback?: Array<{ source: string; total: number; byType: Record<string, number>; currentTier: string }>;
   metrics: {
     users: Record<string, number>;
     scans: Record<string, number>;
@@ -163,6 +174,54 @@ export function AdminDashboard() {
             Stage 3 (50)
           </Button>
         </div>
+      </section>
+
+      <section className="rounded-xl border border-border/80 bg-card p-5">
+        <h2 className="font-heading text-xl">Hunts</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Active {summary.hunts?.active ?? 0} · queued {summary.hunts?.queued ?? 0} · paused {summary.hunts?.paused ?? 0} ·
+          failed {summary.hunts?.failed ?? 0} · completed {summary.hunts?.completed ?? 0} · sources{" "}
+          {summary.hunts?.sourcesChecked ?? 0} · leads {summary.hunts?.leadsCreated ?? 0}
+        </p>
+        <ul className="mt-3 space-y-2 text-sm">
+          {(summary.hunts?.hunts ?? []).slice(0, 12).map((hunt) => (
+            <li key={hunt.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 py-2">
+              <span>
+                {hunt.query} · {hunt.status} · {hunt.stage} · {hunt.leadCount} leads
+              </span>
+              {hunt.status === "running" || hunt.status === "paused" || hunt.status === "queued" ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() =>
+                    void fetch("/api/admin/hunts", {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({ huntId: hunt.id }),
+                    }).then(load)
+                  }
+                >
+                  Stop hunt
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {summary.sourceFeedback?.length ? (
+          <div className="mt-4">
+            <h3 className="text-sm font-medium">Source feedback (review only — does not auto-change trust)</h3>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              {summary.sourceFeedback.map((row) => (
+                <li key={row.source}>
+                  {row.source} tier {row.currentTier}: {row.total} reports
+                  {Object.entries(row.byType)
+                    .map(([type, count]) => ` · ${type} ${count}`)
+                    .join("")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-xl border border-border/80 bg-card p-5">

@@ -8,9 +8,13 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export const FEEDBACK_TYPES = [
   "useful",
+  "already_knew",
   "not_relevant",
+  "expired",
   "broken_link",
+  "suspicious",
   "potential_scam",
+  "claimed_successfully",
   "report_problem",
 ] as const;
 export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
@@ -93,6 +97,7 @@ export type FeedbackRecord = {
   note: string;
   source: string;
   claimId: string;
+  leadId: string;
   urlHost: string;
   appVersion: string;
   status: FeedbackStatus;

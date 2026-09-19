@@ -17,6 +17,7 @@ export type FeedbackInput = {
   note?: string;
   source?: string;
   claimId?: string;
+  leadId?: string;
   url?: string;
 };
 
@@ -43,6 +44,7 @@ export function submitFeedback(input: FeedbackInput): FeedbackRecord {
       note,
       source: (input.source ?? "").trim().slice(0, 80),
       claimId: (input.claimId ?? "").trim().slice(0, 80),
+      leadId: (input.leadId ?? "").trim().slice(0, 80),
       urlHost: hostOf(input.url ?? ""),
       appVersion: APP_VERSION,
       status: "new",
@@ -97,6 +99,7 @@ export function publicFeedback(row: FeedbackRecord) {
     note: row.note,
     source: row.source,
     claimId: row.claimId,
+    leadId: row.leadId ?? "",
     urlHost: row.urlHost,
     appVersion: row.appVersion,
     status: row.status,

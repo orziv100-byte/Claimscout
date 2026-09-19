@@ -41,6 +41,7 @@ export function UpgradeForm() {
             <ul className="list-disc space-y-1 pl-4">
               <li>Catalog + GitHub only</li>
               <li>Eligibility for 1 wallet</li>
+              <li>Limited manual Deep Hunt</li>
               <li>URL inspect and safety filters</li>
             </ul>
             {plan === "free" ? (
@@ -60,6 +61,8 @@ export function UpgradeForm() {
               </li>
               <li>Catalog, GitHub, Wayback, Archive.org</li>
               <li>Up to {PLANS.paid.maxWallets} wallets</li>
+              <li>Expanded Deep Hunt, Wayback and Archive.org</li>
+              <li>Wallet history intelligence, Continuous Hunt, change detection (planned Pro)</li>
             </ul>
             {plan === "paid" ? (
               <p className="text-xs text-foreground">Poolindex Pro is active. {wallets.length}/{maxWallets} wallets bound.</p>

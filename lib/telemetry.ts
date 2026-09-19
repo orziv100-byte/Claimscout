@@ -25,6 +25,13 @@ export function trackScan(user: UserRecord, row: Omit<ScanRecord, "userId" | "ve
     detail: row.sources.join(","),
     code: row.error,
   });
+  recordTelemetry({
+    type: `NORMAL_SCAN_${row.status.toUpperCase()}`,
+    userId: user.id,
+    durationMs: row.durationMs,
+    detail: row.sources.join(","),
+    code: row.error,
+  });
   const live = getUserById(user.id);
   if (!live) return;
   const scanCounts = { ...live.scanCounts };

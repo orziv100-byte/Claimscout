@@ -8,6 +8,9 @@ import { betaMetrics, readOps, updateOps } from "@/lib/ops";
 import { publicSnapshot, readResourceSnapshot } from "@/lib/resource-guard";
 import { guardFailed, isResponse, requireAdmin } from "@/lib/request-guard";
 import { recordSecurity } from "@/lib/beta-store";
+import { aggregateFeedbackBySource } from "@/lib/intelligence/feedback-agg";
+import { adminStopHunt, huntAdminStats } from "@/lib/intelligence/hunt";
+import { DEFAULT_SOURCE_TIERS, sourceTierOverrides } from "@/lib/intelligence/reputation";
 
 export const runtime = "nodejs";
 
@@ -24,6 +27,10 @@ export async function GET(request: Request, context: { params: Promise<{ action:
       metrics: betaMetrics(),
       ops: readOps(),
       resource: publicSnapshot(resource),
+      hunts: huntAdminStats(),
+      sourceReputation: DEFAULT_SOURCE_TIERS,
+      sourceOverrides: sourceTierOverrides(),
+      sourceFeedback: aggregateFeedbackBySource(),
       users: listUsers(),
       invites: listInvites(),
     });
@@ -59,6 +66,15 @@ export async function GET(request: Request, context: { params: Promise<{ action:
         userId: row.userId,
         email: users.get(row.userId) ?? null,
       })),
+    });
+  }
+
+  if (action === "hunts") {
+    return NextResponse.json({
+      version: APP_VERSION,
+      ...huntAdminStats(),
+      sourceFeedback: aggregateFeedbackBySource(),
+      sourceReputation: DEFAULT_SOURCE_TIERS,
     });
   }
 
@@ -122,6 +138,16 @@ export async function POST(request: Request, context: { params: Promise<{ action
       const patch = parseAdminFeedbackPatch(body);
       const row = updateFeedbackStatus(patch.id, patch.status, authed.user.id);
       return NextResponse.json({ ok: true, feedback: publicFeedback(row), version: APP_VERSION });
+    }
+
+    if (action === "hunts") {
+      const huntId = typeof body.huntId === "string" ? body.huntId : "";
+      if (!huntId) {
+        return NextResponse.json({ error: "Hunt id required.", code: "HUNT_ID_REQUIRED", version: APP_VERSION }, { status: 400 });
+      }
+      const hunt = await adminStopHunt(huntId);
+      recordSecurity({ type: "admin_hunt_stop", userId: authed.user.id, detail: huntId });
+      return NextResponse.json({ ok: true, hunt: { id: hunt.id, status: hunt.status, userId: hunt.userId }, version: APP_VERSION });
     }
   } catch (err) {
     return guardFailed(err);
