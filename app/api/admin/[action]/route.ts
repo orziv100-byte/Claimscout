@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { APP_VERSION } from "@/lib/app-info";
 import { createInvite, listInvites, listUsers, updateUser } from "@/lib/auth";
+import { parseAdminFeedbackPatch, parseAdminInviteInput, parseAdminOpsPatch, parseAdminUserPatch } from "@/lib/admin-input";
 import { readErrors, readSecurity, readTelemetry } from "@/lib/beta-store";
 import { listFeedback, publicFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { betaMetrics, readOps, updateOps } from "@/lib/ops";
@@ -86,45 +87,40 @@ export async function POST(request: Request, context: { params: Promise<{ action
 
   try {
     if (action === "invites") {
+      const input = parseAdminInviteInput(body);
       const invite = createInvite({
         createdBy: authed.user.id,
-        email: typeof body.email === "string" ? body.email : undefined,
-        stage: body.stage === 2 || body.stage === 3 || body.stage === 1 ? body.stage : undefined,
-        maxUses: typeof body.maxUses === "number" ? body.maxUses : 1,
-        note: typeof body.note === "string" ? body.note : "",
+        email: input.email,
+        stage: input.stage,
+        maxUses: input.maxUses,
+        note: input.note,
       });
       return NextResponse.json({ ok: true, invite, version: APP_VERSION });
     }
 
     if (action === "ops") {
-      const ops = updateOps(
-        {
-          scansEnabled: typeof body.scansEnabled === "boolean" ? body.scansEnabled : undefined,
-          maintenanceMode: typeof body.maintenanceMode === "boolean" ? body.maintenanceMode : undefined,
-          betaStage: body.betaStage === 1 || body.betaStage === 2 || body.betaStage === 3 ? body.betaStage : undefined,
-          reason: typeof body.reason === "string" ? body.reason : undefined,
-        },
-        authed.user.id,
-      );
+      const ops = updateOps(parseAdminOpsPatch(body), authed.user.id);
       return NextResponse.json({ ok: true, ops, version: APP_VERSION });
     }
 
     if (action === "users") {
-      const id = String(body.id || "");
+      const patch = parseAdminUserPatch(body);
       const user = updateUser(
-        id,
+        patch.id,
         {
-          status: typeof body.status === "string" ? (body.status as never) : undefined,
-          plan: body.plan === "free" || body.plan === "paid" ? body.plan : undefined,
+          status: patch.status,
+          plan: patch.plan,
+          role: patch.role,
         },
         authed.user.id,
       );
-      recordSecurity({ type: "admin_user_patch", userId: authed.user.id, detail: id });
+      recordSecurity({ type: "admin_user_patch", userId: authed.user.id, detail: patch.id });
       return NextResponse.json({ ok: true, user, version: APP_VERSION });
     }
 
     if (action === "feedback") {
-      const row = updateFeedbackStatus(String(body.id || ""), String(body.status || ""), authed.user.id);
+      const patch = parseAdminFeedbackPatch(body);
+      const row = updateFeedbackStatus(patch.id, patch.status, authed.user.id);
       return NextResponse.json({ ok: true, feedback: publicFeedback(row), version: APP_VERSION });
     }
   } catch (err) {

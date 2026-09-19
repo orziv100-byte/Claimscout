@@ -192,7 +192,7 @@ export async function checkEligibility(claimId: string, address: Address): Promi
       status: "unknown",
       detail:
         remainingPool && remainingSymbol
-          ? `Distributor still holds ${trimAmount(remainingPool)} ${remainingSymbol}. Individual eligibility needs the official merkle/snapshot checker.`
+          ? `Distributor still holds ${trimAmount(remainingPool)} ${remainingSymbol}. Remaining contract balance does not prove claimability. Individual eligibility needs the official merkle/snapshot checker.`
           : "Connect the official checker to see if this address is in the snapshot. Poolindex does not reconstruct merkle proofs.",
       remainingPool,
       remainingSymbol,
@@ -257,7 +257,7 @@ export async function checkEligibility(claimId: string, address: Address): Promi
       status: "unknown",
       detail:
         remainingPool && remainingSymbol
-          ? `Not marked claimed. Remaining pool ≈ ${trimAmount(remainingPool)} ${remainingSymbol}. Confirm snapshot inclusion on the official site before signing anything.`
+          ? `Not marked claimed. Remaining pool ≈ ${trimAmount(remainingPool)} ${remainingSymbol}. Remaining contract balance does not prove claimability. Confirm snapshot inclusion on the official site before signing anything.`
           : "Not marked claimed. Confirm snapshot inclusion on the official site — absence of a claimed flag is not proof of eligibility.",
       remainingPool,
       remainingSymbol,

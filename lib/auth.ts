@@ -1,16 +1,16 @@
 import { stageCap } from "./app-info.ts";
-import { mutateBetaState, readBetaState, readOutbox, recordMail, recordSecurity, withBetaLock } from "./beta-store.ts";
+import { mutateBetaState, readBetaState, readOutbox, recordSecurity, withBetaLock } from "./beta-store.ts";
 import type {
-  AccountStatus,
   InviteRecord,
   PublicUser,
   SessionRecord,
   TokenRecord,
   UserRecord,
 } from "./beta-types.ts";
+import { ACCOUNT_STATUSES, USER_ROLES } from "./beta-types.ts";
 import { adminEmails } from "./env.ts";
 import { PRIVACY_VERSION, TERMS_VERSION } from "./legal.ts";
-import type { PlanId } from "./plan.ts";
+import { sendMail } from "./mail.ts";
 import { hashPassword, newId, sha256Base64Url, verifyPassword } from "./password.ts";
 import { SecretMaterialError, assertNoSecretMaterial } from "./secrets-guard.ts";
 import {
@@ -137,7 +137,7 @@ export async function registerAccount(input: {
 
     const passwordHash = await hashPassword(input.password);
 
-    return mutateBetaState((state) => {
+    const created = mutateBetaState((state) => {
       ensureDevInvite(state);
       if (findUserByEmail(state, email)) {
         throw new AuthError(409, "EMAIL_EXISTS", "An account with that email already exists.");
@@ -189,15 +189,17 @@ export async function registerAccount(input: {
       };
       state.tokens.push(token);
       const verifyUrl = `/verify?token=${encodeURIComponent(raw)}`;
-      recordMail({
-        to: user.email,
-        subject: "Verify your Poolindex Beta account",
-        text: `Welcome to Poolindex Closed Beta. Verify your email: ${verifyUrl}`,
-        url: verifyUrl,
-      });
       recordSecurity({ type: "register", userId: user.id, email: user.email });
-      return { user: publicUser(user), verifyUrl };
+      return { user: publicUser(user), verifyUrl, email: user.email };
     });
+    await sendMail({
+      to: created.email,
+      subject: "Verify your Poolindex Beta account",
+      text: `Welcome to Poolindex Closed Beta. Verify your email: ${created.verifyUrl}`,
+      url: created.verifyUrl,
+      purpose: "verify_email",
+    });
+    return { user: created.user, verifyUrl: created.verifyUrl };
   });
 }
 
@@ -290,11 +292,12 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ sent: tr
       });
     });
     const resetUrl = `/reset?token=${encodeURIComponent(raw)}`;
-    recordMail({
+    await sendMail({
       to: user.email,
       subject: "Reset your Poolindex password",
       text: `Reset your password (valid for 1 hour): ${resetUrl}`,
       url: resetUrl,
+      purpose: "reset_password",
     });
     recordSecurity({ type: "password_reset_requested", userId: user.id, email: user.email });
     const reveal = process.env.NODE_ENV !== "production" || process.env.POOLINDEX_REVEAL_MAIL === "1";
@@ -395,19 +398,29 @@ export function updateUser(
   return mutateBetaState((state) => {
     const user = state.users.find((row) => row.id === id);
     if (!user) throw new AuthError(404, "USER_NOT_FOUND", "User not found.");
-    if (patch.status) {
-      if (!["pending_verification", "active", "disabled", "suspended"].includes(patch.status)) {
+    if (patch.status !== undefined) {
+      if (!(ACCOUNT_STATUSES as readonly string[]).includes(patch.status)) {
         throw new AuthError(400, "INVALID_STATUS", "Unknown account status.");
       }
-      user.status = patch.status as AccountStatus;
+      user.status = patch.status;
       if (patch.status === "disabled" || patch.status === "suspended") {
         for (const session of state.sessions) {
           if (session.userId === user.id && !session.revokedAt) session.revokedAt = nowIso();
         }
       }
     }
-    if (patch.role) user.role = patch.role;
-    if (patch.plan) user.plan = patch.plan as PlanId;
+    if (patch.role !== undefined) {
+      if (!(USER_ROLES as readonly string[]).includes(patch.role)) {
+        throw new AuthError(400, "INVALID_ROLE", "Unknown role.");
+      }
+      user.role = patch.role;
+    }
+    if (patch.plan !== undefined) {
+      if (patch.plan !== "free" && patch.plan !== "paid") {
+        throw new AuthError(400, "INVALID_PLAN", "Unknown plan.");
+      }
+      user.plan = patch.plan;
+    }
     if (patch.wallets) user.wallets = patch.wallets;
     if (patch.displayName) user.displayName = patch.displayName;
     if (patch.scanCounts) user.scanCounts = patch.scanCounts;

@@ -1,17 +1,12 @@
-import { NextResponse } from "next/server";
-import { APP_VERSION } from "@/lib/app-info";
-import { inspectEnv } from "@/lib/env";
+import { publicStatusBody } from "@/lib/health";
 import { readOps } from "@/lib/ops";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   const ops = readOps();
-  return NextResponse.json({
-    version: APP_VERSION,
-    maintenanceMode: ops.maintenanceMode,
-    scansEnabled: ops.scansEnabled,
-    betaStage: ops.betaStage,
-    envOk: inspectEnv().ok,
+  return NextResponse.json(publicStatusBody(ops.maintenanceMode), {
+    headers: { "Cache-Control": "no-store" },
   });
 }

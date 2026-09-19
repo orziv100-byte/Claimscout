@@ -3,6 +3,7 @@ import { fetchWithTimeout, readLimitedText } from "./http";
 import { shouldSkipOptionalWork } from "./resource-guard";
 import { scanTextFlags, scanUrlFlags } from "./safety";
 import { waybackAvailable } from "./sources/wayback";
+import { SsrfError } from "./ssrf";
 import type { VerificationFlag, VerificationReport } from "./types";
 
 function extractTitle(html: string): string | undefined {
@@ -20,7 +21,7 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
   let bodySample = "";
 
   try {
-    const res = await fetchWithTimeout(url, 8000, { redirect: "follow" });
+    const res = await fetchWithTimeout(url, 8000);
     statusCode = res.status;
     live = res.ok;
     finalUrl = res.url;
@@ -33,12 +34,20 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
     if (finalUrl && finalUrl !== url) {
       flags.push(...scanUrlFlags(finalUrl));
     }
-  } catch {
-    flags.push({
-      severity: "warning",
-      code: "fetch_failed",
-      message: "Live fetch failed. The page may be down, geo-blocked, or blocking this server.",
-    });
+  } catch (err) {
+    if (err instanceof SsrfError) {
+      flags.push({
+        severity: "danger",
+        code: "ssrf_blocked",
+        message: "This address is not safe to fetch from the server (local, private, or reserved network).",
+      });
+    } else {
+      flags.push({
+        severity: "warning",
+        code: "fetch_failed",
+        message: "Live fetch failed. The page may be down, geo-blocked, or blocking this server.",
+      });
+    }
   }
 
   flags.push(...scanTextFlags(`${title ?? ""}\n${bodySample}`));
@@ -76,7 +85,7 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
 
   let verdict: VerificationReport["verdict"] = "safe_to_review";
   let verdictReason =
-    "No secret-harvesting or blocked-host signals. Still review the official source before connecting a wallet.";
+    "Safety check found no secret-harvesting or blocked-host signals. This is not a guarantee the URL is safe. Inspect the official source before connecting a wallet.";
 
   if (danger) {
     verdict = "blocked";

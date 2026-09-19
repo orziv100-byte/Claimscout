@@ -1,7 +1,7 @@
 import { EligibilityPanel } from "@/components/eligibility-panel";
 import { InspectPanel } from "@/components/inspect-panel";
 import { ResultFeedback } from "@/components/result-feedback";
-import { StatusBadge } from "@/components/claim-card";
+import { ClaimabilityBadge, StatusBadge } from "@/components/claim-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getClaimById } from "@/lib/catalog";
@@ -32,6 +32,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{KIND_LABEL[claim.kind]}</Badge>
           <StatusBadge status={claim.status} />
+          <ClaimabilityBadge claimability={claim.claimability} />
           <Badge variant="outline">{LEGITIMACY_LABEL[claim.legitimacy]}</Badge>
           <Badge variant="outline">{CHAIN_LABEL[claim.chain] ?? claim.chain}</Badge>
           <Badge variant="outline">{claim.asset}</Badge>
@@ -49,7 +50,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
             <h2 className="font-heading text-xl">Who it was for</h2>
             <p className="mt-2 text-sm text-muted-foreground">{claim.eligibility}</p>
             <Separator className="my-4" />
-            <h3 className="text-sm font-medium">How to verify</h3>
+            <h3 className="text-sm font-medium">How to inspect</h3>
             <p className="mt-2 text-sm text-muted-foreground">{claim.howToVerify}</p>
             {claim.warnings.length ? (
               <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-amber-800 dark:text-amber-300">

@@ -228,3 +228,13 @@ test("production env validation and invite creation", async () => {
   assert.equal(metrics.users.registered >= 1, true);
   assert.equal(readOps().betaStage, 1);
 });
+
+test("unknown account status is rejected rather than cast", async () => {
+  const created = await register("ada@example.com", { displayName: "Ada Lovelace" });
+  assert.throws(
+    () => updateUser(created.user.id, { status: "vip" as never }, "admin"),
+    /Unknown account status/,
+  );
+  const live = listUsers().find((row) => row.id === created.user.id);
+  assert.equal(live?.status, "pending_verification");
+});

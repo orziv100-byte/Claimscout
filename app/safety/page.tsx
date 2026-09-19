@@ -11,7 +11,7 @@ export default function SafetyPage() {
       <div>
         <h1 className="font-heading text-3xl tracking-tight">What Poolindex will and will not do</h1>
         <p className="mt-3 text-muted-foreground">
-          This is a discovery and verification tool for rewards that were intentionally offered to the public, or that
+          This is a discovery and inspection tool for rewards that were intentionally offered to the public, or that
           the connected wallet is demonstrably eligible to claim. It is not a wallet cracker, a mixer hunter, or a
           recovery service.
         </p>
@@ -43,7 +43,7 @@ export default function SafetyPage() {
         <p className="text-muted-foreground">
           Bitcointalk, Reddit, GitHub, Internet Archive / Wayback Machine, project websites, crypto blogs, public
           blockchain explorers, published airdrop announcements, and archived faucet pages. Each live hit is safety
-          filtered before display.
+          checked before display. A pass is not a guarantee that a URL is safe.
         </p>
       </section>
 

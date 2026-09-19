@@ -1,6 +1,43 @@
-import type { CatalogClaim } from "./types";
+import type { CatalogClaim, Claimability } from "./types";
 
-export const CATALOG: CatalogClaim[] = [
+export const CONTRACT_BALANCE_NOT_CLAIMABLE =
+  "Remaining tokens in a distributor contract do not prove this is claimable. Eligibility, a valid proof, and an open claim path must be confirmed independently.";
+
+const OPEN_CLAIMABILITY: Record<string, Claimability> = {
+  "freebitco-in": "confirmed_live_claim",
+  "sepolia-pow-faucet": "confirmed_live_claim",
+  "alchemy-sepolia-faucet": "confirmed_live_claim",
+  "google-cloud-web3-faucet": "confirmed_live_claim",
+  "chainlink-faucets": "confirmed_live_claim",
+  "base-sepolia-faucet": "confirmed_live_claim",
+  "bitcoin-puzzle-2015": "eligibility_unknown",
+  "ethereum-foundation-testnet-notes": "eligibility_unknown",
+  "uniswap-socks": "eligibility_unknown",
+};
+
+function attachClaimability(claim: Omit<CatalogClaim, "claimability">): CatalogClaim {
+  let claimability: Claimability;
+  if (claim.status === "unclaimed_remaining") {
+    claimability = "unclaimed_contract_balance_only";
+  } else if (claim.status === "expired" || claim.status === "archived") {
+    claimability = "expired";
+  } else if (claim.status === "open") {
+    const mapped = OPEN_CLAIMABILITY[claim.id];
+    if (!mapped) {
+      throw new Error(`Open catalog entry ${claim.id} is missing a claimability audit.`);
+    }
+    claimability = mapped;
+  } else {
+    claimability = "eligibility_unknown";
+  }
+  const warnings =
+    claimability === "unclaimed_contract_balance_only" && !claim.warnings.includes(CONTRACT_BALANCE_NOT_CLAIMABLE)
+      ? [...claim.warnings, CONTRACT_BALANCE_NOT_CLAIMABLE]
+      : claim.warnings;
+  return { ...claim, claimability, warnings };
+}
+
+const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
   {
     id: "uniswap-uni-airdrop",
     title: "Uniswap UNI retroactive airdrop",
@@ -15,7 +52,7 @@ export const CATALOG: CatalogClaim[] = [
     eligibility:
       "Addresses that swapped or provided liquidity on Uniswap v1/v2 before 1 September 2020, or that held a SOCKS token. Proofs were published with the airdrop.",
     howToVerify:
-      "Confirm your address in the published merkle data, then read UNI.balanceOf(distributor) on Ethereum to see whether unclaimed tokens remain. Claim only through the official app or a verified distributor contract.",
+      "Confirm your address in the published merkle data, then read UNI.balanceOf(distributor) on Ethereum to see whether unclaimed tokens remain. Remaining contract balance is not proof you can claim. Claim only through the official app or a verified distributor contract.",
     warnings: [
       "Third-party “UNI claim” sites are a common phishing vector.",
       "A merkle proof is required. This app will not invent or brute-force proofs.",
@@ -72,7 +109,7 @@ export const CATALOG: CatalogClaim[] = [
     eligibility:
       "Eligible .eth accounts from the published snapshot. Claims are submitted with a merkle proof against the ENS token contract.",
     howToVerify:
-      "Use claim.ens.domains or read the token contract’s merkle root / claimed mapping. Remaining unclaimed ENS can be observed on-chain.",
+      "Use claim.ens.domains or read the token contract’s merkle root / claimed mapping. Remaining unclaimed ENS can be observed on-chain; a remaining balance is not proof of eligibility.",
     warnings: [
       "Only use claim.ens.domains or the verified ENS token contract.",
     ],
@@ -115,7 +152,7 @@ export const CATALOG: CatalogClaim[] = [
     id: "1inch-airdrop",
     title: "1inch token airdrop",
     summary:
-      "December 2020 public airdrop to early 1inch users. Distributed via a merkle contract; leftover tokens have historically remained claimable by eligible addresses.",
+      "December 2020 public airdrop to early 1inch users. Distributed via a merkle contract. Leftover tokens may still sit in the distributor; that remaining balance does not prove a given address can claim.",
     kind: "airdrop",
     status: "unclaimed_remaining",
     legitimacy: "official",
@@ -214,7 +251,7 @@ export const CATALOG: CatalogClaim[] = [
     eligibility:
       "Users with historical trading activity on dYdX in the published snapshot.",
     howToVerify:
-      "Use official dYdX claim documentation and inspect the distributor’s remaining DYDX balance.",
+      "Use official dYdX claim documentation and inspect the distributor’s remaining DYDX balance. Remaining balance is not proof this is still claimable.",
     warnings: ["Claim portals other than official dYdX domains should be treated as hostile."],
     sources: [
       {
@@ -1142,6 +1179,8 @@ export const CATALOG: CatalogClaim[] = [
     tags: ["interop"],
   },
 ];
+
+export const CATALOG: CatalogClaim[] = CATALOG_ENTRIES.map(attachClaimability);
 
 export function getClaimById(id: string): CatalogClaim | undefined {
   return CATALOG.find((c) => c.id === id);

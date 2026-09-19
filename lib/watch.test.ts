@@ -19,6 +19,7 @@ function claim(partial: Partial<CatalogClaim> & Pick<CatalogClaim, "id" | "title
     sources: [],
     action: { type: "none", reason: "test" },
     tags: [],
+    claimability: "eligibility_unknown",
     ...partial,
   };
 }
@@ -95,4 +96,5 @@ test("openWatchPools skips expired archives and formats a digest", () => {
   });
   assert.match(digest, /Initial catalog watch/);
   assert.match(digest, /UNI: 12\.5 UNI/);
+  assert.match(digest, /not proof/);
 });

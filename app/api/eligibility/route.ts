@@ -2,6 +2,7 @@ import { guardedJson } from "@/lib/api-guard";
 import { updateUser } from "@/lib/auth";
 import { gateWallet, withEntitlementCookie } from "@/lib/entitlement";
 import { checkEligibility, isHexAddress } from "@/lib/onchain";
+import { limitExpensiveEndpoint, rateLimitedResponse } from "@/lib/rate-limit";
 import { isResponse, requireScan } from "@/lib/request-guard";
 import { looksLikeSecretMaterial } from "@/lib/secrets-guard";
 import { getAddress } from "viem";
@@ -13,6 +14,8 @@ export const maxDuration = 20;
 export async function GET(request: Request) {
   const authed = requireScan(request);
   if (isResponse(authed)) return authed;
+  const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain");
+  if (!limited.ok) return rateLimitedResponse(limited);
 
   const { searchParams } = new URL(request.url);
   const claimId = searchParams.get("claimId");

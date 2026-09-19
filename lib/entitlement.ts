@@ -111,7 +111,7 @@ export function gateWallet(
       body: {
         error:
           ent.plan === "free"
-            ? "Free checks one wallet. Poolindex Pro ($40) unlocks up to five."
+            ? "Free checks one wallet. Poolindex Pro is planned ($40; payment processing unavailable) and unlocks up to five."
             : "Poolindex Pro includes up to five wallets.",
         code: "WALLET_LIMIT",
         upgradeUrl: "/upgrade",

@@ -31,16 +31,19 @@ export function InspectPanel({ initialUrl = "" }: { initialUrl?: string }) {
     try {
       const res = await fetch(`/api/verify?url=${encodeURIComponent(parsed.toString())}`);
       const json = (await res.json().catch(() => ({}))) as { error?: string } & VerificationReport;
+      if (res.status === 429) {
+        throw new Error(json.error || "Too many inspect requests. Wait, then try once — do not retry in a loop.");
+      }
       if (res.status === 503) {
         throw new Error(
           json.error ||
-            "Verify paused to protect this machine. Wait, then try once — do not retry in a loop.",
+            "Inspect paused to protect this machine. Wait, then try once — do not retry in a loop.",
         );
       }
-      if (!res.ok) throw new Error(json.error || "Verify failed");
+      if (!res.ok) throw new Error(json.error || "Inspect failed");
       setReport(json as VerificationReport);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Verify failed");
+      setError(err instanceof Error ? err.message : "Inspect failed");
     } finally {
       setLoading(false);
     }
@@ -60,7 +63,7 @@ export function InspectPanel({ initialUrl = "" }: { initialUrl?: string }) {
             className="font-mono text-sm"
           />
           <Button type="submit" disabled={loading}>
-            {loading ? <LoaderCircle className="animate-spin" /> : "Verify"}
+            {loading ? <LoaderCircle className="animate-spin" /> : "Safety check"}
           </Button>
         </form>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}

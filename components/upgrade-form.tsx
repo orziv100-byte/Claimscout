@@ -25,8 +25,9 @@ export function UpgradeForm() {
       <div>
         <h1 className="font-heading text-3xl tracking-tight">Free and Poolindex Pro</h1>
         <p className="mt-3 text-muted-foreground">
-          Free scans a short source list against one wallet. Poolindex Pro is $40 for about 70% of sources and up to five
-          wallets. Reddit and Bitcointalk stay reserved.
+          Free scans a short source list against one wallet. Poolindex Pro is a planned $40 plan for about 70% of
+          sources and up to five wallets. Payment processing is unavailable in this Closed Beta. Reddit and Bitcointalk
+          stay reserved.
         </p>
       </div>
 
@@ -40,7 +41,7 @@ export function UpgradeForm() {
             <ul className="list-disc space-y-1 pl-4">
               <li>Catalog + GitHub only</li>
               <li>Eligibility for 1 wallet</li>
-              <li>URL verify and safety filters</li>
+              <li>URL inspect and safety filters</li>
             </ul>
             {plan === "free" ? (
               <p className="text-xs">You are on Free. Slot {wallets.length}/{maxWallets}.</p>
@@ -49,7 +50,7 @@ export function UpgradeForm() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Poolindex Pro</CardTitle>
+            <CardTitle>Poolindex Pro (planned)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p className="text-2xl font-heading text-foreground">${PLANS.paid.priceUsd}</p>
@@ -69,12 +70,12 @@ export function UpgradeForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Activate Poolindex Pro</CardTitle>
+          <CardTitle>Activate Poolindex Pro (planned)</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">
-            After a $40 purchase you receive a license key. Paste it here. The server stores a signed cookie, not the
-            key.
+            After a planned $40 purchase — payment processing is not available yet — an operator can issue a license
+            key. Paste it here. The server stores a signed cookie, not the key.
           </p>
           <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => void submit(e)}>
             <Input

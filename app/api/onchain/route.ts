@@ -3,6 +3,7 @@ import { updateUser } from "@/lib/auth";
 import { CATALOG } from "@/lib/catalog";
 import { gateWallet, withEntitlementCookie } from "@/lib/entitlement";
 import { checkEligibility, isHexAddress, scanCatalogPools } from "@/lib/onchain";
+import { limitExpensiveEndpoint, rateLimitedResponse } from "@/lib/rate-limit";
 import { readResourceSnapshot } from "@/lib/resource-guard";
 import { isResponse, requireScan, requireUser } from "@/lib/request-guard";
 import { looksLikeSecretMaterial } from "@/lib/secrets-guard";
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
   if (poolsOnly || !address) {
     const authed = requireUser(request);
     if (isResponse(authed)) return authed;
+    const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain");
+    if (!limited.ok) return rateLimitedResponse(limited);
     const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
     const res = await guardedJson(
       request,
@@ -33,6 +36,8 @@ export async function GET(request: Request) {
 
   const authed = requireScan(request);
   if (isResponse(authed)) return authed;
+  const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain");
+  if (!limited.ok) return rateLimitedResponse(limited);
 
   if (looksLikeSecretMaterial(address) || !isHexAddress(address)) {
     return NextResponse.json({ error: "invalid address" }, { status: 400 });

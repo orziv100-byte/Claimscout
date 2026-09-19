@@ -21,6 +21,15 @@ export const CLAIM_STATUSES = [
 
 export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
 
+export const CLAIMABILITY = [
+  "confirmed_live_claim",
+  "unclaimed_contract_balance_only",
+  "eligibility_unknown",
+  "expired",
+] as const;
+
+export type Claimability = (typeof CLAIMABILITY)[number];
+
 export const LEGITIMACY = [
   "official",
   "documented_public",
@@ -100,6 +109,7 @@ export type CatalogClaim = {
   summary: string;
   kind: ClaimKind;
   status: ClaimStatus;
+  claimability: Claimability;
   legitimacy: Legitimacy;
   chain: ChainId;
   asset: string;

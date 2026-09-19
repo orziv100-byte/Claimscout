@@ -65,10 +65,10 @@ Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and
 
 ## 13. Known issues
 
-- Email is an on-disk outbox (`var/beta/outbox.jsonl`), not SMTP. The operator must send verify/reset links for real testers.
+- Email uses a mail-provider interface with the on-disk outbox (`var/beta/outbox.jsonl`) as the default fallback. No vendor or credentials are hard-coded.
 - Rate limits and sessions are single-process (this host). Restart clears in-memory rate buckets; sessions persist in `var/beta/state.json`.
 - No payment processing (intentional).
-- `Content-Security-Policy` still allows `frame-ancestors *` so the Cursor preview iframe works.
+- `Content-Security-Policy` uses `frame-ancestors *` only in development (Cursor preview). Production sets `frame-ancestors 'none'`.
 
 ## 14. Remaining risks
 

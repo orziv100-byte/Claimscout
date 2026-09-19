@@ -34,6 +34,9 @@ export function LiveSearch({
     fetch(`/api/search?${params.toString()}`, { signal: ac.signal })
       .then(async (res) => {
         const json = (await res.json().catch(() => ({}))) as { error?: string } & SearchResponse;
+        if (res.status === 429) {
+          throw new Error(json.error || "Too many scans. Wait, then try once — do not retry in a loop.");
+        }
         if (res.status === 503) {
           throw new Error(
             json.error ||
@@ -99,7 +102,7 @@ export function LiveSearch({
               </AlertTitle>
               <AlertDescription>
                 {data.plan.lockedSources.length
-                  ? `Upgrade to Poolindex Pro ($40) for ${data.plan.lockedSources.join(", ")}. `
+                  ? `Poolindex Pro is planned ($40; payment processing unavailable) for ${data.plan.lockedSources.join(", ")}. `
                   : null}
                 {data.plan.reservedSources.length
                   ? `${data.plan.reservedSources.join(", ")} stay reserved for a later plan. `

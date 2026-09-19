@@ -1,6 +1,7 @@
 import { guardedJson } from "@/lib/api-guard";
 import { publicEntitlement, withEntitlementCookie } from "@/lib/entitlement";
 import { capSources } from "@/lib/plan";
+import { limitExpensiveEndpoint, rateLimitedResponse } from "@/lib/rate-limit";
 import { isResponse, requireScan } from "@/lib/request-guard";
 import { runSearch } from "@/lib/search";
 import { trackScan, trackSourceFailure } from "@/lib/telemetry";
@@ -12,6 +13,8 @@ export const maxDuration = 30;
 export async function GET(request: Request) {
   const authed = requireScan(request);
   if (isResponse(authed)) return authed;
+  const limited = limitExpensiveEndpoint(request, authed.user.id, "search");
+  if (!limited.ok) return rateLimitedResponse(limited);
 
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") ?? "";

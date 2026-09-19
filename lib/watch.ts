@@ -147,6 +147,7 @@ export function formatWatchDigest(input: {
     }
   }
   lines.push("", "## Remaining pools still above zero");
+  lines.push("Remaining contract balance is not proof that a claim is open or that you are eligible.");
   if (input.openPools.length === 0) {
     lines.push("- None readable this run.");
   } else {

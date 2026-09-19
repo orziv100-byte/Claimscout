@@ -31,6 +31,9 @@ export function EligibilityPanel({ claim }: { claim: CatalogClaim }) {
         `/api/eligibility?claimId=${encodeURIComponent(claim.id)}&address=${encodeURIComponent(address)}`,
       );
       const json = await res.json();
+      if (res.status === 429) {
+        throw new Error(json.error || "Too many eligibility checks. Wait, then try once — do not retry in a loop.");
+      }
       if (!res.ok) throw new Error(json.error || "Eligibility check failed");
       setResult(json as EligibilityResult);
     } catch (err) {
@@ -64,7 +67,7 @@ export function EligibilityPanel({ claim }: { claim: CatalogClaim }) {
             <AlertDescription>
               {result.detail}
               {result.remainingPool && result.remainingSymbol
-                ? ` Remaining pool ≈ ${result.remainingPool} ${result.remainingSymbol}.`
+                ? ` Remaining pool ≈ ${result.remainingPool} ${result.remainingSymbol}. Remaining contract balance does not prove claimability.`
                 : ""}
             </AlertDescription>
           </Alert>

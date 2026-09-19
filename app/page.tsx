@@ -24,7 +24,7 @@ export default function HomePage() {
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
             Poolindex searches current sites and archives for airdrops, faucets, giveaways, redemption links, and
-            community testnet rewards — then verifies the URL before you touch a wallet.
+            community testnet rewards — then runs a safety check on the URL before you touch a wallet.
           </p>
         </div>
         <SearchForm compact />
@@ -34,7 +34,7 @@ export default function HomePage() {
           </Link>{" "}
           is invite-only. Free: catalog + GitHub, one wallet.{" "}
           <Link href="/upgrade" className="text-primary hover:underline">
-            Poolindex Pro ($40)
+            Poolindex Pro (planned)
           </Link>
           : about 70% of sources and up to five wallets. Private keys, seed phrases, and other people&apos;s wallets are
           out of scope.
@@ -50,8 +50,8 @@ export default function HomePage() {
           },
           {
             icon: Eye,
-            title: "URL verification",
-            body: "Live fetch, phishing heuristics, and Wayback snapshots before you click claim.",
+            title: "URL safety check",
+            body: "Inspect a live fetch, phishing heuristics, and Wayback snapshots before you click claim. This is not a guarantee the URL is safe.",
           },
           {
             icon: LockKeyhole,

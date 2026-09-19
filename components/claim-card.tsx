@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultFeedback } from "@/components/result-feedback";
-import { CHAIN_LABEL, KIND_LABEL, LEGITIMACY_LABEL, STATUS_LABEL } from "@/lib/labels";
+import { CHAIN_LABEL, CLAIMABILITY_LABEL, KIND_LABEL, LEGITIMACY_LABEL, STATUS_LABEL } from "@/lib/labels";
 import type { CatalogClaim, DiscoveredClaim } from "@/lib/types";
 import { Archive, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
@@ -12,12 +12,22 @@ export function KindBadge({ kind }: { kind: string }) {
 
 export function StatusBadge({ status }: { status: CatalogClaim["status"] }) {
   const tone =
-    status === "open" || status === "unclaimed_remaining"
+    status === "open"
       ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
       : status === "expired"
         ? "bg-muted text-muted-foreground"
         : "bg-amber-500/15 text-amber-800 dark:text-amber-400";
   return <Badge variant="outline" className={tone}>{STATUS_LABEL[status]}</Badge>;
+}
+
+export function ClaimabilityBadge({ claimability }: { claimability: CatalogClaim["claimability"] }) {
+  const tone =
+    claimability === "confirmed_live_claim"
+      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+      : claimability === "expired"
+        ? "bg-muted text-muted-foreground"
+        : "bg-amber-500/15 text-amber-800 dark:text-amber-400";
+  return <Badge variant="outline" className={tone}>{CLAIMABILITY_LABEL[claimability]}</Badge>;
 }
 
 export function CatalogClaimCard({ claim }: { claim: CatalogClaim }) {
@@ -28,6 +38,7 @@ export function CatalogClaimCard({ claim }: { claim: CatalogClaim }) {
           <div className="flex flex-wrap gap-1.5">
             <KindBadge kind={claim.kind} />
             <StatusBadge status={claim.status} />
+            <ClaimabilityBadge claimability={claim.claimability} />
             <Badge variant="outline">{LEGITIMACY_LABEL[claim.legitimacy]}</Badge>
           </div>
           <CardTitle className="mt-2 text-lg">{claim.title}</CardTitle>
@@ -94,7 +105,7 @@ export function DiscoveredClaimCard({ item }: { item: DiscoveredClaim }) {
               href={`/discover?inspect=${encodeURIComponent(item.url)}`}
               className="text-muted-foreground hover:text-foreground"
             >
-              Verify URL
+              Inspect URL
             </Link>
           )}
         </div>

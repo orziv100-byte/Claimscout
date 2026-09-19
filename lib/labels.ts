@@ -1,4 +1,4 @@
-import type { ClaimKind, ClaimStatus, Legitimacy, SourceKind } from "./types";
+import type { ClaimKind, ClaimStatus, Claimability, Legitimacy, SourceKind } from "./types";
 
 export const KIND_LABEL: Record<ClaimKind, string> = {
   airdrop: "Airdrop",
@@ -13,10 +13,17 @@ export const KIND_LABEL: Record<ClaimKind, string> = {
 
 export const STATUS_LABEL: Record<ClaimStatus, string> = {
   open: "Open",
-  unclaimed_remaining: "Unclaimed remaining",
+  unclaimed_remaining: "Unclaimed contract balance",
   expired: "Window closed",
   archived: "Archive only",
   unknown: "Needs verification",
+};
+
+export const CLAIMABILITY_LABEL: Record<Claimability, string> = {
+  confirmed_live_claim: "Confirmed live claim",
+  unclaimed_contract_balance_only: "Unclaimed contract balance only",
+  eligibility_unknown: "Eligibility unknown",
+  expired: "Expired",
 };
 
 export const LEGITIMACY_LABEL: Record<Legitimacy, string> = {

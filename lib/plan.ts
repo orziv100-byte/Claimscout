@@ -34,7 +34,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     priceUsd: 40,
     maxWallets: 5,
     sources: ["catalog", "github", "wayback", "archive_org"],
-    summary: "About 70% of scan sources (4 of 6) and up to five wallets.",
+    summary: "Planned $40 plan: about 70% of scan sources (4 of 6) and up to five wallets. Payment processing is unavailable.",
   },
 };
 

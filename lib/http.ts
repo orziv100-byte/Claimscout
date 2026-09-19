@@ -1,4 +1,5 @@
 import { readResourceSnapshot, ResourcePressureError } from "./resource-guard";
+import { fetchSafe, type FetchImpl, type LookupFn } from "./ssrf";
 
 export const UA = "Poolindex/1.0 (public crypto claim discovery; research tool)";
 
@@ -8,10 +9,17 @@ const inflight = new Map<string, Promise<unknown>>();
 type CacheEntry<T> = { value: T; expires: number };
 const cache = new Map<string, CacheEntry<unknown>>();
 
+export type FetchWithTimeoutDeps = {
+  lookup?: LookupFn;
+  fetchImpl?: FetchImpl;
+  maxRedirects?: number;
+};
+
 export async function fetchWithTimeout(
   url: string,
   ms = 7000,
   init: RequestInit = {},
+  deps: FetchWithTimeoutDeps = {},
 ): Promise<Response> {
   const pressure = readResourceSnapshot();
   if (pressure.level === "critical") {
@@ -30,16 +38,24 @@ export async function fetchWithTimeout(
     else parent.addEventListener("abort", onParentAbort, { once: true });
   }
   try {
-    return await fetch(url, {
-      ...init,
-      signal: ctrl.signal,
-      redirect: init.redirect ?? "follow",
-      headers: {
-        accept: "text/html,application/json;q=0.9,*/*;q=0.8",
-        "user-agent": UA,
-        ...(init.headers ?? {}),
+    return await fetchSafe(
+      url,
+      {
+        ...init,
+        signal: ctrl.signal,
+        redirect: init.redirect ?? "follow",
+        headers: {
+          accept: "text/html,application/json;q=0.9,*/*;q=0.8",
+          "user-agent": UA,
+          ...(init.headers ?? {}),
+        },
       },
-    });
+      {
+        lookup: deps.lookup,
+        fetchImpl: deps.fetchImpl,
+        maxRedirects: deps.maxRedirects,
+      },
+    );
   } finally {
     clearTimeout(timer);
     parent?.removeEventListener("abort", onParentAbort);

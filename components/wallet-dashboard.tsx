@@ -32,6 +32,9 @@ export function WalletDashboard() {
       error?: string;
       pools?: { claimId: string; remaining?: string; symbol?: string; error?: string }[];
     };
+    if (res.status === 429) {
+      throw new Error(json.error || "Too many pool scans. Wait, then try once — do not retry in a loop.");
+    }
     if (res.status === 503) {
       throw new Error(
         json.error || "Pool scan paused to protect this machine. Wait, then try once.",
@@ -56,6 +59,9 @@ export function WalletDashboard() {
         error?: string;
         eligibility?: EligibilityResult[];
       };
+      if (res.status === 429) {
+        throw new Error(json.error || "Too many wallet checks. Wait, then try once — do not retry in a loop.");
+      }
       if (res.status === 503) {
         throw new Error(
           json.error || "Wallet check paused to protect this machine. Wait, then try once.",
@@ -161,7 +167,10 @@ export function WalletDashboard() {
             </TableBody>
           </Table>
           {address ? (
-            <p className="mt-3 text-xs text-muted-foreground">Checking {shortAddress(address)} against published public offers only.</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Checking {shortAddress(address)} against published public offers only. Remaining contract balance is not
+              proof of claimability.
+            </p>
           ) : null}
         </CardContent>
       </Card>
