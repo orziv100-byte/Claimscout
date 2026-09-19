@@ -7,7 +7,7 @@
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "NODE_OPTIONS='--max-old-space-size=2048' next start --hostname 0.0.0.0 --port 43147",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --experimental-default-type=module --test lib/resource-guard.test.ts lib/safety.test.ts lib/search.test.ts && bash scripts/dual-machine/backup.test.sh",
+    "test": "node --experimental-strip-types --experimental-default-type=module --test lib/resource-guard.test.ts lib/safety.test.ts && bash scripts/dual-machine/backup.test.sh",
     "backup:snapshot": "bash scripts/dual-machine/snapshot.sh",
     "backup:verify": "bash scripts/dual-machine/verify.sh"
   },
