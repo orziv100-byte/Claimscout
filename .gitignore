@@ -34,6 +34,14 @@ yarn-error.log*
 .env*
 !.env.example
 
+# dual-machine backup config and local snapshot trees
+scripts/dual-machine/config.env
+/claimscout-backups/
+/logs/*
+!/logs/.gitkeep
+/var/results/*
+!/var/results/.gitkeep
+
 # vercel
 .vercel
 

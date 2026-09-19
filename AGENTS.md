@@ -34,3 +34,29 @@ Operational defaults for this repo:
 - Do not spawn extra subagents or parallel scans when RAM available is under ~3 GiB or load average is high for this 4-core host.
 - If a command OOMs, hangs, or restarts itself, stop and diagnose; never retry it in a loop.
 - Live scans, Wayback CDX, and on-chain pool checks are serialized in-app (`lib/resource-guard.ts`, `/api/health`). Do not add unbounded `Promise.all` fan-out.
+
+# Dual-machine workload + backup — high priority
+
+Two operator machines exist. Use both when useful; do not duplicate heavy work.
+
+1. **Windows PC** — primary development/control. Interactive Cursor, light edits, deciding what to run.
+2. **claimscoutserver (Linux)** — secondary compute, runtime, and durable backup. Working copy: `~/claimscout`. Snapshots: `~/claimscout-backups`.
+
+This Cursor Cloud VM is ephemeral. It is not the durable backup destination.
+
+Before any heavy job (`next build`, live scan, extra agents):
+
+- Run `scripts/dual-machine/check-resources.sh` (Linux) or `scripts/dual-machine/windows/Check-Resources.ps1`.
+- Run `scripts/dual-machine/assign-workload.sh <dev|build|scan|backup>`.
+- Never start a second heavy job if a lock exists or RAM available is under ~3 GiB.
+- If Windows is overloaded, move independent builds/scans/backups to claimscoutserver — one at a time.
+- Respect the crash/resource safety rule above.
+
+Backup rules (append-only snapshots, never a deleting mirror):
+
+- Keep a current working copy on the Windows PC and a synchronized snapshot tree on Linux.
+- Snapshot source, config examples, `logs/`, `var/results/`. Do not copy `node_modules`, `.next`, caches, or secrets (`.env`, `*.pem`, keys).
+- Never overwrite a newer valid copy with an older one. `restore.sh --replace-live` refuses older snapshots.
+- A deletion on one machine must not rewrite the other: new snapshots get a new UTC directory; `current` is only a symlink; shrink below 50% of the last file count aborts.
+- Verify with `scripts/dual-machine/verify.sh --all`.
+- Git origin is the source-control replica, not a substitute for timestamped snapshots.
