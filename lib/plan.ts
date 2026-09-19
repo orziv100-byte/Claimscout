@@ -30,7 +30,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   paid: {
     id: "paid",
-    name: "Scout+",
+    name: "Poolindex Pro",
     priceUsd: 40,
     maxWallets: 5,
     sources: ["catalog", "github", "wayback", "archive_org"],

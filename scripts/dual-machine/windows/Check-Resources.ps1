@@ -1,4 +1,4 @@
-# Main Windows PC — resource check before any heavy Claim Scout job.
+# Main Windows PC — resource check before any heavy Poolindex job.
 $ErrorActionPreference = "Stop"
 $minRamMb = 3072
 $maxDiskPct = 88
@@ -16,7 +16,7 @@ if ($disk -and ($disk.Used + $disk.Free) -gt 0) {
 
 Write-Output "ram_available_mb=$freeMb ram_used_pct=$usedPct cpu_load_pct=$($cpu.Average) disk_used_pct=$diskPct"
 if ($freeMb -lt $minRamMb) {
-  Write-Error "REFUSE: RAM available ${freeMb}MB < ${minRamMb}MB. Move independent work to claimscoutserver."
+  Write-Error "REFUSE: RAM available ${freeMb}MB < ${minRamMb}MB. Move independent work to poolindexserver."
   exit 2
 }
 if ($diskPct -ge $maxDiskPct) {

@@ -1,6 +1,6 @@
 # Closed Beta audit and rollout
 
-© 2026 Claim Scout. All rights reserved.
+© 2026 Poolindex. All rights reserved.
 
 Pre-implementation audit of HEAD `1adec459b9` (snapshot `20260919T193714Z`).
 
@@ -15,7 +15,7 @@ Pre-implementation audit of HEAD `1adec459b9` (snapshot `20260919T193714Z`).
 | Scanning | EXISTS | Frozen. Not expanded. |
 | Source management | EXISTS | Catalog + six live sources. |
 | Watch | EXISTS | Daily catalog remaining-pool digest. |
-| Server-side limits | EXISTS | Free/Scout+ in `lib/plan.ts` + API routes. |
+| Server-side limits | EXISTS | Free/Poolindex Pro in `lib/plan.ts` + API routes. |
 | Logging | PARTIAL → added | Security/telemetry/error jsonl. |
 | Telemetry | MISSING → added | Scan/source/resource/app events. |
 | Error handling | PARTIAL | Resource 503 existed; app error journal added. |
@@ -35,8 +35,8 @@ Did not add Postgres, NextAuth, or Stripe. Closed Beta (10–50 users) extends t
 
 ## Invite the first 10 users
 
-1. Set production env: `CLAIM_SCOUT_SESSION_SECRET`, `CLAIM_SCOUT_PLAN_SECRET`, `CLAIM_SCOUT_ADMIN_EMAILS`, optional `CLAIM_SCOUT_PAID_KEYS`.
-2. Register the operator email from `CLAIM_SCOUT_ADMIN_EMAILS` with a valid invite (`closed-beta-dev` in non-production, or a bootstrap invite).
+1. Set production env: `POOLINDEX_SESSION_SECRET`, `POOLINDEX_PLAN_SECRET`, `POOLINDEX_ADMIN_EMAILS`, optional `POOLINDEX_PAID_KEYS`.
+2. Register the operator email from `POOLINDEX_ADMIN_EMAILS` with a valid invite (`closed-beta-dev` in non-production, or a bootstrap invite).
 3. Verify that email, sign in, open `/admin`.
 4. Confirm Stage 1 (cap 10). Create 10 invites (optionally bound to tester emails).
 5. Send each invite code plus `/register`, `/terms`, and `/privacy`.
@@ -46,4 +46,4 @@ Did not add Postgres, NextAuth, or Stripe. Closed Beta (10–50 users) extends t
 
 ## Restore
 
-See `docs/RESTORE.md`. Snapshot taken before this work: `/home/ubuntu/claimscout-backups/snapshots/20260919T193714Z` (git `1adec459b9`).
+See `docs/RESTORE.md`. Snapshot taken before this work: `/home/ubuntu/poolindex-backups/snapshots/20260919T193714Z` (git `1adec459b9`).

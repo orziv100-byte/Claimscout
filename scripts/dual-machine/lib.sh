@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for Claim Scout dual-machine backup and workload gating.
+# Shared helpers for Poolindex dual-machine backup and workload gating.
 set -euo pipefail
 
 dual_machine_dir() {
@@ -19,20 +19,20 @@ load_config() {
   scripts_dir="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
   root="$(cd "$scripts_dir/../.." && pwd)"
 
-  CLAIM_SCOUT_ROLE="${CLAIM_SCOUT_ROLE:-linux}"
-  CLAIM_SCOUT_ROOT="${CLAIM_SCOUT_ROOT:-$root}"
-  if [[ -z "${CLAIM_SCOUT_BACKUP_ROOT:-}" ]]; then
-    CLAIM_SCOUT_BACKUP_ROOT="${HOME}/claimscout-backups"
+  POOLINDEX_ROLE="${POOLINDEX_ROLE:-linux}"
+  POOLINDEX_ROOT="${POOLINDEX_ROOT:-$root}"
+  if [[ -z "${POOLINDEX_BACKUP_ROOT:-}" ]]; then
+    POOLINDEX_BACKUP_ROOT="${HOME}/poolindex-backups"
   fi
-  CLAIM_SCOUT_PEER_HOST="${CLAIM_SCOUT_PEER_HOST:-}"
-  CLAIM_SCOUT_PEER_USER="${CLAIM_SCOUT_PEER_USER:-}"
-  CLAIM_SCOUT_PEER_PATH="${CLAIM_SCOUT_PEER_PATH:-}"
-  CLAIM_SCOUT_KEEP_SNAPSHOTS="${CLAIM_SCOUT_KEEP_SNAPSHOTS:-14}"
-  CLAIM_SCOUT_MIN_SNAPSHOTS="${CLAIM_SCOUT_MIN_SNAPSHOTS:-3}"
-  CLAIM_SCOUT_SHRINK_LIMIT="${CLAIM_SCOUT_SHRINK_LIMIT:-0.5}"
-  CLAIM_SCOUT_MIN_RAM_MB="${CLAIM_SCOUT_MIN_RAM_MB:-3072}"
-  CLAIM_SCOUT_MAX_LOAD_PER_CPU="${CLAIM_SCOUT_MAX_LOAD_PER_CPU:-1.75}"
-  CLAIM_SCOUT_MAX_DISK_PCT="${CLAIM_SCOUT_MAX_DISK_PCT:-88}"
+  POOLINDEX_PEER_HOST="${POOLINDEX_PEER_HOST:-}"
+  POOLINDEX_PEER_USER="${POOLINDEX_PEER_USER:-}"
+  POOLINDEX_PEER_PATH="${POOLINDEX_PEER_PATH:-}"
+  POOLINDEX_KEEP_SNAPSHOTS="${POOLINDEX_KEEP_SNAPSHOTS:-14}"
+  POOLINDEX_MIN_SNAPSHOTS="${POOLINDEX_MIN_SNAPSHOTS:-3}"
+  POOLINDEX_SHRINK_LIMIT="${POOLINDEX_SHRINK_LIMIT:-0.5}"
+  POOLINDEX_MIN_RAM_MB="${POOLINDEX_MIN_RAM_MB:-3072}"
+  POOLINDEX_MAX_LOAD_PER_CPU="${POOLINDEX_MAX_LOAD_PER_CPU:-1.75}"
+  POOLINDEX_MAX_DISK_PCT="${POOLINDEX_MAX_DISK_PCT:-88}"
 
   local cfg="${scripts_dir}/config.env"
   if [[ -f "$cfg" ]]; then
@@ -43,15 +43,15 @@ load_config() {
     set +a
   fi
 
-  CLAIM_SCOUT_ROOT="$(cd "${CLAIM_SCOUT_ROOT}" && pwd)"
-  mkdir -p "${CLAIM_SCOUT_BACKUP_ROOT}"
-  CLAIM_SCOUT_BACKUP_ROOT="$(cd "${CLAIM_SCOUT_BACKUP_ROOT}" && pwd)"
+  POOLINDEX_ROOT="$(cd "${POOLINDEX_ROOT}" && pwd)"
+  mkdir -p "${POOLINDEX_BACKUP_ROOT}"
+  POOLINDEX_BACKUP_ROOT="$(cd "${POOLINDEX_BACKUP_ROOT}" && pwd)"
   EXCLUDE_FILE="${scripts_dir}/exclude.txt"
-  SNAPSHOTS_DIR="${CLAIM_SCOUT_BACKUP_ROOT}/snapshots"
-  INCOMING_DIR="${CLAIM_SCOUT_BACKUP_ROOT}/incoming"
-  CURRENT_LINK="${CLAIM_SCOUT_BACKUP_ROOT}/current"
-  LOCK_FILE="${CLAIM_SCOUT_BACKUP_ROOT}/backup.lock"
-  HEAVY_LOCK="${TMPDIR:-/tmp}/claimscout-heavy.lock"
+  SNAPSHOTS_DIR="${POOLINDEX_BACKUP_ROOT}/snapshots"
+  INCOMING_DIR="${POOLINDEX_BACKUP_ROOT}/incoming"
+  CURRENT_LINK="${POOLINDEX_BACKUP_ROOT}/current"
+  LOCK_FILE="${POOLINDEX_BACKUP_ROOT}/backup.lock"
+  HEAVY_LOCK="${TMPDIR:-/tmp}/poolindex-heavy.lock"
   mkdir -p "$SNAPSHOTS_DIR" "$INCOMING_DIR"
 }
 
@@ -96,7 +96,7 @@ resource_report() {
   usedpct="$(read_ram_used_pct)"
   load="$(read_load1)"
   ncpu="$(read_ncpu)"
-  disk="$(read_disk_used_pct "${CLAIM_SCOUT_ROOT:-/}")"
+  disk="$(read_disk_used_pct "${POOLINDEX_ROOT:-/}")"
   printf 'ram_available_mb=%s ram_used_pct=%s load1=%s ncpu=%s disk_used_pct=%s\n' \
     "$avail" "$usedpct" "$load" "$ncpu" "$disk"
 }
@@ -106,19 +106,19 @@ resources_ok() {
   avail="$(read_mem_available_mb)"
   load="$(read_load1)"
   ncpu="$(read_ncpu)"
-  disk="$(read_disk_used_pct "${CLAIM_SCOUT_ROOT:-/}")"
-  load_limit="$(python3 -c "print($ncpu * $CLAIM_SCOUT_MAX_LOAD_PER_CPU)")"
+  disk="$(read_disk_used_pct "${POOLINDEX_ROOT:-/}")"
+  load_limit="$(python3 -c "print($ncpu * $POOLINDEX_MAX_LOAD_PER_CPU)")"
 
-  if (( avail < CLAIM_SCOUT_MIN_RAM_MB )); then
-    echo "REFUSE: RAM available ${avail}MB < ${CLAIM_SCOUT_MIN_RAM_MB}MB"
+  if (( avail < POOLINDEX_MIN_RAM_MB )); then
+    echo "REFUSE: RAM available ${avail}MB < ${POOLINDEX_MIN_RAM_MB}MB"
     return 1
   fi
   if python3 -c "import sys; sys.exit(0 if float('$load') > float('$load_limit') else 1)"; then
     echo "REFUSE: load ${load} > ${load_limit} (${ncpu} CPUs)"
     return 1
   fi
-  if python3 -c "import sys; sys.exit(0 if float('$disk') >= float('$CLAIM_SCOUT_MAX_DISK_PCT') else 1)"; then
-    echo "REFUSE: disk ${disk}% >= ${CLAIM_SCOUT_MAX_DISK_PCT}%"
+  if python3 -c "import sys; sys.exit(0 if float('$disk') >= float('$POOLINDEX_MAX_DISK_PCT') else 1)"; then
+    echo "REFUSE: disk ${disk}% >= ${POOLINDEX_MAX_DISK_PCT}%"
     return 1
   fi
   echo "OK: RAM ${avail}MB available, load ${load}/${ncpu}, disk ${disk}%"
@@ -149,7 +149,7 @@ tar_excludes_args() {
 
 count_source_files() {
   (
-    cd "$CLAIM_SCOUT_ROOT"
+    cd "$POOLINDEX_ROOT"
     local excludes=()
     if [[ -f "$EXCLUDE_FILE" ]]; then
       while IFS= read -r line || [[ -n "$line" ]]; do
@@ -164,7 +164,7 @@ count_source_files() {
 
 source_newest_unix() {
   (
-    cd "$CLAIM_SCOUT_ROOT"
+    cd "$POOLINDEX_ROOT"
     find . -type f \
       ! -path './node_modules/*' ! -path './.next/*' ! -path './.git/*' \
       -printf '%T@\n' 2>/dev/null | sort -nr | head -n 1 | cut -d. -f1

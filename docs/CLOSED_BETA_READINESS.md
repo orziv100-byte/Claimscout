@@ -1,6 +1,6 @@
-# CLAIM SCOUT CLOSED BETA READINESS REPORT
+# Poolindex Closed Beta readiness report
 
-© 2026 Claim Scout. All rights reserved.
+© 2026 Poolindex. All rights reserved.
 
 Date: 2026-09-19. App version: 0.1.0. Branch: `cursor/closed-beta-release-415b`.
 
@@ -8,7 +8,7 @@ Pre-implementation snapshot: `20260919T193714Z` (git `1adec459b9`, tree SHA-256 
 
 ## 1. What existed before this project
 
-Next.js Claim Scout with catalog, live sources, safety filters, resource guard, dual-machine snapshots, Scout+ server-side caps, HMAC entitlement cookie, and daily catalog watch. No user accounts, admin, Terms/Privacy, telemetry, or human feedback.
+Next.js Poolindex with catalog, live sources, safety filters, resource guard, dual-machine snapshots, Poolindex Pro server-side caps, HMAC entitlement cookie, and daily catalog watch. No user accounts, admin, Terms/Privacy, telemetry, or human feedback.
 
 ## 2. What was added
 
@@ -16,17 +16,17 @@ Invite-only accounts (scrypt passwords, HMAC sessions, email verification via op
 
 ## 3. Authentication status
 
-Implemented and tested: register with invite, Terms/Privacy checkboxes, email verify, login, logout, password reset, 7-day signed HTTP-only cookies, expired cookie rejection, invalid credentials, disabled/suspended lockout. Unique user IDs. Dev invite `closed-beta-dev` is non-production only. Production bootstrap: `CLAIM_SCOUT_BOOTSTRAP_INVITE`.
+Implemented and tested: register with invite, Terms/Privacy checkboxes, email verify, login, logout, password reset, 7-day signed HTTP-only cookies, expired cookie rejection, invalid credentials, disabled/suspended lockout. Unique user IDs. Dev invite `closed-beta-dev` is non-production only. Production bootstrap: `POOLINDEX_BOOTSTRAP_INVITE`.
 
 ## 4. Security status
 
 - Public addresses only. Seed phrases and private-key-shaped input are rejected (unit + API).
 - CSRF Origin check on mutating auth/admin/feedback routes.
 - Rate limits on register/login/forgot.
-- Secrets expected in environment variables. Production refuses missing `CLAIM_SCOUT_SESSION_SECRET`, `CLAIM_SCOUT_PLAN_SECRET`, `CLAIM_SCOUT_ADMIN_EMAILS`.
+- Secrets expected in environment variables. Production refuses missing `POOLINDEX_SESSION_SECRET`, `POOLINDEX_PLAN_SECRET`, `POOLINDEX_ADMIN_EMAILS`.
 - Security event log in `var/beta/security.jsonl`.
 - Admin role is env-gated, not a UI flag.
-- HTTPS: `Secure` cookies when `NODE_ENV=production` or `CLAIM_SCOUT_SECURE_COOKIES=1`. Put TLS on the reverse proxy.
+- HTTPS: `Secure` cookies when `NODE_ENV=production` or `POOLINDEX_SECURE_COOKIES=1`. Put TLS on the reverse proxy.
 - No seed/private-key forms exist in the product.
 
 ## 5. Admin/control status
@@ -43,15 +43,15 @@ Stage 1/2/3 caps 10/20/50. Metrics: invites, registrations, verified, first scan
 
 ## 8. IP/Copyright status
 
-Footer, README, package description, and docs use `© 2026 Claim Scout. All rights reserved.` Product architecture: `docs/PRODUCT.md`. Third-party packages: `THIRD_PARTY_NOTICES.md`. Git history kept. No copyright headers added to vendor code.
+Footer, README, package description, and docs use `© 2026 Poolindex. All rights reserved.` Product architecture: `docs/PRODUCT.md`. Third-party packages: `THIRD_PARTY_NOTICES.md`. Git history kept. No copyright headers added to vendor code.
 
 ## 9. Terms/Privacy status
 
-`/terms` and `/privacy`. Registration stores user ID, Terms version `beta-2026-09-19`, Privacy version `beta-2026-09-19`, timestamp. Terms state Claim Scout is a research tool and does not guarantee discovery, eligibility, payment, or profit. Privacy states seed phrases and private keys are not collected.
+`/terms` and `/privacy`. Registration stores user ID, Terms version `beta-2026-09-19`, Privacy version `beta-2026-09-19`, timestamp. Terms state Poolindex is a research tool and does not guarantee discovery, eligibility, payment, or profit. Privacy states seed phrases and private keys are not collected.
 
 ## 10. Free/Pro enforcement status
 
-Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and wallets. Free: catalog+GitHub, 1 wallet. Scout+: 4/6 sources, 5 wallets, $40 planned, no payment processor.
+Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and wallets. Free: catalog+GitHub, 1 wallet. Poolindex Pro: 4/6 sources, 5 wallets, $40 planned, no payment processor.
 
 ## 11. Resource/crash protection status
 
@@ -79,11 +79,11 @@ Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and
 
 ## 15. Exact steps to invite the first 10 users
 
-1. On claimscoutserver, set `CLAIM_SCOUT_SESSION_SECRET`, `CLAIM_SCOUT_PLAN_SECRET`, `CLAIM_SCOUT_ADMIN_EMAILS`, `CLAIM_SCOUT_BOOTSTRAP_INVITE`. Optional: `CLAIM_SCOUT_PAID_KEYS`.
+1. On poolindexserver, set `POOLINDEX_SESSION_SECRET`, `POOLINDEX_PLAN_SECRET`, `POOLINDEX_ADMIN_EMAILS`, `POOLINDEX_BOOTSTRAP_INVITE`. Optional: `POOLINDEX_PAID_KEYS`.
 2. Take a fresh snapshot: `npm run backup:snapshot -- --with-git`.
 3. Register the operator email with the bootstrap invite, verify via outbox, sign in, open `/admin`.
 4. Confirm Stage 1 (cap 10). Create 10 invites (bind email when you can).
-5. Send each person: invite code, `/register`, `/terms`, `/privacy`. Tell them Claim Scout never wants a seed phrase.
+5. Send each person: invite code, `/register`, `/terms`, `/privacy`. Tell them Poolindex never wants a seed phrase.
 6. Confirm each person: register, accept both documents, verify email, sign in, bind one public `0x` address, finish one catalog/GitHub scan, send feedback.
 7. Use Stop new scans if the host is unstable. That does not delete data.
 8. After review, Admin → Stage 2 (20), later Stage 3 (50).

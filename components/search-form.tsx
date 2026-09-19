@@ -98,7 +98,7 @@ export function SearchForm({
                 />
                 {source.label}
                 {access === "upgrade" ? (
-                  <span className="text-[10px] uppercase tracking-wide">Scout+</span>
+                  <span className="text-[10px] uppercase tracking-wide">Poolindex Pro</span>
                 ) : null}
                 {access === "reserved" ? (
                   <span className="text-[10px] uppercase tracking-wide">Later</span>

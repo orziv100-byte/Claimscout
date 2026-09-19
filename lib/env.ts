@@ -1,7 +1,7 @@
 const PRODUCTION_REQUIRED = [
-  "CLAIM_SCOUT_SESSION_SECRET",
-  "CLAIM_SCOUT_PLAN_SECRET",
-  "CLAIM_SCOUT_ADMIN_EMAILS",
+  "POOLINDEX_SESSION_SECRET",
+  "POOLINDEX_PLAN_SECRET",
+  "POOLINDEX_ADMIN_EMAILS",
 ] as const;
 
 export type EnvReport = {
@@ -21,17 +21,17 @@ export function inspectEnv(env: NodeJS.ProcessEnv = process.env): EnvReport {
       else usingDevDefaults.push(key);
     }
   }
-  if (production && env.CLAIM_SCOUT_PLAN_SECRET === "dev-only-claimscout-plan-secret") {
-    missing.push("CLAIM_SCOUT_PLAN_SECRET");
+  if (production && env.POOLINDEX_PLAN_SECRET === "dev-only-poolindex-plan-secret") {
+    missing.push("POOLINDEX_PLAN_SECRET");
   }
-  if (production && env.CLAIM_SCOUT_SESSION_SECRET === "dev-only-claimscout-session-secret") {
-    missing.push("CLAIM_SCOUT_SESSION_SECRET");
+  if (production && env.POOLINDEX_SESSION_SECRET === "dev-only-poolindex-session-secret") {
+    missing.push("POOLINDEX_SESSION_SECRET");
   }
   return { ok: missing.length === 0, production, missing, usingDevDefaults };
 }
 
 export function adminEmails(env: NodeJS.ProcessEnv = process.env): string[] {
-  return (env.CLAIM_SCOUT_ADMIN_EMAILS || "")
+  return (env.POOLINDEX_ADMIN_EMAILS || "")
     .split(/[,\s]+/)
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);

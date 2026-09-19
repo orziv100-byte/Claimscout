@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const activated = activatePaidLicense(ent, body.license);
     if (!activated.ok) {
       return NextResponse.json(
-        { error: "That Scout+ key is not valid.", code: "INVALID_LICENSE" },
+        { error: "That Poolindex Pro key is not valid.", code: "INVALID_LICENSE" },
         { status: 403 },
       );
     }
@@ -58,8 +58,8 @@ export async function POST(request: Request) {
         {
           error:
             ent.plan === "free"
-              ? "Free checks one wallet. Scout+ ($40) unlocks up to five."
-              : "Scout+ includes up to five wallets.",
+              ? "Free checks one wallet. Poolindex Pro ($40) unlocks up to five."
+              : "Poolindex Pro includes up to five wallets.",
           code: bound.code,
           upgradeUrl: "/upgrade",
           maxWallets: max,

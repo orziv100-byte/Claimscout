@@ -1,6 +1,6 @@
 import { readResourceSnapshot, ResourcePressureError } from "./resource-guard";
 
-export const UA = "Claimscout/1.0 (public crypto claim discovery; research tool)";
+export const UA = "Poolindex/1.0 (public crypto claim discovery; research tool)";
 
 const MAX_CACHE_ENTRIES = 48;
 const inflight = new Map<string, Promise<unknown>>();

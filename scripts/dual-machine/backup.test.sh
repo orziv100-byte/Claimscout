@@ -3,7 +3,7 @@
 # except reading scripts. Uses a temp directory.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
-tmp="$(mktemp -d /tmp/claimscout-backup-test.XXXXXX)"
+tmp="$(mktemp -d /tmp/poolindex-backup-test.XXXXXX)"
 trap 'rm -rf "$tmp"' EXIT
 
 mkdir -p "$tmp/project/app" "$tmp/project/logs" "$tmp/backups"
@@ -14,15 +14,15 @@ mkdir -p "$tmp/project/node_modules/x"
 printf 'nope\n' > "$tmp/project/node_modules/x/mod.js"
 cp "$here/exclude.txt" "$tmp/exclude.txt"
 # Use the real scripts with env overrides.
-export CLAIM_SCOUT_ROOT="$tmp/project"
-export CLAIM_SCOUT_BACKUP_ROOT="$tmp/backups"
-export CLAIM_SCOUT_ROLE="test"
-export CLAIM_SCOUT_KEEP_SNAPSHOTS=3
-export CLAIM_SCOUT_MIN_SNAPSHOTS=2
-export CLAIM_SCOUT_SHRINK_LIMIT=0.5
-export CLAIM_SCOUT_MIN_RAM_MB=1
-export CLAIM_SCOUT_MAX_LOAD_PER_CPU=100
-export CLAIM_SCOUT_MAX_DISK_PCT=99
+export POOLINDEX_ROOT="$tmp/project"
+export POOLINDEX_BACKUP_ROOT="$tmp/backups"
+export POOLINDEX_ROLE="test"
+export POOLINDEX_KEEP_SNAPSHOTS=3
+export POOLINDEX_MIN_SNAPSHOTS=2
+export POOLINDEX_SHRINK_LIMIT=0.5
+export POOLINDEX_MIN_RAM_MB=1
+export POOLINDEX_MAX_LOAD_PER_CPU=100
+export POOLINDEX_MAX_DISK_PCT=99
 
 echo "TEST snapshot 1"
 "$here/snapshot.sh"

@@ -24,7 +24,7 @@ const EMPTY: BetaState = {
 let chain: Promise<unknown> = Promise.resolve();
 
 export function betaRoot(): string {
-  return process.env.CLAIM_SCOUT_BETA_DIR || join(process.cwd(), "var/beta");
+  return process.env.POOLINDEX_BETA_DIR || join(process.cwd(), "var/beta");
 }
 
 function statePath(root = betaRoot()) {

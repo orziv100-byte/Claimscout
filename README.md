@@ -1,10 +1,10 @@
-# Claim Scout
+# Poolindex
 
-© 2026 Claim Scout. All rights reserved.
+© 2026 Poolindex. All rights reserved.
 
 Web tool for discovering and verifying **publicly claimable** cryptocurrency rewards — airdrops, historical faucets, giveaways, redemption links, community testnet drips, and documented public puzzles.
 
-Closed Beta is invite-only. Claim Scout is a research and source-scanning tool. It does not guarantee discovery, eligibility, payment, or profit. It will not brute-force keys, hunt seed phrases, open other people’s wallets, or sign a transaction unless you explicitly approve a legitimate claim.
+Closed Beta is invite-only. Poolindex is a research and source-scanning tool. It does not guarantee discovery, eligibility, payment, or profit. It will not brute-force keys, hunt seed phrases, open other people’s wallets, or sign a transaction unless you explicitly approve a legitimate claim.
 
 See `docs/PRODUCT.md`, `docs/CLOSED_BETA.md`, `/terms`, and `/privacy`.
 
@@ -46,11 +46,11 @@ Optional environment variables:
 | `ETH_RPC_URL` | Ethereum JSON-RPC (defaults to a public node) |
 | `ARB_RPC_URL` | Arbitrum JSON-RPC |
 
-| `CLAIM_SCOUT_SESSION_SECRET` | Required in production. Signs login sessions |
-| `CLAIM_SCOUT_ADMIN_EMAILS` | Operator emails that receive admin role on register |
-| `CLAIM_SCOUT_BOOTSTRAP_INVITE` | One-time operator invite code in production |
-| `CLAIM_SCOUT_PLAN_SECRET` | Signs the Scout+ entitlement cookie |
-| `CLAIM_SCOUT_PAID_KEYS` | Scout+ license keys (no billing yet) |
+| `POOLINDEX_SESSION_SECRET` | Required in production. Signs login sessions |
+| `POOLINDEX_ADMIN_EMAILS` | Operator emails that receive admin role on register |
+| `POOLINDEX_BOOTSTRAP_INVITE` | One-time operator invite code in production |
+| `POOLINDEX_PLAN_SECRET` | Signs the Poolindex Pro entitlement cookie |
+| `POOLINDEX_PAID_KEYS` | Poolindex Pro license keys (no billing yet) |
 
 No API keys are required for the catalog, Wayback CDX, archive.org, or read-only RPC checks.
 
@@ -58,7 +58,7 @@ Closed Beta: register at `/register` with an invite, accept Terms and Privacy, v
 
 ## Using it
 
-1. **Scout** — search the catalog and jump into a live scan.
+1. **Index** — search the catalog and jump into a live scan.
 2. **Live scan** — query GitHub, Wayback Machine, archive.org, Reddit, and Bitcointalk. Secret-looking hits, claim bots, and airdrop hunters are dropped.
 3. **Catalog** — filter curated public offers by type and status.
 4. **Claim page** — sources, archive links, URL inspector, eligibility.
@@ -67,10 +67,10 @@ Closed Beta: register at `/register` with an invite, accept Terms and Privacy, v
 ## Plans
 
 - **Free** — catalog + GitHub, eligibility for **one** wallet.
-- **Scout+ ($40)** — 4 of 6 scan sources (~70%): catalog, GitHub, Wayback, Archive.org, and **up to five** wallets.
+- **Poolindex Pro ($40)** — 4 of 6 scan sources (~70%): catalog, GitHub, Wayback, Archive.org, and **up to five** wallets.
 - Reddit and Bitcointalk stay reserved.
 
-Activate Scout+ at `/upgrade` with a license key (`CLAIM_SCOUT_PAID_KEYS`). In `next dev` the demo key is `scout-plus-demo`.
+Activate Poolindex Pro at `/upgrade` with a license key (`POOLINDEX_PAID_KEYS`). In `next dev` the demo key is `poolindex-pro-demo`.
 
 Merkle airdrops open the **official** claim UI. This app does not reconstruct merkle proofs.
 
@@ -87,4 +87,4 @@ Next.js, TypeScript, Tailwind CSS, shadcn/ui, viem.
 
 ## License notice
 
-© 2026 Claim Scout. All rights reserved. Third-party packages: `THIRD_PARTY_NOTICES.md`.
+© 2026 Poolindex. All rights reserved. Third-party packages: `THIRD_PARTY_NOTICES.md`.

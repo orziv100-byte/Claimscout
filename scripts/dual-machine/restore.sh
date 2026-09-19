@@ -47,7 +47,7 @@ if [[ "$REPLACE_LIVE" -eq 1 && -n "$live_newest" && -n "$src_newest" ]]; then
   fi
 fi
 
-out="${CLAIM_SCOUT_BACKUP_ROOT}/restores/restore-$(date -u +%Y%m%dT%H%M%SZ)"
+out="${POOLINDEX_BACKUP_ROOT}/restores/restore-$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$out"
 tar -xzf "${src}/tree.tar.gz" -C "$out"
 echo "restore: extracted to $out (live tree untouched)"
@@ -56,10 +56,10 @@ if [[ "$REPLACE_LIVE" -eq 1 ]]; then
   echo "restore: taking a safety snapshot of the live tree first"
   "$(cd "$(dirname "$0")" && pwd)/snapshot.sh"
   # Copy into a sibling folder next to live, not over it. Operator can rename.
-  sibling="${CLAIM_SCOUT_ROOT}.restored-$(date -u +%Y%m%dT%H%M%SZ)"
+  sibling="${POOLINDEX_ROOT}.restored-$(date -u +%Y%m%dT%H%M%SZ)"
   mkdir -p "$sibling"
   tar -xzf "${src}/tree.tar.gz" -C "$sibling"
-  echo "restore: live tree still at ${CLAIM_SCOUT_ROOT}"
+  echo "restore: live tree still at ${POOLINDEX_ROOT}"
   echo "restore: restored copy at ${sibling}"
   echo "restore: replace live yourself only after comparing the two trees."
 fi

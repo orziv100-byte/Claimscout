@@ -1,8 +1,8 @@
 {
-  "name": "claimscout",
+  "name": "poolindex",
   "version": "0.1.0",
   "private": true,
-  "description": "Claim Scout Closed Beta — public-claim research tool. © 2026 Claim Scout. All rights reserved.",
+  "description": "Poolindex Closed Beta — public-claim research tool. © 2026 Poolindex. All rights reserved.",
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=2048' next dev --hostname 0.0.0.0 --port 43147",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",

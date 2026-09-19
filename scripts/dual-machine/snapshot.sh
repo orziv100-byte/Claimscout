@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create an append-only versioned snapshot of the Claim Scout working copy.
+# Create an append-only versioned snapshot of the Poolindex working copy.
 # Never overwrites an existing snapshot directory. Never copies secrets or
 # reproducible caches. Refuses to record a suddenly-shrunken tree.
 set -euo pipefail
@@ -42,16 +42,16 @@ mapfile -t tar_excludes < <(tar_excludes_args)
 git_head="untracked"
 git_branch="unknown"
 git_status=""
-if [[ -d "${CLAIM_SCOUT_ROOT}/.git" ]]; then
-  git_head="$(git -C "$CLAIM_SCOUT_ROOT" rev-parse HEAD 2>/dev/null || echo untracked)"
-  git_branch="$(git -C "$CLAIM_SCOUT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
-  git_status="$(git -C "$CLAIM_SCOUT_ROOT" status -sb 2>/dev/null | tr '\n' ';')"
+if [[ -d "${POOLINDEX_ROOT}/.git" ]]; then
+  git_head="$(git -C "$POOLINDEX_ROOT" rev-parse HEAD 2>/dev/null || echo untracked)"
+  git_branch="$(git -C "$POOLINDEX_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+  git_status="$(git -C "$POOLINDEX_ROOT" status -sb 2>/dev/null | tr '\n' ';')"
 fi
 
 if [[ ${#tar_excludes[@]} -gt 0 ]]; then
-  tar -C "$CLAIM_SCOUT_ROOT" "${tar_excludes[@]}" -cf - . | gzip -1 > "${dest}/tree.tar.gz"
+  tar -C "$POOLINDEX_ROOT" "${tar_excludes[@]}" -cf - . | gzip -1 > "${dest}/tree.tar.gz"
 else
-  tar -C "$CLAIM_SCOUT_ROOT" -cf - . | gzip -1 > "${dest}/tree.tar.gz"
+  tar -C "$POOLINDEX_ROOT" -cf - . | gzip -1 > "${dest}/tree.tar.gz"
 fi
 file_count="$(tar -tzf "${dest}/tree.tar.gz" | wc -l | tr -d ' ')"
 newest="$(source_newest_unix || echo 0)"
@@ -60,23 +60,23 @@ bytes="$(stat -c%s "${dest}/tree.tar.gz")"
 sha="$(sha256sum "${dest}/tree.tar.gz" | awk '{print $1}')"
 printf '%s  tree.tar.gz\n' "$sha" > "${dest}/tree.tar.gz.sha256"
 
-if [[ "$WITH_GIT" -eq 1 && -d "${CLAIM_SCOUT_ROOT}/.git" ]]; then
-  git -C "$CLAIM_SCOUT_ROOT" bundle create "${dest}/repo.bundle" --all >/dev/null
+if [[ "$WITH_GIT" -eq 1 && -d "${POOLINDEX_ROOT}/.git" ]]; then
+  git -C "$POOLINDEX_ROOT" bundle create "${dest}/repo.bundle" --all >/dev/null
   sha256sum "${dest}/repo.bundle" | awk '{print $1 "  repo.bundle"}' > "${dest}/repo.bundle.sha256"
 fi
 
 printf '%s\n' "$git_head" > "${dest}/GIT-HEAD"
 printf '%s\n' "$git_branch" > "${dest}/GIT-BRANCH"
 
-write_manifest "$dest" "$CLAIM_SCOUT_ROOT" "$CLAIM_SCOUT_ROLE" "$sha" "$bytes" "$file_count" "$newest" "$git_head" "$git_branch" "$git_status"
+write_manifest "$dest" "$POOLINDEX_ROOT" "$POOLINDEX_ROLE" "$sha" "$bytes" "$file_count" "$newest" "$git_head" "$git_branch" "$git_status"
 
 # Shrink / deletion guard against the previous verified snapshot.
 if [[ -n "$prev" && "$prev" != "$dest" && -f "${prev}/MANIFEST.json" && "$ALLOW_SHRINK" -eq 0 ]]; then
   prev_count="$(read_manifest_field "$prev" file_count || echo 0)"
   if [[ -n "$prev_count" && "$prev_count" != "0" ]]; then
-    too_small="$(python3 -c "print(int($file_count) < int($prev_count) * float('$CLAIM_SCOUT_SHRINK_LIMIT'))")"
+    too_small="$(python3 -c "print(int($file_count) < int($prev_count) * float('$POOLINDEX_SHRINK_LIMIT'))")"
     if [[ "$too_small" == "True" ]]; then
-      echo "snapshot: ABORT file_count ${file_count} is below ${CLAIM_SCOUT_SHRINK_LIMIT} of previous ${prev_count}."
+      echo "snapshot: ABORT file_count ${file_count} is below ${POOLINDEX_SHRINK_LIMIT} of previous ${prev_count}."
       echo "snapshot: previous snapshot left intact at $prev"
       rm -rf "$dest"
       exit 4
@@ -93,8 +93,8 @@ ln -sfn "$dest" "$CURRENT_LINK"
 # Retention: drop oldest verified snapshots only when more than KEEP and MIN remain.
 mapfile -t all < <(ls -1d "$SNAPSHOTS_DIR"/20* 2>/dev/null | sort)
 total="${#all[@]}"
-keep="$CLAIM_SCOUT_KEEP_SNAPSHOTS"
-min="$CLAIM_SCOUT_MIN_SNAPSHOTS"
+keep="$POOLINDEX_KEEP_SNAPSHOTS"
+min="$POOLINDEX_MIN_SNAPSHOTS"
 if (( total > keep && total > min )); then
   drop=$(( total - keep ))
   if (( total - drop < min )); then

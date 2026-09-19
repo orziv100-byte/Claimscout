@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 const scrypt = promisify(scryptCb);
 
 function scryptN(): number {
-  const raw = Number(process.env.CLAIM_SCOUT_SCRYPT_N || 16384);
+  const raw = Number(process.env.POOLINDEX_SCRYPT_N || 16384);
   if (!Number.isFinite(raw) || raw < 2) return 16384;
   return raw;
 }

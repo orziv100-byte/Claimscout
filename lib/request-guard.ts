@@ -42,7 +42,7 @@ export function requireUser(
   }
   if (!opts.allowUnverified && session.user.status === "pending_verification") {
     return NextResponse.json(
-      { error: "Verify your email before using Claim Scout.", code: "EMAIL_UNVERIFIED", version: APP_VERSION },
+      { error: "Verify your email before using Poolindex.", code: "EMAIL_UNVERIFIED", version: APP_VERSION },
       { status: 403 },
     );
   }

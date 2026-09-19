@@ -1,8 +1,8 @@
 # Restore procedure
 
-© 2026 Claim Scout. All rights reserved.
+© 2026 Poolindex. All rights reserved.
 
-This Cloud VM is ephemeral. Durable backups live on **claimscoutserver** (`~/claimscout-backups`) and any copies kept on the Windows control PC.
+This Cloud VM is ephemeral. Durable backups live on **poolindexserver** (`~/poolindex-backups`) and any copies kept on the Windows control PC.
 
 ## Verify a snapshot
 
@@ -19,7 +19,7 @@ A verified snapshot has `MANIFEST.json` with `"verified": true`, matching `tree.
 bash scripts/dual-machine/restore.sh --from=STAMP
 ```
 
-Extracts to `~/claimscout-backups/restores/restore-<utc>`. The live working copy is not modified.
+Extracts to `~/poolindex-backups/restores/restore-<utc>`. The live working copy is not modified.
 
 ## Restore when replacing a damaged live tree
 

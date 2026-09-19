@@ -6,7 +6,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 load_config
 
 echo "=== dual-machine live verify $(date -u +%FT%TZ) host=$(hostname) user=$(whoami) ==="
-echo "role=${CLAIM_SCOUT_ROLE:-unset} root=${CLAIM_SCOUT_ROOT}"
+echo "role=${POOLINDEX_ROLE:-unset} root=${POOLINDEX_ROOT}"
 
 echo
 echo "--- resources ---"
@@ -19,7 +19,7 @@ fi
 
 echo
 echo "--- local backup ---"
-if [[ -x "$here/verify.sh" ]] && CLAIM_SCOUT_BACKUP_ROOT="${CLAIM_SCOUT_BACKUP_ROOT:-$HOME/claimscout-backups}" "$here/verify.sh" --all; then
+if [[ -x "$here/verify.sh" ]] && POOLINDEX_BACKUP_ROOT="${POOLINDEX_BACKUP_ROOT:-$HOME/poolindex-backups}" "$here/verify.sh" --all; then
   echo "LOCAL_BACKUP_VERIFY: PASS"
 else
   echo "LOCAL_BACKUP_VERIFY: FAIL (no verified snapshots on this host)"
@@ -30,8 +30,8 @@ echo "--- SSH to claimed Linux server ---"
 ssh_ok=0
 for spec in \
   "lior@10.100.102.71" \
-  "lior@claimscoutserver.local" \
-  "lior@claimscoutserver"
+  "lior@poolindexserver.local" \
+  "lior@poolindexserver"
  do
   echo "try ssh -o BatchMode=yes -o ConnectTimeout=4 $spec"
   if ssh -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=no "$spec" "echo SERVER_SSH_OK \$(hostname) \$(whoami)" 2>&1 | tee /tmp/ssh_try.out | grep -q SERVER_SSH_OK; then
@@ -47,7 +47,7 @@ fi
 
 echo
 echo "--- workload lock ---"
-if [[ -f "${HEAVY_LOCK:-/tmp/claimscout-heavy.lock}" ]]; then
+if [[ -f "${HEAVY_LOCK:-/tmp/poolindex-heavy.lock}" ]]; then
   echo "WORKLOAD_LOCK: occupied $(cat "$HEAVY_LOCK")"
 else
   echo "WORKLOAD_LOCK: free"
@@ -57,5 +57,5 @@ fi
 echo
 echo "MAIN_PC: FAIL unless this host is the Windows control PC (hostname=$(hostname))"
 echo "SERVER: see SERVER_SSH above; Cursor worker connectivity is reported by the parent agent MCP, not this script"
-echo "BACKUP: see LOCAL_BACKUP_VERIFY; automatic-on-both-machines requires this script to PASS on Windows AND on claimscoutserver"
+echo "BACKUP: see LOCAL_BACKUP_VERIFY; automatic-on-both-machines requires this script to PASS on Windows AND on poolindexserver"
 echo "WORKLOAD_DISTRIBUTION: FAIL unless SERVER_SSH PASS and a second host ran assign-workload concurrently"

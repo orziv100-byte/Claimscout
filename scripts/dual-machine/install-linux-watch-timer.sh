@@ -8,44 +8,44 @@ here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
 digest="${root}/scripts/watch-digest.sh"
 unit_dir="${HOME}/.config/systemd/user"
-service="${unit_dir}/claimscout-watch.service"
-timer="${unit_dir}/claimscout-watch.timer"
+service="${unit_dir}/poolindex-watch.service"
+timer="${unit_dir}/poolindex-watch.timer"
 
 if command -v systemctl >/dev/null 2>&1 && systemctl --user status >/dev/null 2>&1; then
   mkdir -p "$unit_dir"
   cat > "$service" <<EOF
 [Unit]
-Description=Claim Scout daily catalog watch digest
+Description=Poolindex daily catalog watch digest
 
 [Service]
 Type=oneshot
 Nice=10
 IOSchedulingClass=idle
-Environment=CLAIM_SCOUT_ROOT=${CLAIM_SCOUT_ROOT}
+Environment=POOLINDEX_ROOT=${POOLINDEX_ROOT}
 ExecStart=${digest}
 EOF
   cat > "$timer" <<EOF
 [Unit]
-Description=Claim Scout catalog watch once a day
+Description=Poolindex catalog watch once a day
 
 [Timer]
 OnCalendar=*-*-* 06:00:00
 Persistent=true
 RandomizedDelaySec=300
-Unit=claimscout-watch.service
+Unit=poolindex-watch.service
 
 [Install]
 WantedBy=timers.target
 EOF
   systemctl --user daemon-reload
-  systemctl --user enable --now claimscout-watch.timer
-  echo "install: systemd user timer claimscout-watch.timer enabled (06:00 UTC ±5min)"
+  systemctl --user enable --now poolindex-watch.timer
+  echo "install: systemd user timer poolindex-watch.timer enabled (06:00 UTC ±5min)"
   exit 0
 fi
 
-cron_line="0 6 * * * ${digest} >/tmp/claimscout-watch.log 2>&1"
+cron_line="0 6 * * * ${digest} >/tmp/poolindex-watch.log 2>&1"
 tmp="$(mktemp)"
-crontab -l 2>/dev/null | grep -v 'claimscout-watch\|watch-digest.sh' > "$tmp" || true
+crontab -l 2>/dev/null | grep -v 'poolindex-watch\|watch-digest.sh' > "$tmp" || true
 echo "$cron_line" >> "$tmp"
 crontab "$tmp"
 rm -f "$tmp"

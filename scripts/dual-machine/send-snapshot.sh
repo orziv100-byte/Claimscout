@@ -5,8 +5,8 @@ set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/lib.sh"
 load_config
 
-if [[ -z "$CLAIM_SCOUT_PEER_HOST" ]]; then
-  echo "send: CLAIM_SCOUT_PEER_HOST is empty."
+if [[ -z "$POOLINDEX_PEER_HOST" ]]; then
+  echo "send: POOLINDEX_PEER_HOST is empty."
   echo "send: git remains the control-plane sync. Configure SSH in config.env to push snapshot tarballs."
   exit 1
 fi
@@ -23,10 +23,10 @@ if [[ -z "$current" || ! -d "$current" ]]; then
 fi
 "$(cd "$(dirname "$0")" && pwd)/verify.sh" "$current"
 
-remote_user="${CLAIM_SCOUT_PEER_USER:-}"
-remote="${CLAIM_SCOUT_PEER_HOST}"
+remote_user="${POOLINDEX_PEER_USER:-}"
+remote="${POOLINDEX_PEER_HOST}"
 [[ -n "$remote_user" ]] && remote="${remote_user}@${remote}"
-remote_path="${CLAIM_SCOUT_PEER_PATH:-~/claimscout-backups/incoming}"
+remote_path="${POOLINDEX_PEER_PATH:-~/poolindex-backups/incoming}"
 name="$(basename "$current")"
 
 echo "send: $current -> ${remote}:${remote_path}/${name}"

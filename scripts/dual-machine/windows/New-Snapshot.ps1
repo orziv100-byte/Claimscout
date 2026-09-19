@@ -1,4 +1,4 @@
-# Append-only snapshot of the Claim Scout working copy on the Windows control PC.
+# Append-only snapshot of the Poolindex working copy on the Windows control PC.
 # Does not copy node_modules, .next, or secret env files.
 param(
   [string]$Root = "",
@@ -11,7 +11,7 @@ if (-not $Root) {
   $Root = (Resolve-Path (Join-Path $scripts "..\..")).Path
 }
 if (-not $BackupRoot) {
-  $BackupRoot = Join-Path $env:USERPROFILE "claimscout-backups"
+  $BackupRoot = Join-Path $env:USERPROFILE "poolindex-backups"
 }
 
 & (Join-Path $here "Check-Resources.ps1")

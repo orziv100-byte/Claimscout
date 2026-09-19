@@ -13,23 +13,23 @@ import { inspectEnv } from "./env.ts";
 import { readUserScans } from "./beta-store.ts";
 import { trackScan } from "./telemetry.ts";
 
-const dir = mkdtempSync(join(tmpdir(), "claimscout-beta-"));
-process.env.CLAIM_SCOUT_BETA_DIR = dir;
-process.env.CLAIM_SCOUT_SCRYPT_N = "4";
-process.env.CLAIM_SCOUT_SESSION_SECRET = "test-session-secret";
-process.env.CLAIM_SCOUT_PLAN_SECRET = "test-plan-secret";
-process.env.CLAIM_SCOUT_ADMIN_EMAILS = "admin@example.com";
-process.env.CLAIM_SCOUT_BETA_STAGE_CAP = "2";
+const dir = mkdtempSync(join(tmpdir(), "poolindex-beta-"));
+process.env.POOLINDEX_BETA_DIR = dir;
+process.env.POOLINDEX_SCRYPT_N = "4";
+process.env.POOLINDEX_SESSION_SECRET = "test-session-secret";
+process.env.POOLINDEX_PLAN_SECRET = "test-plan-secret";
+process.env.POOLINDEX_ADMIN_EMAILS = "admin@example.com";
+process.env.POOLINDEX_BETA_STAGE_CAP = "2";
 process.env.NODE_ENV = "test";
 
 before(() => {
-  process.env.CLAIM_SCOUT_BETA_DIR = dir;
+  process.env.POOLINDEX_BETA_DIR = dir;
 });
 
 beforeEach(async () => {
   rmSync(dir, { recursive: true, force: true });
-  process.env.CLAIM_SCOUT_BETA_DIR = dir;
-  process.env.CLAIM_SCOUT_BETA_STAGE_CAP = "2";
+  process.env.POOLINDEX_BETA_DIR = dir;
+  process.env.POOLINDEX_BETA_STAGE_CAP = "2";
 });
 
 after(() => {
@@ -129,7 +129,7 @@ test("invalid credentials, expired sessions, and disabled accounts", async () =>
 });
 
 test("user A cannot see user B wallets, scans, or feedback", async () => {
-  process.env.CLAIM_SCOUT_BETA_STAGE_CAP = "5";
+  process.env.POOLINDEX_BETA_STAGE_CAP = "5";
   const a = await register("a@example.com", { displayName: "User A" });
   const b = await register("b@example.com", { displayName: "User B" });
   verifyEmailToken(a.verifyUrl.split("token=")[1]);
@@ -176,7 +176,7 @@ test("admin role is env-gated and kill switch pauses scans without deleting user
 });
 
 test("beta stage cap blocks extra registrations", async () => {
-  process.env.CLAIM_SCOUT_BETA_STAGE_CAP = "1";
+  process.env.POOLINDEX_BETA_STAGE_CAP = "1";
   await register("one@example.com", { displayName: "One" });
   await assert.rejects(() => register("two@example.com", { displayName: "Two" }), /full/);
 });
@@ -213,12 +213,12 @@ test("feedback workflow and secret material rejection", async () => {
 test("production env validation and invite creation", async () => {
   const report = inspectEnv({ NODE_ENV: "production" });
   assert.equal(report.ok, false);
-  assert.ok(report.missing.includes("CLAIM_SCOUT_SESSION_SECRET"));
+  assert.ok(report.missing.includes("POOLINDEX_SESSION_SECRET"));
   const ok = inspectEnv({
     NODE_ENV: "production",
-    CLAIM_SCOUT_SESSION_SECRET: "prod-session",
-    CLAIM_SCOUT_PLAN_SECRET: "prod-plan",
-    CLAIM_SCOUT_ADMIN_EMAILS: "admin@example.com",
+    POOLINDEX_SESSION_SECRET: "prod-session",
+    POOLINDEX_PLAN_SECRET: "prod-plan",
+    POOLINDEX_ADMIN_EMAILS: "admin@example.com",
   });
   assert.equal(ok.ok, true);
   const invite = createInvite({ createdBy: "admin", email: "guest@example.com", maxUses: 1, note: "stage1" });

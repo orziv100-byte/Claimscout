@@ -79,7 +79,7 @@ function ensureDevInvite(state: ReturnType<typeof readBetaState>) {
       });
     }
   }
-  const bootstrap = process.env.CLAIM_SCOUT_BOOTSTRAP_INVITE?.trim();
+  const bootstrap = process.env.POOLINDEX_BOOTSTRAP_INVITE?.trim();
   if (!bootstrap) return;
   if (state.invites.some((invite) => invite.code === bootstrap)) return;
   state.invites.push({
@@ -191,8 +191,8 @@ export async function registerAccount(input: {
       const verifyUrl = `/verify?token=${encodeURIComponent(raw)}`;
       recordMail({
         to: user.email,
-        subject: "Verify your Claim Scout Beta account",
-        text: `Welcome to Claim Scout Closed Beta. Verify your email: ${verifyUrl}`,
+        subject: "Verify your Poolindex Beta account",
+        text: `Welcome to Poolindex Closed Beta. Verify your email: ${verifyUrl}`,
         url: verifyUrl,
       });
       recordSecurity({ type: "register", userId: user.id, email: user.email });
@@ -292,12 +292,12 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ sent: tr
     const resetUrl = `/reset?token=${encodeURIComponent(raw)}`;
     recordMail({
       to: user.email,
-      subject: "Reset your Claim Scout password",
+      subject: "Reset your Poolindex password",
       text: `Reset your password (valid for 1 hour): ${resetUrl}`,
       url: resetUrl,
     });
     recordSecurity({ type: "password_reset_requested", userId: user.id, email: user.email });
-    const reveal = process.env.NODE_ENV !== "production" || process.env.CLAIM_SCOUT_REVEAL_MAIL === "1";
+    const reveal = process.env.NODE_ENV !== "production" || process.env.POOLINDEX_REVEAL_MAIL === "1";
     return reveal ? { sent: true as const, resetUrl } : { sent: true as const };
   });
 }

@@ -1,9 +1,9 @@
 # Dual-machine workload and backup
 
-Claim Scout has two operator machines:
+Poolindex has two operator machines:
 
 - **Windows PC** — control and interactive development.
-- **claimscoutserver (Linux)** — independent compute, runtime, and durable backup (`~/claimscout`).
+- **poolindexserver (Linux)** — independent compute, runtime, and durable backup (`~/poolindex`).
 
 Do not run `next build`, live scans, and extra agents on both machines at the same time. Check resources first:
 
@@ -16,7 +16,7 @@ On Windows: `scripts/dual-machine/windows/Check-Resources.ps1`
 
 ## Backup (append-only)
 
-Snapshots go to `~/claimscout-backups/snapshots/<UTC>/` (Windows: `%USERPROFILE%\claimscout-backups`). `current` is only a symlink. A delete or shrink on one machine cannot rewrite the other machine's older snapshots.
+Snapshots go to `~/poolindex-backups/snapshots/<UTC>/` (Windows: `%USERPROFILE%\poolindex-backups`). `current` is only a symlink. A delete or shrink on one machine cannot rewrite the other machine's older snapshots.
 
 ```bash
 scripts/dual-machine/snapshot.sh

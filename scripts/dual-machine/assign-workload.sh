@@ -12,7 +12,7 @@ if [[ -z "$task" ]]; then
   exit 1
 fi
 
-echo "assign: role=${CLAIM_SCOUT_ROLE} host=$(hostname) task=${task}"
+echo "assign: role=${POOLINDEX_ROLE} host=$(hostname) task=${task}"
 resource_report
 
 if [[ -f "$HEAVY_LOCK" ]]; then
@@ -32,7 +32,7 @@ case "$task" in
     echo "ASSIGN: Linux may run next only if Windows is overloaded AND no other heavy job is running."
     ;;
   build|scan)
-    echo "ASSIGN: Linux server (${CLAIM_SCOUT_ROLE}) for $task — independent of the Windows editor."
+    echo "ASSIGN: Linux server (${POOLINDEX_ROLE}) for $task — independent of the Windows editor."
     echo "ASSIGN: do not also start next build/scan on Windows at the same time."
     ;;
   backup|watch)

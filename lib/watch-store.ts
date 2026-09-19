@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { WatchSnapshot } from "./watch";
 
 function watchRoot(): string {
-  return process.env.CLAIM_SCOUT_WATCH_DIR || join(process.cwd(), "var/results/watch");
+  return process.env.POOLINDEX_WATCH_DIR || join(process.cwd(), "var/results/watch");
 }
 
 export function watchPaths(root = watchRoot()) {

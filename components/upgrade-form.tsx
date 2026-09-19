@@ -23,9 +23,9 @@ export function UpgradeForm() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
       <div>
-        <h1 className="font-heading text-3xl tracking-tight">Free and Scout+</h1>
+        <h1 className="font-heading text-3xl tracking-tight">Free and Poolindex Pro</h1>
         <p className="mt-3 text-muted-foreground">
-          Free scans a short source list against one wallet. Scout+ is $40 for about 70% of sources and up to five
+          Free scans a short source list against one wallet. Poolindex Pro is $40 for about 70% of sources and up to five
           wallets. Reddit and Bitcointalk stay reserved.
         </p>
       </div>
@@ -49,7 +49,7 @@ export function UpgradeForm() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Scout+</CardTitle>
+            <CardTitle>Poolindex Pro</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p className="text-2xl font-heading text-foreground">${PLANS.paid.priceUsd}</p>
@@ -61,7 +61,7 @@ export function UpgradeForm() {
               <li>Up to {PLANS.paid.maxWallets} wallets</li>
             </ul>
             {plan === "paid" ? (
-              <p className="text-xs text-foreground">Scout+ is active. {wallets.length}/{maxWallets} wallets bound.</p>
+              <p className="text-xs text-foreground">Poolindex Pro is active. {wallets.length}/{maxWallets} wallets bound.</p>
             ) : null}
           </CardContent>
         </Card>
@@ -69,7 +69,7 @@ export function UpgradeForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Activate Scout+</CardTitle>
+          <CardTitle>Activate Poolindex Pro</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">
@@ -80,7 +80,7 @@ export function UpgradeForm() {
             <Input
               value={license}
               onChange={(e) => setLicense(e.target.value)}
-              placeholder="Scout+ license key"
+              placeholder="Poolindex Pro license key"
               className="font-mono"
               autoComplete="off"
             />

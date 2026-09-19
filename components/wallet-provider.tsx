@@ -33,7 +33,7 @@ type WalletState = {
 
 const WalletContext = createContext<WalletState | null>(null);
 
-const SESSION_KEY = "claimscout.address";
+const SESSION_KEY = "poolindex.address";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const { bindAddress } = usePlan();

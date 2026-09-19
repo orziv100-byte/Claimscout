@@ -118,7 +118,7 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
           <DialogHeader>
             <DialogTitle>Submit public claim?</DialogTitle>
             <DialogDescription>
-              This will ask your wallet to sign a transaction. Claimscout never stores keys and will not send a
+              This will ask your wallet to sign a transaction. Poolindex never stores keys and will not send a
               transaction until you approve it in the wallet prompt.
             </DialogDescription>
           </DialogHeader>

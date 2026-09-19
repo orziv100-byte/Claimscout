@@ -28,7 +28,7 @@ export default function AccountPage() {
         <dt className="text-muted-foreground">Status</dt>
         <dd>{user.status}</dd>
         <dt className="text-muted-foreground">Plan</dt>
-        <dd>{user.plan === "paid" ? "Scout+" : "Free"}</dd>
+        <dd>{user.plan === "paid" ? "Poolindex Pro" : "Free"}</dd>
         <dt className="text-muted-foreground">Wallets</dt>
         <dd className="font-mono text-xs">{user.wallets.join(", ") || "none bound"}</dd>
         <dt className="text-muted-foreground">Terms</dt>

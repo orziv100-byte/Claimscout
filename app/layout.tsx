@@ -27,11 +27,11 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   title: {
-    default: "Claim Scout",
-    template: "%s · Claim Scout",
+    default: "Poolindex",
+    template: "%s · Poolindex",
   },
   description:
-    "Closed Beta research tool for public crypto claim sources. Read-only wallet checks. © 2026 Claim Scout. All rights reserved.",
+    "Closed Beta research tool for public crypto claim sources. Read-only wallet checks. © 2026 Poolindex. All rights reserved.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -80,7 +80,7 @@ export function WalletDashboard() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <p className="text-muted-foreground">
-            Claimscout stores only the public address in session storage. It never requests a signature for browsing or
+            Poolindex stores only the public address in session storage. It never requests a signature for browsing or
             eligibility. Private keys and seed phrases are rejected if pasted.
           </p>
           {address ? (

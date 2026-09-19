@@ -12,11 +12,11 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const NAV = [
-  { href: "/", label: "Scout" },
+  { href: "/", label: "Index" },
   { href: "/discover", label: "Live scan" },
   { href: "/catalog", label: "Catalog" },
   { href: "/wallet", label: "Wallet check" },
-  { href: "/upgrade", label: "Scout+" },
+  { href: "/upgrade", label: "Poolindex Pro" },
   { href: "/safety", label: "Rules" },
 ];
 
@@ -32,7 +32,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center justify-between gap-6">
           <Link href="/" className="flex items-baseline gap-2">
-            <span className="font-heading text-xl tracking-tight">Claim Scout</span>
+            <span className="font-heading text-xl tracking-tight">Poolindex</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">Closed Beta · public claims only</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-1">

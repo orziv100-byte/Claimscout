@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const SESSION_COOKIE = "claimscout_session";
+export const SESSION_COOKIE = "poolindex_session";
 export const SESSION_TTL_SEC = 7 * 24 * 60 * 60;
 
 export type SessionClaims = {
@@ -11,10 +11,10 @@ export type SessionClaims = {
 };
 
 export function sessionSecret(): string {
-  const fromEnv = process.env.CLAIM_SCOUT_SESSION_SECRET?.trim();
+  const fromEnv = process.env.POOLINDEX_SESSION_SECRET?.trim();
   if (fromEnv) return fromEnv;
   if (process.env.NODE_ENV === "production") return "";
-  return "dev-only-claimscout-session-secret";
+  return "dev-only-poolindex-session-secret";
 }
 
 function sign(payload: string, secret: string): string {
@@ -66,6 +66,6 @@ export function sessionCookieOptions(): {
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_TTL_SEC,
-    secure: process.env.NODE_ENV === "production" || process.env.CLAIM_SCOUT_SECURE_COOKIES === "1",
+    secure: process.env.NODE_ENV === "production" || process.env.POOLINDEX_SECURE_COOKIES === "1",
   };
 }

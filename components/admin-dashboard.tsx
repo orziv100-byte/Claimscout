@@ -215,7 +215,7 @@ export function AdminDashboard() {
                       Disable
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => void patchUser(user.id, { plan: user.plan === "paid" ? "free" : "paid" })}>
-                      {user.plan === "paid" ? "Make Free" : "Make Scout+"}
+                      {user.plan === "paid" ? "Make Free" : "Make Poolindex Pro"}
                     </Button>
                   </td>
                 </tr>

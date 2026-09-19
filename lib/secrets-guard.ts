@@ -20,7 +20,7 @@ export function looksLikeSecretMaterial(value: string): boolean {
 export function assertNoSecretMaterial(value: string, field = "input"): void {
   if (looksLikeSecretMaterial(value)) {
     throw new SecretMaterialError(
-      `Claim Scout does not accept seed phrases, private keys, or recovery secrets in ${field}.`,
+      `Poolindex does not accept seed phrases, private keys, or recovery secrets in ${field}.`,
     );
   }
 }

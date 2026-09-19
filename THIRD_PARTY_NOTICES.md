@@ -1,6 +1,6 @@
 # Third-party notices
 
-Claim Scout includes the following direct runtime and development dependencies. Their licenses are those published by the upstream packages. This file is not legal advice.
+Poolindex includes the following direct runtime and development dependencies. Their licenses are those published by the upstream packages. This file is not legal advice.
 
 ## Runtime
 
@@ -25,4 +25,4 @@ Claim Scout includes the following direct runtime and development dependencies. 
 | tailwindcss, @tailwindcss/postcss | CSS |
 | @types/node, @types/react, @types/react-dom | Types |
 
-Exact versions are in `package-lock.json`. Do not copy this notice into vendor code. Claim Scout original code is © 2026 Claim Scout. All rights reserved.
+Exact versions are in `package-lock.json`. Do not copy this notice into vendor code. Poolindex original code is © 2026 Poolindex. All rights reserved.

@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Crash / resource safety — highest priority
 
-Continuously protect this machine from overload and crashes while working on Claim Scout.
+Continuously protect this machine from overload and crashes while working on Poolindex.
 
 If you detect any crash, freeze, severe slowdown, process failure, repeated restart, out-of-memory condition, or abnormal CPU/RAM/disk usage:
 
@@ -25,7 +25,7 @@ If you detect any crash, freeze, severe slowdown, process failure, repeated rest
 9. Preserve completed work before stopping or restructuring tasks.
 10. After recovery, verify system stability and then resume from the last safe point.
 
-Stability has priority over speed. Do not allow Claim Scout, builds, scans, agents, or background jobs to overload or repeatedly crash this server.
+Stability has priority over speed. Do not allow Poolindex, builds, scans, agents, or background jobs to overload or repeatedly crash this server.
 
 Operational defaults for this repo:
 
@@ -35,7 +35,7 @@ Operational defaults for this repo:
 - If a command OOMs, hangs, or restarts itself, stop and diagnose; never retry it in a loop.
 - Live scans, Wayback CDX, and on-chain pool checks are serialized in-app (`lib/resource-guard.ts`, `/api/health`). Do not add unbounded `Promise.all` fan-out.
 - Catalog watch (`scripts/watch-digest.sh`, `/api/watch?refresh=1`) is one light sequential pool read. Do not stack it with `next build` or a live scan. Failed watch runs are skipped until the next daily timer — no retry loop.
-- Never log Scout+ license keys, `CLAIM_SCOUT_PLAN_SECRET`, or `CLAIM_SCOUT_SESSION_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
+- Never log Poolindex Pro license keys, `POOLINDEX_PLAN_SECRET`, or `POOLINDEX_SESSION_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
 - Closed Beta accounts and feedback live in `var/beta/` (gitignored). Isolate by user ID. Do not expand live-scan sources during Closed Beta. The admin kill switch pauses scans; it must not delete accounts, logs, or snapshots.
 
 
@@ -44,7 +44,7 @@ Operational defaults for this repo:
 Two operator machines exist. Use both when useful; do not duplicate heavy work.
 
 1. **Windows PC** — primary development/control. Interactive Cursor, light edits, deciding what to run.
-2. **claimscoutserver (Linux)** — secondary compute, runtime, and durable backup. Working copy: `~/claimscout`. Snapshots: `~/claimscout-backups`.
+2. **poolindexserver (Linux)** — secondary compute, runtime, and durable backup. Working copy: `~/poolindex`. Snapshots: `~/poolindex-backups`.
 
 This Cursor Cloud VM is ephemeral. It is not the durable backup destination.
 
@@ -53,7 +53,7 @@ Before any heavy job (`next build`, live scan, extra agents):
 - Run `scripts/dual-machine/check-resources.sh` (Linux) or `scripts/dual-machine/windows/Check-Resources.ps1`.
 - Run `scripts/dual-machine/assign-workload.sh <dev|build|scan|backup>`.
 - Never start a second heavy job if a lock exists or RAM available is under ~3 GiB.
-- If Windows is overloaded, move independent builds/scans/backups to claimscoutserver — one at a time.
+- If Windows is overloaded, move independent builds/scans/backups to poolindexserver — one at a time.
 - Respect the crash/resource safety rule above.
 
 Backup rules (append-only snapshots, never a deleting mirror):

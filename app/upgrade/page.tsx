@@ -1,7 +1,7 @@
 import { UpgradeForm } from "@/components/upgrade-form";
 
 export const metadata = {
-  title: "Scout+",
+  title: "Poolindex Pro",
 };
 
 export default function UpgradePage() {

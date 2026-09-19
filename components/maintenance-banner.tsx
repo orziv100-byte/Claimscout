@@ -9,7 +9,7 @@ export function MaintenanceBanner() {
   if (ops.scansEnabled && !ops.maintenanceMode) return null;
   return (
     <div className="border-b border-amber-500/40 bg-amber-500/10 px-4 py-2 text-center text-sm">
-      {ops.maintenanceMode ? "Claim Scout is in maintenance mode. " : "New scans are paused. "}
+      {ops.maintenanceMode ? "Poolindex is in maintenance mode. " : "New scans are paused. "}
       Existing accounts and data are preserved.
       {ops.reason ? ` ${ops.reason}` : ""}
       {user?.role === "admin" ? (

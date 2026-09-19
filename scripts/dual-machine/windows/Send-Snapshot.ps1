@@ -1,15 +1,15 @@
-# Send the latest Windows snapshot to claimscoutserver as a NEW incoming folder.
+# Send the latest Windows snapshot to poolindexserver as a NEW incoming folder.
 # Never mirrors or deletes the Linux live tree.
 param(
-  [string]$PeerHost = $env:CLAIM_SCOUT_PEER_HOST,
-  [string]$PeerUser = $env:CLAIM_SCOUT_PEER_USER,
-  [string]$PeerPath = $env:CLAIM_SCOUT_PEER_PATH,
+  [string]$PeerHost = $env:POOLINDEX_PEER_HOST,
+  [string]$PeerUser = $env:POOLINDEX_PEER_USER,
+  [string]$PeerPath = $env:POOLINDEX_PEER_PATH,
   [string]$BackupRoot = ""
 )
 $ErrorActionPreference = "Stop"
-if (-not $BackupRoot) { $BackupRoot = Join-Path $env:USERPROFILE "claimscout-backups" }
-if (-not $PeerHost) { throw "Set CLAIM_SCOUT_PEER_HOST (e.g. claimscoutserver) or pass -PeerHost." }
-if (-not $PeerPath) { $PeerPath = "~/claimscout-backups/incoming" }
+if (-not $BackupRoot) { $BackupRoot = Join-Path $env:USERPROFILE "poolindex-backups" }
+if (-not $PeerHost) { throw "Set POOLINDEX_PEER_HOST (e.g. poolindexserver) or pass -PeerHost." }
+if (-not $PeerPath) { $PeerPath = "~/poolindex-backups/incoming" }
 
 & (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "Check-Resources.ps1")
 & (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "New-Snapshot.ps1") -BackupRoot $BackupRoot

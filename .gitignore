@@ -36,7 +36,7 @@ yarn-error.log*
 
 # dual-machine backup config and local snapshot trees
 scripts/dual-machine/config.env
-/claimscout-backups/
+/poolindex-backups/
 /logs/*
 !/logs/.gitkeep
 /var/results/*

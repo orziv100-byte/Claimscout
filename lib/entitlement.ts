@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { PLANS, bindWallet, type PlanId } from "./plan";
 
-export const ENTITLEMENT_COOKIE = "claimscout_entitlement";
+export const ENTITLEMENT_COOKIE = "poolindex_entitlement";
 
 export type Entitlement = {
   plan: PlanId;
@@ -18,16 +18,16 @@ export type PublicEntitlement = Entitlement & {
 };
 
 function planSecret(): string {
-  return process.env.CLAIM_SCOUT_PLAN_SECRET || "dev-only-claimscout-plan-secret";
+  return process.env.POOLINDEX_PLAN_SECRET || "dev-only-poolindex-plan-secret";
 }
 
 function paidKeys(): string[] {
-  const fromEnv = (process.env.CLAIM_SCOUT_PAID_KEYS || "")
+  const fromEnv = (process.env.POOLINDEX_PAID_KEYS || "")
     .split(/[,\s]+/)
     .map((key) => key.trim())
     .filter(Boolean);
   if (fromEnv.length) return fromEnv;
-  if (process.env.NODE_ENV !== "production") return ["scout-plus-demo"];
+  if (process.env.NODE_ENV !== "production") return ["poolindex-pro-demo"];
   return [];
 }
 
@@ -63,7 +63,7 @@ export function parseEntitlement(raw: string | undefined): Entitlement {
 }
 
 export function entitlementFromRequest(request: Request): Entitlement {
-  if (process.env.CLAIM_SCOUT_PLAN === "paid") {
+  if (process.env.POOLINDEX_PLAN === "paid") {
     const cookie = cookieValue(request, ENTITLEMENT_COOKIE);
     const parsed = parseEntitlement(cookie);
     return { plan: "paid", wallets: parsed.wallets };
@@ -111,8 +111,8 @@ export function gateWallet(
       body: {
         error:
           ent.plan === "free"
-            ? "Free checks one wallet. Scout+ ($40) unlocks up to five."
-            : "Scout+ includes up to five wallets.",
+            ? "Free checks one wallet. Poolindex Pro ($40) unlocks up to five."
+            : "Poolindex Pro includes up to five wallets.",
         code: "WALLET_LIMIT",
         upgradeUrl: "/upgrade",
         maxWallets,
