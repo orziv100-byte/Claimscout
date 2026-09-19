@@ -165,6 +165,12 @@ export type EligibilityResult = {
   officialCheckerUrl?: string;
 };
 
+export type LiveSourceResult = {
+  items: DiscoveredClaim[];
+  blocked: number;
+  error?: string;
+};
+
 export type SearchResponse = {
   query: string;
   catalog: CatalogClaim[];

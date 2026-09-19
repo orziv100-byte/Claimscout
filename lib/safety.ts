@@ -84,11 +84,25 @@ export function isBlockedHost(url: string): boolean {
   return false;
 }
 
+const AUTOMATION_RE =
+  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto[- ]?(?:connect|farm|claim|mining|mine|task|ref|click))\b/i;
+
+export function looksLikeAutomation(text: string): boolean {
+  return AUTOMATION_RE.test(text);
+}
+
 export function scanTextFlags(text: string): VerificationFlag[] {
   const flags: VerificationFlag[] = [];
   const secret = looksLikeSecret(text);
   if (secret) {
     flags.push({ severity: "danger", code: secret.code, message: secret.message });
+  }
+  if (looksLikeAutomation(text)) {
+    flags.push({
+      severity: "danger",
+      code: "automation",
+      message: "Result describes claim automation, auto-mining, or bots. Out of scope.",
+    });
   }
   for (const rule of SCAM_PATTERNS) {
     if (rule.re.test(text)) {
@@ -153,8 +167,8 @@ export function shouldBlockDiscovery(input: {
     return { blocked: true, reason: "blocked_host" };
   }
   const blob = `${input.title}\n${input.summary}\n${input.url}`;
-  const secret = looksLikeSecret(blob);
-  if (secret) return { blocked: true, reason: secret.code };
+  const danger = scanTextFlags(blob).find((flag) => flag.severity === "danger");
+  if (danger) return { blocked: true, reason: danger.code };
   return { blocked: false };
 }
 

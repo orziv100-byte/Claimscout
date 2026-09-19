@@ -1,6 +1,6 @@
 import { cached, fetchWithTimeout, readLimitedText } from "../http";
 import { inferKind, shouldBlockDiscovery } from "../safety";
-import type { DiscoveredClaim } from "../types";
+import type { DiscoveredClaim, LiveSourceResult } from "../types";
 
 function decodeDuckHref(href: string): string | null {
   try {
@@ -14,10 +14,7 @@ function decodeDuckHref(href: string): string | null {
   }
 }
 
-export async function searchBitcointalk(query: string): Promise<{
-  items: DiscoveredClaim[];
-  error?: string;
-}> {
+export async function searchBitcointalk(query: string): Promise<LiveSourceResult> {
   const q = `site:bitcointalk.org ${query.trim() || "faucet OR giveaway OR airdrop"} claim OR redeem OR faucet`;
   const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
 
@@ -31,6 +28,7 @@ export async function searchBitcointalk(query: string): Promise<{
     });
 
     const items: DiscoveredClaim[] = [];
+    let blocked = 0;
     const seen = new Set<string>();
     const linkRe = /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
     let match: RegExpExecArray | null;
@@ -40,8 +38,11 @@ export async function searchBitcointalk(query: string): Promise<{
       if (seen.has(href)) continue;
       seen.add(href);
       const title = match[2].replace(/<[^>]+>/g, "").trim() || "Bitcointalk thread";
-      const blocked = shouldBlockDiscovery({ title, summary: title, url: href });
-      if (blocked.blocked) continue;
+      const decision = shouldBlockDiscovery({ title, summary: title, url: href });
+      if (decision.blocked) {
+        blocked += 1;
+        continue;
+      }
       items.push({
         id: `bitcointalk-${Buffer.from(href).toString("base64url").slice(0, 16)}`,
         title,
@@ -87,9 +88,10 @@ export async function searchBitcointalk(query: string): Promise<{
       );
     }
 
-    return { items };
+    return { items, blocked };
   } catch (err) {
     return {
+      blocked: 0,
       items: [
         {
           id: "bitcointalk-campaigns-board",

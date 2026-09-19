@@ -1,6 +1,6 @@
 import { cached, fetchWithTimeout, readJsonLimited } from "../http";
 import { inferKind, shouldBlockDiscovery } from "../safety";
-import type { DiscoveredClaim } from "../types";
+import type { DiscoveredClaim, LiveSourceResult } from "../types";
 
 type ArchiveDoc = {
   identifier?: string;
@@ -9,10 +9,7 @@ type ArchiveDoc = {
   original?: string;
 };
 
-export async function searchArchiveOrg(query: string): Promise<{
-  items: DiscoveredClaim[];
-  error?: string;
-}> {
+export async function searchArchiveOrg(query: string): Promise<LiveSourceResult> {
   const q = `${query.trim() || "bitcoin faucet airdrop"} (faucet OR airdrop OR giveaway)`;
   const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(
     q,
@@ -26,6 +23,7 @@ export async function searchArchiveOrg(query: string): Promise<{
     });
 
     const items: DiscoveredClaim[] = [];
+    let blocked = 0;
     for (const doc of json.response?.docs ?? []) {
       if (!doc.identifier) continue;
       const page = `https://archive.org/details/${doc.identifier}`;
@@ -33,8 +31,11 @@ export async function searchArchiveOrg(query: string): Promise<{
       const summary = String(doc.description || "Internet Archive item")
         .replace(/<[^>]+>/g, "")
         .slice(0, 280);
-      const blocked = shouldBlockDiscovery({ title, summary, url: page });
-      if (blocked.blocked) continue;
+      const decision = shouldBlockDiscovery({ title, summary, url: page });
+      if (decision.blocked) {
+        blocked += 1;
+        continue;
+      }
       items.push({
         id: `archive-${doc.identifier}`,
         title,
@@ -48,8 +49,8 @@ export async function searchArchiveOrg(query: string): Promise<{
         archiveUrl: page,
       });
     }
-    return { items };
+    return { items, blocked };
   } catch (err) {
-    return { items: [], error: err instanceof Error ? err.message : "archive.org search failed" };
+    return { items: [], blocked: 0, error: err instanceof Error ? err.message : "archive.org search failed" };
   }
 }

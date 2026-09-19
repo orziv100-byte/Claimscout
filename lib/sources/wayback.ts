@@ -1,7 +1,7 @@
 import { cached, fetchWithTimeout, readJsonLimited } from "../http";
 import { mapLimit, readResourceSnapshot } from "../resource-guard";
 import { inferKind, shouldBlockDiscovery } from "../safety";
-import type { DiscoveredClaim } from "../types";
+import type { DiscoveredClaim, LiveSourceResult } from "../types";
 
 const FAUCET_AND_CLAIM_HOSTS = [
   "freebitcoins.appspot.com",
@@ -73,10 +73,7 @@ export async function waybackAvailable(url: string): Promise<{
   }
 }
 
-export async function searchWayback(query: string): Promise<{
-  items: DiscoveredClaim[];
-  error?: string;
-}> {
+export async function searchWayback(query: string): Promise<LiveSourceResult> {
   const q = query.trim().toLowerCase();
   const hosts = FAUCET_AND_CLAIM_HOSTS.filter((h) => {
     if (!q) return true;
@@ -103,6 +100,7 @@ export async function searchWayback(query: string): Promise<{
 
     const seenHosts = new Set<string>();
     const items: DiscoveredClaim[] = [];
+    let blocked = 0;
     for (const { host, row } of groups.flat()) {
       if (seenHosts.has(host)) continue;
       seenHosts.add(host);
@@ -110,8 +108,11 @@ export async function searchWayback(query: string): Promise<{
       const snapshotUrl = `https://web.archive.org/web/${row.timestamp}/${original}`;
       const title = `Archived page · ${host}`;
       const summary = `Wayback snapshot ${row.timestamp} of ${original}`;
-      const blocked = shouldBlockDiscovery({ title, summary, url: original });
-      if (blocked.blocked) continue;
+      const decision = shouldBlockDiscovery({ title, summary, url: original });
+      if (decision.blocked) {
+        blocked += 1;
+        continue;
+      }
       items.push({
         id: `wayback-${row.timestamp}-${encodeURIComponent(original).slice(0, 40)}`,
         title,
@@ -126,9 +127,9 @@ export async function searchWayback(query: string): Promise<{
         archiveUrl: snapshotUrl,
       });
     }
-    return { items: items.slice(0, 18) };
+    return { items: items.slice(0, 18), blocked };
   } catch (err) {
-    return { items: [], error: err instanceof Error ? err.message : "Wayback search failed" };
+    return { items: [], blocked: 0, error: err instanceof Error ? err.message : "Wayback search failed" };
   }
 }
 

@@ -5,11 +5,11 @@ import { searchBitcointalk } from "./sources/bitcointalk";
 import { searchGitHub } from "./sources/github";
 import { searchReddit } from "./sources/reddit";
 import { searchWayback } from "./sources/wayback";
-import type { DiscoveredClaim, SearchResponse, SourceKind } from "./types";
+import type { DiscoveredClaim, LiveSourceResult, SearchResponse, SourceKind } from "./types";
 
 const ALL_LIVE: SourceKind[] = ["github", "wayback", "reddit", "bitcointalk", "archive_org"];
 
-type LiveResult = { key: string; items: DiscoveredClaim[]; error?: string };
+type LiveResult = LiveSourceResult & { key: string };
 
 export async function runSearch(
   opts: {
@@ -41,47 +41,37 @@ export async function runSearch(
   if (sources.has("github")) {
     liveRunners.push({
       key: "github",
-      run: () => searchGitHub(opts.query).then((r) => ({ key: "github", items: r.items, error: r.error })),
+      run: () => searchGitHub(opts.query).then((r) => ({ key: "github", ...r })),
     });
   }
   if (sources.has("wayback")) {
     liveRunners.push({
       key: "wayback",
-      run: () => searchWayback(opts.query).then((r) => ({ key: "wayback", items: r.items, error: r.error })),
+      run: () => searchWayback(opts.query).then((r) => ({ key: "wayback", ...r })),
     });
   }
   if (sources.has("reddit")) {
     liveRunners.push({
       key: "reddit",
-      run: () => searchReddit(opts.query).then((r) => ({ key: "reddit", items: r.items, error: r.error })),
+      run: () => searchReddit(opts.query).then((r) => ({ key: "reddit", ...r })),
     });
   }
   if (sources.has("bitcointalk")) {
     liveRunners.push({
       key: "bitcointalk",
-      run: () =>
-        searchBitcointalk(opts.query).then((r) => ({
-          key: "bitcointalk",
-          items: r.items,
-          error: r.error,
-        })),
+      run: () => searchBitcointalk(opts.query).then((r) => ({ key: "bitcointalk", ...r })),
     });
   }
   if (sources.has("archive_org")) {
     liveRunners.push({
       key: "archive_org",
-      run: () =>
-        searchArchiveOrg(opts.query).then((r) => ({
-          key: "archive_org",
-          items: r.items,
-          error: r.error,
-        })),
+      run: () => searchArchiveOrg(opts.query).then((r) => ({ key: "archive_org", ...r })),
     });
   }
 
   const discovered: DiscoveredClaim[] = [];
   const sourceErrors: { source: string; message: string }[] = [];
-  const blocked = 0;
+  let blocked = 0;
   let degraded = false;
   let resourceNote: string | undefined;
 
@@ -129,6 +119,7 @@ export async function runSearch(
         if (result.error) {
           sourceErrors.push({ source: result.key, message: result.error });
         }
+        blocked += result.blocked;
         for (const item of result.items) {
           const catalogHit = CATALOG.find(
             (c) =>

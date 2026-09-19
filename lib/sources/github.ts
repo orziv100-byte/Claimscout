@@ -1,6 +1,6 @@
 import { cached, fetchWithTimeout, readJsonLimited } from "../http";
 import { inferKind, publicOfferHint, shouldBlockDiscovery } from "../safety";
-import type { DiscoveredClaim } from "../types";
+import type { DiscoveredClaim, LiveSourceResult } from "../types";
 
 type GithubRepo = {
   id: number;
@@ -18,13 +18,6 @@ type GithubSearch = {
   message?: string;
 };
 
-const AUTOMATION_RE =
-  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto (?:connect|farm|claim))\b/i;
-
-function looksLikeAutomation(text: string): boolean {
-  return AUTOMATION_RE.test(text);
-}
-
 function githubHeaders(): HeadersInit {
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
@@ -35,10 +28,7 @@ function githubHeaders(): HeadersInit {
   return headers;
 }
 
-export async function searchGitHub(query: string): Promise<{
-  items: DiscoveredClaim[];
-  error?: string;
-}> {
+export async function searchGitHub(query: string): Promise<LiveSourceResult> {
   const trimmed = query.trim();
   const q = /faucet/i.test(trimmed)
     ? `${trimmed} crypto faucet`
@@ -57,14 +47,17 @@ export async function searchGitHub(query: string): Promise<{
     });
 
     const items: DiscoveredClaim[] = [];
+    let blocked = 0;
     for (const repo of data.items ?? []) {
       const title = repo.full_name;
       const summary = repo.description || "GitHub repository matching a public claim query.";
-      if (looksLikeAutomation(`${title} ${summary}`)) continue;
       if (/\b(apple airdrop|file transfer|opendrop|localsend)\b/i.test(`${title} ${summary}`)) continue;
       if (!/\b(token|crypto|merkle|erc-?20|faucet|web3|ethereum|bitcoin|airdrop)\b/i.test(`${title} ${summary}`)) continue;
-      const blocked = shouldBlockDiscovery({ title, summary, url: repo.html_url });
-      if (blocked.blocked) continue;
+      const decision = shouldBlockDiscovery({ title, summary, url: repo.html_url });
+      if (decision.blocked) {
+        blocked += 1;
+        continue;
+      }
       if (!publicOfferHint(`${title} ${summary}`) && !/airdrop|faucet|merkle|claim/i.test(title)) {
         continue;
       }
@@ -84,8 +77,8 @@ export async function searchGitHub(query: string): Promise<{
             : [],
       });
     }
-    return { items };
+    return { items, blocked };
   } catch (err) {
-    return { items: [], error: err instanceof Error ? err.message : "GitHub search failed" };
+    return { items: [], blocked: 0, error: err instanceof Error ? err.message : "GitHub search failed" };
   }
 }

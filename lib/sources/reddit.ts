@@ -1,6 +1,6 @@
 import { cached, fetchWithTimeout, readJsonLimited } from "../http";
 import { inferKind, publicOfferHint, scanTextFlags, shouldBlockDiscovery } from "../safety";
-import type { DiscoveredClaim } from "../types";
+import type { DiscoveredClaim, LiveSourceResult } from "../types";
 
 const SUBREDDITS = ["CryptoAirdrops", "freebitcoin", "ethereum", "BitcoinBeginners"];
 
@@ -17,10 +17,7 @@ type RedditChild = {
   };
 };
 
-export async function searchReddit(query: string): Promise<{
-  items: DiscoveredClaim[];
-  error?: string;
-}> {
+export async function searchReddit(query: string): Promise<LiveSourceResult> {
   const q = query.trim() || "airdrop OR faucet OR giveaway claim";
   const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(
     `${q} (airdrop OR faucet OR giveaway OR claim)`,
@@ -36,6 +33,7 @@ export async function searchReddit(query: string): Promise<{
     });
 
     const items: DiscoveredClaim[] = [];
+    let blocked = 0;
     for (const child of json.data?.children ?? []) {
       const d = child.data;
       if (!d?.title) continue;
@@ -43,14 +41,14 @@ export async function searchReddit(query: string): Promise<{
       const permalink = d.permalink ? `https://www.reddit.com${d.permalink}` : d.url;
       if (!permalink) continue;
       const summary = (d.selftext || "").slice(0, 280) || `r/${d.subreddit} post`;
-      const blocked = shouldBlockDiscovery({ title: d.title, summary, url: permalink });
-      if (blocked.blocked) continue;
+      const decision = shouldBlockDiscovery({ title: d.title, summary, url: permalink });
+      if (decision.blocked) {
+        blocked += 1;
+        continue;
+      }
       const flags = scanTextFlags(`${d.title}\n${d.selftext ?? ""}`)
         .filter((f) => f.severity !== "danger")
         .map((f) => f.message);
-      if (scanTextFlags(`${d.title}\n${d.selftext ?? ""}`).some((f) => f.severity === "danger")) {
-        continue;
-      }
       if (!publicOfferHint(`${d.title} ${summary}`)) continue;
       items.push({
         id: `reddit-${d.id}`,
@@ -68,8 +66,8 @@ export async function searchReddit(query: string): Promise<{
         ],
       });
     }
-    return { items };
+    return { items, blocked };
   } catch (err) {
-    return { items: [], error: err instanceof Error ? err.message : "Reddit search failed" };
+    return { items: [], blocked: 0, error: err instanceof Error ? err.message : "Reddit search failed" };
   }
 }
