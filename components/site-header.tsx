@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/components/auth-provider";
 import { usePlan } from "@/components/plan-provider";
 import { useWallet } from "@/components/wallet-provider";
 import { shortAddress } from "@/lib/labels";
@@ -23,6 +24,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { address, mode, connectInjected, setReadonlyAddress, disconnect, error } = useWallet();
   const { name: planName, wallets, maxWallets } = usePlan();
+  const { user, logout } = useAuth();
   const [draft, setDraft] = useState("");
 
   return (
@@ -30,8 +32,8 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center justify-between gap-6">
           <Link href="/" className="flex items-baseline gap-2">
-            <span className="font-heading text-xl tracking-tight">Claimscout</span>
-            <span className="hidden text-xs text-muted-foreground sm:inline">public claims only</span>
+            <span className="font-heading text-xl tracking-tight">Claim Scout</span>
+            <span className="hidden text-xs text-muted-foreground sm:inline">Closed Beta · public claims only</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-1">
             {NAV.map((item) => {
@@ -51,6 +53,25 @@ export function SiteHeader() {
           </nav>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          {user ? (
+            <div className="flex items-center gap-2 text-xs">
+              <Link href="/account" className="text-muted-foreground hover:text-foreground">
+                {user.displayName}
+              </Link>
+              {user.role === "admin" ? (
+                <Link href="/admin" className="text-primary hover:underline">
+                  Admin
+                </Link>
+              ) : null}
+              <Button size="sm" variant="ghost" onClick={() => void logout()}>
+                Sign out
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
+              Sign in
+            </Link>
+          )}
           {address ? (
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs">

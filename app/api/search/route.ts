@@ -1,13 +1,18 @@
 import { guardedJson } from "@/lib/api-guard";
-import { entitlementFromRequest, publicEntitlement, withEntitlementCookie } from "@/lib/entitlement";
+import { publicEntitlement, withEntitlementCookie } from "@/lib/entitlement";
 import { capSources } from "@/lib/plan";
+import { isResponse, requireScan } from "@/lib/request-guard";
 import { runSearch } from "@/lib/search";
+import { trackScan, trackSourceFailure } from "@/lib/telemetry";
 import { CLAIM_KINDS, CLAIM_STATUSES, SOURCE_KINDS } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
+  const authed = requireScan(request);
+  if (isResponse(authed)) return authed;
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") ?? "";
   const sources = searchParams.get("sources")?.split(",").filter(Boolean);
@@ -18,38 +23,62 @@ export async function GET(request: Request) {
   const validSources = sources?.filter((s) => s === "catalog" || (SOURCE_KINDS as readonly string[]).includes(s));
   const validKinds = kinds?.filter((k) => (CLAIM_KINDS as readonly string[]).includes(k));
   const validStatuses = statuses?.filter((s) => (CLAIM_STATUSES as readonly string[]).includes(s));
-  const ent = entitlementFromRequest(request);
+  const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
   const capped = capSources(ent.plan, validSources);
   const plan = publicEntitlement(ent);
+  const startedAt = Date.now();
+  trackScan(authed.user, { query, sources: capped.allowed, status: "started" });
 
-  const coalesceKey = `search:${ent.plan}:${query}|${capped.allowed.join(",")}|${(validKinds ?? []).join(",")}|${(validStatuses ?? []).join(",")}|${chain ?? ""}`;
+  const coalesceKey = `search:${authed.user.id}:${ent.plan}:${query}|${capped.allowed.join(",")}|${(validKinds ?? []).join(",")}|${(validStatuses ?? []).join(",")}|${chain ?? ""}`;
 
   const res = await guardedJson(
     request,
     "live-scan",
     "heavy",
     async () => {
-      const result = await runSearch(
-        {
+      try {
+        const result = await runSearch(
+          {
+            query,
+            sources: capped.allowed,
+            kinds: validKinds,
+            statuses: validStatuses,
+            chain,
+          },
+          request.signal,
+        );
+        for (const failure of result.sourceErrors) {
+          trackSourceFailure(failure.source, failure.message, authed.user.id);
+        }
+        trackScan(authed.user, {
           query,
           sources: capped.allowed,
-          kinds: validKinds,
-          statuses: validStatuses,
-          chain,
-        },
-        request.signal,
-      );
-      return {
-        ...result,
-        plan: {
-          id: plan.plan,
-          name: plan.name,
-          allowedSources: capped.allowed,
-          lockedSources: capped.locked,
-          reservedSources: capped.reserved,
-          maxWallets: plan.maxWallets,
-        },
-      };
+          status: "completed",
+          durationMs: result.tookMs,
+          itemCount: result.catalog.length + result.discovered.length,
+          blocked: result.blocked,
+        });
+        return {
+          ...result,
+          plan: {
+            id: plan.plan,
+            name: plan.name,
+            allowedSources: capped.allowed,
+            lockedSources: capped.locked,
+            reservedSources: capped.reserved,
+            maxWallets: plan.maxWallets,
+          },
+        };
+      } catch (err) {
+        trackScan(authed.user, {
+          query,
+          sources: capped.allowed,
+          status: "failed",
+          durationMs: Date.now() - startedAt,
+          error: err instanceof Error ? err.message : "failed",
+        });
+        throw err;
+      }
     },
     coalesceKey,
   );

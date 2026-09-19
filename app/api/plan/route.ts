@@ -1,24 +1,30 @@
 import { guardedJson } from "@/lib/api-guard";
+import { updateUser } from "@/lib/auth";
 import {
   activatePaidLicense,
-  entitlementFromRequest,
   publicEntitlement,
   withEntitlementCookie,
 } from "@/lib/entitlement";
 import { PLANS, bindWallet } from "@/lib/plan";
 import { isHexAddress } from "@/lib/address";
+import { looksLikeSecretMaterial } from "@/lib/secrets-guard";
 import { getAddress } from "viem";
 import { NextResponse } from "next/server";
+import { isResponse, requireUser } from "@/lib/request-guard";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const ent = entitlementFromRequest(request);
+  const authed = requireUser(request, { allowUnverified: true });
+  if (isResponse(authed)) return authed;
+  const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
   return withEntitlementCookie(NextResponse.json(publicEntitlement(ent)), ent);
 }
 
 export async function POST(request: Request) {
-  const ent = entitlementFromRequest(request);
+  const authed = requireUser(request);
+  if (isResponse(authed)) return authed;
+  const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
   const body = (await request.json().catch(() => ({}))) as { license?: string; address?: string };
 
   if (typeof body.license === "string") {
@@ -29,15 +35,20 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
+    const user = updateUser(authed.user.id, { plan: "paid", wallets: activated.entitlement.wallets }, authed.user.id);
+    const next = { plan: user.plan, wallets: user.wallets };
     return withEntitlementCookie(
-      NextResponse.json({ ...publicEntitlement(activated.entitlement), activated: true }),
-      activated.entitlement,
+      NextResponse.json({ ...publicEntitlement(next), activated: true }),
+      next,
     );
   }
 
   if (typeof body.address === "string") {
-    if (!isHexAddress(body.address)) {
-      return NextResponse.json({ error: "address must be a 0x-prefixed 20-byte hex string" }, { status: 400 });
+    if (looksLikeSecretMaterial(body.address) || !isHexAddress(body.address)) {
+      return NextResponse.json(
+        { error: "Enter a public 0x address. Seed phrases and private keys are rejected.", code: "SECRET_MATERIAL_REJECTED" },
+        { status: 400 },
+      );
     }
     const checksum = getAddress(body.address);
     const max = PLANS[ent.plan].maxWallets;
@@ -57,9 +68,10 @@ export async function POST(request: Request) {
         { status: 402 },
       );
     }
-    const next = { ...ent, wallets: bound.wallets };
+    const user = updateUser(authed.user.id, { wallets: bound.wallets }, authed.user.id);
+    const next = { plan: user.plan, wallets: user.wallets };
     return withEntitlementCookie(NextResponse.json({ ...publicEntitlement(next), added: bound.added }), next);
   }
 
-  return guardedJson(request, "plan-read", "light", async () => publicEntitlement(ent), "plan:read");
+  return guardedJson(request, "plan-read", "light", async () => publicEntitlement(ent), `plan:${authed.user.id}`);
 }

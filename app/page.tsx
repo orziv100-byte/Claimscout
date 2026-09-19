@@ -29,7 +29,10 @@ export default function HomePage() {
         </div>
         <SearchForm compact />
         <p className="text-xs text-muted-foreground">
-          Free: catalog + GitHub, one wallet.{" "}
+          <Link href="/register" className="text-primary hover:underline">
+            Closed Beta
+          </Link>{" "}
+          is invite-only. Free: catalog + GitHub, one wallet.{" "}
           <Link href="/upgrade" className="text-primary hover:underline">
             Scout+ ($40)
           </Link>

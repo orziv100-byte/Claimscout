@@ -1,8 +1,11 @@
 import { guardedJson } from "@/lib/api-guard";
+import { updateUser } from "@/lib/auth";
 import { CATALOG } from "@/lib/catalog";
-import { entitlementFromRequest, gateWallet, withEntitlementCookie } from "@/lib/entitlement";
+import { gateWallet, withEntitlementCookie } from "@/lib/entitlement";
 import { checkEligibility, isHexAddress, scanCatalogPools } from "@/lib/onchain";
 import { readResourceSnapshot } from "@/lib/resource-guard";
+import { isResponse, requireScan, requireUser } from "@/lib/request-guard";
+import { looksLikeSecretMaterial } from "@/lib/secrets-guard";
 import { getAddress } from "viem";
 import { NextResponse } from "next/server";
 
@@ -14,29 +17,37 @@ export async function GET(request: Request) {
   const address = searchParams.get("address");
   const poolsOnly = searchParams.get("pools") === "1";
 
-  if (address && !isHexAddress(address)) {
+  if (poolsOnly || !address) {
+    const authed = requireUser(request);
+    if (isResponse(authed)) return authed;
+    const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
+    const res = await guardedJson(
+      request,
+      "onchain-pools",
+      "light",
+      async () => ({ pools: await scanCatalogPools() }),
+      "onchain:pools",
+    );
+    return withEntitlementCookie(res, ent);
+  }
+
+  const authed = requireScan(request);
+  if (isResponse(authed)) return authed;
+
+  if (looksLikeSecretMaterial(address) || !isHexAddress(address)) {
     return NextResponse.json({ error: "invalid address" }, { status: 400 });
   }
 
-  const ent = entitlementFromRequest(request);
-  let nextEnt = ent;
-  if (address && !poolsOnly) {
-    const gated = gateWallet(ent, getAddress(address));
-    if (!gated.ok) {
-      return NextResponse.json(gated.body, { status: gated.status });
-    }
-    nextEnt = gated.entitlement;
+  const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
+  const gated = gateWallet(ent, getAddress(address));
+  if (!gated.ok) {
+    return NextResponse.json(gated.body, { status: gated.status });
+  }
+  if (gated.entitlement.wallets.join(",") !== authed.user.wallets.join(",")) {
+    updateUser(authed.user.id, { wallets: gated.entitlement.wallets }, authed.user.id);
   }
 
-  const kind = poolsOnly || !address ? "light" : "heavy";
-  const name = poolsOnly || !address ? "onchain-pools" : "onchain-eligibility";
-  const coalesceKey = poolsOnly || !address ? "onchain:pools" : `onchain:${address.toLowerCase()}`;
-
-  const res = await guardedJson(request, name, kind, async () => {
-    if (poolsOnly || !address) {
-      return { pools: await scanCatalogPools() };
-    }
-
+  const res = await guardedJson(request, "onchain-eligibility", "heavy", async () => {
     const checksum = getAddress(address);
     const claims = CATALOG.filter((c) => c.id !== "tornado-avoided");
     const eligibility = [];
@@ -54,6 +65,6 @@ export async function GET(request: Request) {
       eligibility.push(await checkEligibility(claim.id, checksum));
     }
     return { address: checksum, eligibility };
-  }, coalesceKey);
-  return withEntitlementCookie(res, nextEnt);
+  }, `onchain:${authed.user.id}:${address.toLowerCase()}`);
+  return withEntitlementCookie(res, gated.entitlement);
 }

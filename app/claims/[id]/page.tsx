@@ -1,5 +1,6 @@
 import { EligibilityPanel } from "@/components/eligibility-panel";
 import { InspectPanel } from "@/components/inspect-panel";
+import { ResultFeedback } from "@/components/result-feedback";
 import { StatusBadge } from "@/components/claim-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -101,6 +102,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
         <div className="flex flex-col gap-4">
           <EligibilityPanel claim={claim} />
           {inspectUrl ? <InspectPanel initialUrl={inspectUrl} /> : <InspectPanel />}
+          <ResultFeedback source="catalog" claimId={claim.id} url={inspectUrl} />
         </div>
       </div>
     </div>

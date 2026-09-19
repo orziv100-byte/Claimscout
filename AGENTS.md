@@ -35,7 +35,9 @@ Operational defaults for this repo:
 - If a command OOMs, hangs, or restarts itself, stop and diagnose; never retry it in a loop.
 - Live scans, Wayback CDX, and on-chain pool checks are serialized in-app (`lib/resource-guard.ts`, `/api/health`). Do not add unbounded `Promise.all` fan-out.
 - Catalog watch (`scripts/watch-digest.sh`, `/api/watch?refresh=1`) is one light sequential pool read. Do not stack it with `next build` or a live scan. Failed watch runs are skipped until the next daily timer — no retry loop.
-- Never log Scout+ license keys or `CLAIM_SCOUT_PLAN_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
+- Never log Scout+ license keys, `CLAIM_SCOUT_PLAN_SECRET`, or `CLAIM_SCOUT_SESSION_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
+- Closed Beta accounts and feedback live in `var/beta/` (gitignored). Isolate by user ID. Do not expand live-scan sources during Closed Beta. The admin kill switch pauses scans; it must not delete accounts, logs, or snapshots.
+
 
 # Dual-machine workload + backup — high priority
 

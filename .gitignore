@@ -41,6 +41,8 @@ scripts/dual-machine/config.env
 !/logs/.gitkeep
 /var/results/*
 !/var/results/.gitkeep
+/var/beta/*
+!/var/beta/.gitkeep
 
 # vercel
 .vercel

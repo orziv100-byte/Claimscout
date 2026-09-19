@@ -1,8 +1,13 @@
-# Claimscout
+# Claim Scout
+
+© 2026 Claim Scout. All rights reserved.
 
 Web tool for discovering and verifying **publicly claimable** cryptocurrency rewards — airdrops, historical faucets, giveaways, redemption links, community testnet drips, and documented public puzzles.
 
-It searches live sources and archives, then lets you inspect a URL and run **read-only** eligibility checks. It will not brute-force keys, hunt seed phrases, open other people’s wallets, or sign a transaction unless you explicitly approve a legitimate claim.
+Closed Beta is invite-only. Claim Scout is a research and source-scanning tool. It does not guarantee discovery, eligibility, payment, or profit. It will not brute-force keys, hunt seed phrases, open other people’s wallets, or sign a transaction unless you explicitly approve a legitimate claim.
+
+See `docs/PRODUCT.md`, `docs/CLOSED_BETA.md`, `/terms`, and `/privacy`.
+
 
 ## What it covers
 
@@ -41,7 +46,15 @@ Optional environment variables:
 | `ETH_RPC_URL` | Ethereum JSON-RPC (defaults to a public node) |
 | `ARB_RPC_URL` | Arbitrum JSON-RPC |
 
+| `CLAIM_SCOUT_SESSION_SECRET` | Required in production. Signs login sessions |
+| `CLAIM_SCOUT_ADMIN_EMAILS` | Operator emails that receive admin role on register |
+| `CLAIM_SCOUT_BOOTSTRAP_INVITE` | One-time operator invite code in production |
+| `CLAIM_SCOUT_PLAN_SECRET` | Signs the Scout+ entitlement cookie |
+| `CLAIM_SCOUT_PAID_KEYS` | Scout+ license keys (no billing yet) |
+
 No API keys are required for the catalog, Wayback CDX, archive.org, or read-only RPC checks.
+
+Closed Beta: register at `/register` with an invite, accept Terms and Privacy, verify email, then sign in. Admin control center is `/admin`. Kill switch stops new scans without deleting data. Restore: `docs/RESTORE.md`.
 
 ## Using it
 
@@ -71,3 +84,7 @@ bash scripts/dual-machine/install-linux-watch-timer.sh
 ## Stack
 
 Next.js, TypeScript, Tailwind CSS, shadcn/ui, viem.
+
+## License notice
+
+© 2026 Claim Scout. All rights reserved. Third-party packages: `THIRD_PARTY_NOTICES.md`.

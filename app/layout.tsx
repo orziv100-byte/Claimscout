@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { AuthProvider } from "@/components/auth-provider";
+import { MaintenanceBanner } from "@/components/maintenance-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,11 +27,11 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   title: {
-    default: "Claimscout",
-    template: "%s · Claimscout",
+    default: "Claim Scout",
+    template: "%s · Claim Scout",
   },
   description:
-    "Discover and verify publicly claimable cryptocurrency rewards — airdrops, faucets, archived giveaways, and redemption links. Read-only until you approve a legitimate claim.",
+    "Closed Beta research tool for public crypto claim sources. Read-only wallet checks. © 2026 Claim Scout. All rights reserved.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -40,13 +42,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
-          <PlanProvider>
-            <WalletProvider>
-              <SiteHeader />
-              <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-              <SiteFooter />
-            </WalletProvider>
-          </PlanProvider>
+          <AuthProvider>
+            <PlanProvider>
+              <WalletProvider>
+                <MaintenanceBanner />
+                <SiteHeader />
+                <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+                <SiteFooter />
+              </WalletProvider>
+            </PlanProvider>
+          </AuthProvider>
         </TooltipProvider>
       </body>
     </html>

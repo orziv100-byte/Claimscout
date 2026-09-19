@@ -1,4 +1,5 @@
 import { guardedJson } from "@/lib/api-guard";
+import { isResponse, requireScan } from "@/lib/request-guard";
 import { cdxSearch, waybackAvailable } from "@/lib/sources/wayback";
 import { NextResponse } from "next/server";
 
@@ -6,6 +7,8 @@ export const runtime = "nodejs";
 export const maxDuration = 20;
 
 export async function GET(request: Request) {
+  const authed = requireScan(request);
+  if (isResponse(authed)) return authed;
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
   if (!url) {
@@ -29,6 +32,6 @@ export async function GET(request: Request) {
         })),
       };
     },
-    `archive:${url}`,
+    `archive:${authed.user.id}:${url}`,
   );
 }

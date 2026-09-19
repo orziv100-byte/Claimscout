@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResultFeedback } from "@/components/result-feedback";
 import { CHAIN_LABEL, KIND_LABEL, LEGITIMACY_LABEL, STATUS_LABEL } from "@/lib/labels";
 import type { CatalogClaim, DiscoveredClaim } from "@/lib/types";
 import { Archive, ArrowUpRight } from "lucide-react";
@@ -97,6 +98,7 @@ export function DiscoveredClaimCard({ item }: { item: DiscoveredClaim }) {
             </Link>
           )}
         </div>
+        <ResultFeedback source={item.source} claimId={item.catalogId} url={item.url} />
       </CardContent>
     </Card>
   );

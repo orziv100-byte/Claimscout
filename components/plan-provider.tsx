@@ -57,7 +57,11 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const res = await fetch("/api/plan");
-      const json = (await res.json().catch(() => ({}))) as PlanPayload;
+        const json = (await res.json().catch(() => ({}))) as PlanPayload;
+      if (res.status === 401) {
+        apply({ plan: "free", name: PLANS.free.name, maxWallets: PLANS.free.maxWallets, wallets: [], sources: [...PLANS.free.sources] });
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Could not load plan");
       apply(json);
     } catch (err) {

@@ -5,6 +5,7 @@ import {
   withJob,
   type JobKind,
 } from "./resource-guard";
+import { trackAppError, trackResourceLimit } from "./telemetry";
 
 function isAbortError(err: unknown): boolean {
   return (
@@ -31,6 +32,7 @@ export async function guardedJson(
       return NextResponse.json({ error: "aborted", code: "ABORTED" }, { status: 400 });
     }
     if (err instanceof ResourcePressureError) {
+      trackResourceLimit(err.code, err.message);
       return NextResponse.json(
         {
           error: err.message,
@@ -47,6 +49,7 @@ export async function guardedJson(
         },
       );
     }
+    trackAppError(err instanceof Error ? err.message : "unknown", name);
     throw err;
   }
 }
