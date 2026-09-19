@@ -1,4 +1,5 @@
 import { CATALOG, filterCatalog, getClaimById } from "./catalog";
+import { liveSourceLimit, readResourceSnapshot } from "./resource-guard";
 import { searchArchiveOrg } from "./sources/archive-org";
 import { searchBitcointalk } from "./sources/bitcointalk";
 import { searchGitHub } from "./sources/github";
@@ -7,6 +8,8 @@ import { searchWayback } from "./sources/wayback";
 import type { DiscoveredClaim, SearchResponse, SourceKind } from "./types";
 
 const ALL_LIVE: SourceKind[] = ["github", "wayback", "reddit", "bitcointalk", "archive_org"];
+
+type LiveResult = { key: string; items: DiscoveredClaim[]; error?: string };
 
 export async function runSearch(opts: {
   query: string;
@@ -29,70 +32,100 @@ export async function runSearch(opts: {
       })
     : [];
 
-  const liveJobs: Promise<{ key: string; items: DiscoveredClaim[]; error?: string }>[] = [];
+  const liveRunners: { key: string; run: () => Promise<LiveResult> }[] = [];
 
   if (sources.has("github")) {
-    liveJobs.push(
-      searchGitHub(opts.query).then((r) => ({ key: "github", items: r.items, error: r.error })),
-    );
+    liveRunners.push({
+      key: "github",
+      run: () => searchGitHub(opts.query).then((r) => ({ key: "github", items: r.items, error: r.error })),
+    });
   }
   if (sources.has("wayback")) {
-    liveJobs.push(
-      searchWayback(opts.query).then((r) => ({ key: "wayback", items: r.items, error: r.error })),
-    );
+    liveRunners.push({
+      key: "wayback",
+      run: () => searchWayback(opts.query).then((r) => ({ key: "wayback", items: r.items, error: r.error })),
+    });
   }
   if (sources.has("reddit")) {
-    liveJobs.push(
-      searchReddit(opts.query).then((r) => ({ key: "reddit", items: r.items, error: r.error })),
-    );
+    liveRunners.push({
+      key: "reddit",
+      run: () => searchReddit(opts.query).then((r) => ({ key: "reddit", items: r.items, error: r.error })),
+    });
   }
   if (sources.has("bitcointalk")) {
-    liveJobs.push(
-      searchBitcointalk(opts.query).then((r) => ({
-        key: "bitcointalk",
-        items: r.items,
-        error: r.error,
-      })),
-    );
+    liveRunners.push({
+      key: "bitcointalk",
+      run: () =>
+        searchBitcointalk(opts.query).then((r) => ({
+          key: "bitcointalk",
+          items: r.items,
+          error: r.error,
+        })),
+    });
   }
   if (sources.has("archive_org")) {
-    liveJobs.push(
-      searchArchiveOrg(opts.query).then((r) => ({
-        key: "archive_org",
-        items: r.items,
-        error: r.error,
-      })),
-    );
+    liveRunners.push({
+      key: "archive_org",
+      run: () =>
+        searchArchiveOrg(opts.query).then((r) => ({
+          key: "archive_org",
+          items: r.items,
+          error: r.error,
+        })),
+    });
   }
 
-  const settled = await Promise.allSettled(liveJobs);
   const discovered: DiscoveredClaim[] = [];
   const sourceErrors: { source: string; message: string }[] = [];
   const blocked = 0;
+  let degraded = false;
+  let resourceNote: string | undefined;
 
-  for (const result of settled) {
-    if (result.status === "rejected") {
-      sourceErrors.push({
-        source: "unknown",
-        message: result.reason instanceof Error ? result.reason.message : "failed",
-      });
-      continue;
-    }
-    if (result.value.error) {
-      sourceErrors.push({ source: result.value.key, message: result.value.error });
-    }
-    for (const item of result.value.items) {
-      const catalogHit = CATALOG.find(
-        (c) =>
-          c.officialUrl &&
-          (item.url.startsWith(c.officialUrl) ||
-            c.sources.some((s) => item.url.startsWith(s.url))),
-      );
-      if (catalogHit) {
-        item.catalogId = catalogHit.id;
-        item.legitimacy = catalogHit.legitimacy;
+  const initial = readResourceSnapshot();
+  const limit = liveSourceLimit(initial);
+  if (liveRunners.length && limit === 0) {
+    degraded = true;
+    resourceNote = initial.message;
+    sourceErrors.push({
+      source: "live",
+      message: `Live scan skipped to protect this machine: ${initial.message}`,
+    });
+  } else {
+    for (const runner of liveRunners) {
+      const snap = readResourceSnapshot();
+      if (snap.level === "critical") {
+        degraded = true;
+        resourceNote = snap.message;
+        sourceErrors.push({
+          source: runner.key,
+          message: `Remaining live sources skipped (${snap.message}). No retry.`,
+        });
+        break;
       }
-      discovered.push(item);
+      try {
+        const result = await runner.run();
+        if (result.error) {
+          sourceErrors.push({ source: result.key, message: result.error });
+        }
+        for (const item of result.items) {
+          const catalogHit = CATALOG.find(
+            (c) =>
+              c.officialUrl &&
+              (item.url.startsWith(c.officialUrl) ||
+                c.sources.some((s) => item.url.startsWith(s.url))),
+          );
+          if (catalogHit) {
+            item.catalogId = catalogHit.id;
+            item.legitimacy = catalogHit.legitimacy;
+          }
+          discovered.push(item);
+        }
+      } catch (err) {
+        sourceErrors.push({
+          source: runner.key,
+          message: err instanceof Error ? err.message : "failed",
+        });
+      }
     }
   }
 
@@ -104,6 +137,8 @@ export async function runSearch(opts: {
     blocked,
     sourceErrors,
     tookMs: Date.now() - started,
+    degraded: degraded || undefined,
+    resourceNote,
   };
 }
 

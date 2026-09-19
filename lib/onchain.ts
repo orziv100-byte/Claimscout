@@ -1,6 +1,7 @@
 import { createPublicClient, formatUnits, http, type Address, type Hex } from "viem";
 import { arbitrum, mainnet } from "viem/chains";
 import { CATALOG } from "./catalog";
+import { readResourceSnapshot } from "./resource-guard";
 import type { EligibilityResult } from "./types";
 
 const erc20Abi = [
@@ -279,6 +280,14 @@ export async function scanCatalogPools(): Promise<PoolSnapshot[]> {
   const targets = CATALOG.filter((c) => c.onChain?.token);
   const out: PoolSnapshot[] = [];
   for (const claim of targets) {
+    const snap = readResourceSnapshot();
+    if (snap.level === "critical") {
+      out.push({
+        claimId: claim.id,
+        error: `Pool scan stopped: ${snap.message}`,
+      });
+      break;
+    }
     out.push(await readRemainingPool(claim.id));
   }
   return out;

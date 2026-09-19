@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0 --port 43147",
-    "build": "next build",
-    "start": "next start --hostname 0.0.0.0 --port 43147",
-    "lint": "eslint"
+    "dev": "NODE_OPTIONS='--max-old-space-size=2048' next dev --hostname 0.0.0.0 --port 43147",
+    "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
+    "start": "NODE_OPTIONS='--max-old-space-size=2048' next start --hostname 0.0.0.0 --port 43147",
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --experimental-default-type=module --test lib/resource-guard.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

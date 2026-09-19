@@ -1,8 +1,9 @@
+import { guardedJson } from "@/lib/api-guard";
 import { runSearch } from "@/lib/search";
 import { CLAIM_KINDS, CLAIM_STATUSES, SOURCE_KINDS } from "@/lib/types";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,13 +17,20 @@ export async function GET(request: Request) {
   const validKinds = kinds?.filter((k) => (CLAIM_KINDS as readonly string[]).includes(k));
   const validStatuses = statuses?.filter((s) => (CLAIM_STATUSES as readonly string[]).includes(s));
 
-  const result = await runSearch({
-    query,
-    sources: validSources,
-    kinds: validKinds,
-    statuses: validStatuses,
-    chain,
-  });
+  const coalesceKey = `search:${query}|${(validSources ?? []).join(",")}|${(validKinds ?? []).join(",")}|${(validStatuses ?? []).join(",")}|${chain ?? ""}`;
 
-  return NextResponse.json(result);
+  return guardedJson(
+    request,
+    "live-scan",
+    "heavy",
+    () =>
+      runSearch({
+        query,
+        sources: validSources,
+        kinds: validKinds,
+        statuses: validStatuses,
+        chain,
+      }),
+    coalesceKey,
+  );
 }

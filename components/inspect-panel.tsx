@@ -30,7 +30,13 @@ export function InspectPanel({ initialUrl = "" }: { initialUrl?: string }) {
     setLoading(true);
     try {
       const res = await fetch(`/api/verify?url=${encodeURIComponent(parsed.toString())}`);
-      const json = await res.json();
+      const json = (await res.json().catch(() => ({}))) as { error?: string } & VerificationReport;
+      if (res.status === 503) {
+        throw new Error(
+          json.error ||
+            "Verify paused to protect this machine. Wait, then try once — do not retry in a loop.",
+        );
+      }
       if (!res.ok) throw new Error(json.error || "Verify failed");
       setReport(json as VerificationReport);
     } catch (err) {

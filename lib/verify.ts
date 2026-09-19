@@ -1,5 +1,6 @@
 import { CATALOG, getClaimById } from "./catalog";
-import { fetchWithTimeout } from "./http";
+import { fetchWithTimeout, readLimitedText } from "./http";
+import { shouldSkipOptionalWork } from "./resource-guard";
 import { scanTextFlags, scanUrlFlags } from "./safety";
 import { waybackAvailable } from "./sources/wayback";
 import type { VerificationFlag, VerificationReport } from "./types";
@@ -25,8 +26,8 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
     finalUrl = res.url;
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("text/html")) {
-      const html = await res.text();
-      bodySample = html.slice(0, 50_000);
+      const html = await readLimitedText(res, 50_000);
+      bodySample = html;
       title = extractTitle(html);
     }
     if (finalUrl && finalUrl !== url) {
@@ -50,7 +51,9 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
     });
   }
 
-  const archive = await waybackAvailable(url);
+  const archive = shouldSkipOptionalWork()
+    ? { available: false as const }
+    : await waybackAvailable(url);
   if (archive.available) {
     flags.push({
       severity: "info",

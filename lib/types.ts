@@ -172,4 +172,6 @@ export type SearchResponse = {
   blocked: number;
   sourceErrors: { source: string; message: string }[];
   tookMs: number;
+  degraded?: boolean;
+  resourceNote?: string;
 };

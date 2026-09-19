@@ -1,4 +1,5 @@
-import { cached, fetchWithTimeout } from "../http";
+import { cached, fetchWithTimeout, readJsonLimited } from "../http";
+import { mapLimit, readResourceSnapshot } from "../resource-guard";
 import { inferKind, shouldBlockDiscovery } from "../safety";
 import type { DiscoveredClaim } from "../types";
 
@@ -39,7 +40,7 @@ export async function cdxSearch(urlPattern: string, limit = 12): Promise<CdxRow[
   return cached(`cdx:${urlPattern}:${limit}`, 10 * 60_000, async () => {
     const res = await fetchWithTimeout(api, 12000);
     if (!res.ok) throw new Error(`CDX HTTP ${res.status}`);
-    const json = await res.json();
+    const json = await readJsonLimited(res, 400_000);
     return parseCdx(json);
   });
 }
@@ -54,7 +55,7 @@ export async function waybackAvailable(url: string): Promise<{
     return await cached(`wb-av:${url}`, 10 * 60_000, async () => {
       const res = await fetchWithTimeout(api, 8000);
       if (!res.ok) return { available: false };
-      const json = (await res.json()) as {
+      const json = (await readJsonLimited(res, 80_000)) as {
         archived_snapshots?: { closest?: { available?: boolean; url?: string; timestamp?: string } };
       };
       const closest = json.archived_snapshots?.closest;
@@ -84,15 +85,19 @@ export async function searchWayback(query: string): Promise<{
   const targets = (hosts.length ? hosts : FAUCET_AND_CLAIM_HOSTS).slice(0, 6);
 
   try {
-    const groups = await Promise.all(
-      targets.map(async (host) => {
+    const groups = await mapLimit(
+      targets,
+      1,
+      async (host) => {
+        if (readResourceSnapshot().level === "critical") return [];
         try {
           const rows = await cdxSearch(host.includes("/") ? host : `${host}/*`, 5);
           return rows.map((row) => ({ host, row }));
         } catch {
           return [];
         }
-      }),
+      },
+      () => readResourceSnapshot().level === "critical",
     );
 
     const seenHosts = new Set<string>();

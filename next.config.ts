@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     "*.cursor.com",
     "*.cursor.sh",
   ],
+  experimental: {
+    turbopackMemoryEviction: "full",
+  },
   async headers() {
     return [
       {

@@ -32,7 +32,13 @@ export function LiveSearch({
     const ac = new AbortController();
     fetch(`/api/search?${params.toString()}`, { signal: ac.signal })
       .then(async (res) => {
-        const json = await res.json();
+        const json = (await res.json().catch(() => ({}))) as { error?: string } & SearchResponse;
+        if (res.status === 503) {
+          throw new Error(
+            json.error ||
+              "Live scan paused to protect this machine. Wait for CPU/RAM to recover, then scan once — do not retry in a loop.",
+          );
+        }
         if (!res.ok) throw new Error(json.error || "Search failed");
         setData(json as SearchResponse);
         setError(null);
@@ -82,6 +88,15 @@ export function LiveSearch({
                     </li>
                   ))}
                 </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {data.degraded ? (
+            <Alert>
+              <AlertTitle>Scan reduced to protect this machine</AlertTitle>
+              <AlertDescription>
+                {data.resourceNote ||
+                  "Live sources were throttled because of CPU, RAM, or disk pressure. Completed catalog results are kept. Do not re-run the scan in a loop."}
               </AlertDescription>
             </Alert>
           ) : null}

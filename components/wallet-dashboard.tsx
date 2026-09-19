@@ -28,7 +28,16 @@ export function WalletDashboard() {
 
   async function loadPools() {
     const res = await fetch("/api/onchain?pools=1");
-    const json = await res.json();
+    const json = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      pools?: { claimId: string; remaining?: string; symbol?: string; error?: string }[];
+    };
+    if (res.status === 503) {
+      throw new Error(
+        json.error || "Pool scan paused to protect this machine. Wait, then try once.",
+      );
+    }
+    if (!res.ok) throw new Error(json.error || "Pool scan failed");
     const map: Record<string, { remaining?: string; symbol?: string; error?: string }> = {};
     for (const pool of json.pools ?? []) {
       map[pool.claimId] = pool;
@@ -43,7 +52,15 @@ export function WalletDashboard() {
     try {
       await loadPools();
       const res = await fetch(`/api/onchain?address=${encodeURIComponent(address)}`);
-      const json = await res.json();
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        eligibility?: EligibilityResult[];
+      };
+      if (res.status === 503) {
+        throw new Error(
+          json.error || "Wallet check paused to protect this machine. Wait, then try once.",
+        );
+      }
       if (!res.ok) throw new Error(json.error || "Check failed");
       setRows(json.eligibility as EligibilityResult[]);
     } catch (err) {

@@ -1,4 +1,4 @@
-import { cached, fetchWithTimeout } from "../http";
+import { cached, fetchWithTimeout, readJsonLimited } from "../http";
 import { inferKind, shouldBlockDiscovery } from "../safety";
 import type { DiscoveredClaim } from "../types";
 
@@ -22,7 +22,7 @@ export async function searchArchiveOrg(query: string): Promise<{
     const json = await cached(`ia:${q}`, 10 * 60_000, async () => {
       const res = await fetchWithTimeout(url, 10000);
       if (!res.ok) throw new Error(`archive.org HTTP ${res.status}`);
-      return (await res.json()) as { response?: { docs?: ArchiveDoc[] } };
+      return (await readJsonLimited(res, 400_000)) as { response?: { docs?: ArchiveDoc[] } };
     });
 
     const items: DiscoveredClaim[] = [];

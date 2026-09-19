@@ -1,8 +1,10 @@
+import { guardedJson } from "@/lib/api-guard";
 import { checkEligibility, isHexAddress } from "@/lib/onchain";
 import { getAddress } from "viem";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const maxDuration = 20;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,6 +17,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "address must be a 0x-prefixed 20-byte hex string" }, { status: 400 });
   }
 
-  const result = await checkEligibility(claimId, getAddress(address));
-  return NextResponse.json(result);
+  return guardedJson(
+    request,
+    "eligibility",
+    "light",
+    () => checkEligibility(claimId, getAddress(address)),
+    `eligibility:${claimId}:${address.toLowerCase()}`,
+  );
 }

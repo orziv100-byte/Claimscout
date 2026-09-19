@@ -1,4 +1,4 @@
-import { cached, fetchWithTimeout } from "../http";
+import { cached, fetchWithTimeout, readLimitedText } from "../http";
 import { inferKind, shouldBlockDiscovery } from "../safety";
 import type { DiscoveredClaim } from "../types";
 
@@ -27,7 +27,7 @@ export async function searchBitcointalk(query: string): Promise<{
         headers: { accept: "text/html" },
       });
       if (!res.ok) throw new Error(`Search HTTP ${res.status}`);
-      return await res.text();
+      return await readLimitedText(res, 200_000);
     });
 
     const items: DiscoveredClaim[] = [];

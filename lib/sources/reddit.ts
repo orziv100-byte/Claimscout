@@ -1,4 +1,4 @@
-import { cached, fetchWithTimeout } from "../http";
+import { cached, fetchWithTimeout, readJsonLimited } from "../http";
 import { inferKind, publicOfferHint, scanTextFlags, shouldBlockDiscovery } from "../safety";
 import type { DiscoveredClaim } from "../types";
 
@@ -32,7 +32,7 @@ export async function searchReddit(query: string): Promise<{
         headers: { accept: "application/json" },
       });
       if (!res.ok) throw new Error(`Reddit HTTP ${res.status}`);
-      return (await res.json()) as { data?: { children?: RedditChild[] } };
+      return (await readJsonLimited(res, 400_000)) as { data?: { children?: RedditChild[] } };
     });
 
     const items: DiscoveredClaim[] = [];

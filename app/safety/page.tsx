@@ -48,6 +48,15 @@ export default function SafetyPage() {
       </section>
 
       <section className="space-y-3 text-sm leading-relaxed">
+        <h2 className="font-heading text-2xl">Host protection</h2>
+        <p className="text-muted-foreground">
+          Claimscout refuses to stack live scans, archive lookups, and on-chain checks when this machine is short on
+          RAM, CPU, or disk. Overload returns HTTP 503 with a resource snapshot. Failed scans are not retried in a
+          loop. Stability comes before speed.
+        </p>
+      </section>
+
+      <section className="space-y-3 text-sm leading-relaxed">
         <h2 className="font-heading text-2xl">Wallet policy</h2>
         <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
           <li>Connecting or pasting an address is read-only (balance / mapping calls).</li>
