@@ -28,7 +28,7 @@ export async function searchReddit(query: string): Promise<{
 
   try {
     const json = await cached(`reddit:${q}`, 5 * 60_000, async () => {
-      const res = await fetchWithTimeout(url, 10000, {
+      const res = await fetchWithTimeout(url, 7000, {
         headers: { accept: "application/json" },
       });
       if (!res.ok) throw new Error(`Reddit HTTP ${res.status}`);

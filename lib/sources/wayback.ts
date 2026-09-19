@@ -38,7 +38,7 @@ function parseCdx(json: unknown): CdxRow[] {
 export async function cdxSearch(urlPattern: string, limit = 12): Promise<CdxRow[]> {
   const api = `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(urlPattern)}&output=json&fl=timestamp,original,statuscode,mimetype&filter=statuscode:200&collapse=urlkey&limit=${limit}`;
   return cached(`cdx:${urlPattern}:${limit}`, 10 * 60_000, async () => {
-    const res = await fetchWithTimeout(api, 12000);
+    const res = await fetchWithTimeout(api, 7000);
     if (!res.ok) throw new Error(`CDX HTTP ${res.status}`);
     const json = await readJsonLimited(res, 400_000);
     return parseCdx(json);
@@ -53,7 +53,7 @@ export async function waybackAvailable(url: string): Promise<{
   const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`;
   try {
     return await cached(`wb-av:${url}`, 10 * 60_000, async () => {
-      const res = await fetchWithTimeout(api, 8000);
+      const res = await fetchWithTimeout(api, 6000);
       if (!res.ok) return { available: false };
       const json = (await readJsonLimited(res, 80_000)) as {
         archived_snapshots?: { closest?: { available?: boolean; url?: string; timestamp?: string } };
@@ -82,14 +82,15 @@ export async function searchWayback(query: string): Promise<{
     if (!q) return true;
     return q.split(/\s+/).some((part) => h.includes(part) || part.length >= 4);
   });
-  const targets = (hosts.length ? hosts : FAUCET_AND_CLAIM_HOSTS).slice(0, 6);
+  const targets = (hosts.length ? hosts : FAUCET_AND_CLAIM_HOSTS).slice(0, 3);
 
+  const started = Date.now();
   try {
     const groups = await mapLimit(
       targets,
       1,
       async (host) => {
-        if (readResourceSnapshot().level === "critical") return [];
+        if (readResourceSnapshot().level === "critical" || Date.now() - started > 10_000) return [];
         try {
           const rows = await cdxSearch(host.includes("/") ? host : `${host}/*`, 5);
           return rows.map((row) => ({ host, row }));
@@ -97,7 +98,7 @@ export async function searchWayback(query: string): Promise<{
           return [];
         }
       },
-      () => readResourceSnapshot().level === "critical",
+      () => readResourceSnapshot().level === "critical" || Date.now() - started > 10_000,
     );
 
     const seenHosts = new Set<string>();

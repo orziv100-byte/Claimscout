@@ -10,7 +10,7 @@ const cache = new Map<string, CacheEntry<unknown>>();
 
 export async function fetchWithTimeout(
   url: string,
-  ms = 12000,
+  ms = 7000,
   init: RequestInit = {},
 ): Promise<Response> {
   const pressure = readResourceSnapshot();

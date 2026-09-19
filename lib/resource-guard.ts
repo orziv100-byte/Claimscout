@@ -26,14 +26,14 @@ export type ResourceSnapshot = {
 
 export class ResourcePressureError extends Error {
   readonly code = "RESOURCE_PRESSURE" as const;
+  readonly snapshot: ResourceSnapshot;
+  readonly retryAfterSec: number;
 
-  constructor(
-    message: string,
-    readonly snapshot: ResourceSnapshot,
-    readonly retryAfterSec = 20,
-  ) {
+  constructor(message: string, snapshot: ResourceSnapshot, retryAfterSec = 20) {
     super(message);
     this.name = "ResourcePressureError";
+    this.snapshot = snapshot;
+    this.retryAfterSec = retryAfterSec;
   }
 }
 

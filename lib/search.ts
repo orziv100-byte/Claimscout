@@ -11,14 +11,18 @@ const ALL_LIVE: SourceKind[] = ["github", "wayback", "reddit", "bitcointalk", "a
 
 type LiveResult = { key: string; items: DiscoveredClaim[]; error?: string };
 
-export async function runSearch(opts: {
-  query: string;
-  sources?: string[];
-  kinds?: string[];
-  statuses?: string[];
-  chain?: string;
-}): Promise<SearchResponse> {
+export async function runSearch(
+  opts: {
+    query: string;
+    sources?: string[];
+    kinds?: string[];
+    statuses?: string[];
+    chain?: string;
+  },
+  signal?: AbortSignal,
+): Promise<SearchResponse> {
   const started = Date.now();
+  const budgetMs = 18_000;
   const sources = new Set(
     (opts.sources?.length ? opts.sources : ["catalog", ...ALL_LIVE]) as string[],
   );
@@ -92,6 +96,24 @@ export async function runSearch(opts: {
     });
   } else {
     for (const runner of liveRunners) {
+      if (signal?.aborted) {
+        degraded = true;
+        resourceNote = "Client cancelled the scan.";
+        sourceErrors.push({
+          source: runner.key,
+          message: "Scan aborted. Remaining live sources skipped. No retry.",
+        });
+        break;
+      }
+      if (Date.now() - started > budgetMs) {
+        degraded = true;
+        resourceNote = "Live scan hit its time budget to protect this machine.";
+        sourceErrors.push({
+          source: runner.key,
+          message: "Time budget reached. Remaining live sources skipped. No retry.",
+        });
+        break;
+      }
       const snap = readResourceSnapshot();
       if (snap.level === "critical") {
         degraded = true;

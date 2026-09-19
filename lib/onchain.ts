@@ -293,9 +293,7 @@ export async function scanCatalogPools(): Promise<PoolSnapshot[]> {
   return out;
 }
 
-export function isHexAddress(value: string): value is Address {
-  return /^0x[0-9a-fA-F]{40}$/.test(value);
-}
+export { isHexAddress } from "./address";
 
 export function asHexData(data: string): Hex {
   return data as Hex;

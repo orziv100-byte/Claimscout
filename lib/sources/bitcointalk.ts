@@ -23,7 +23,7 @@ export async function searchBitcointalk(query: string): Promise<{
 
   try {
     const html = await cached(`ddg-btctalk:${q}`, 10 * 60_000, async () => {
-      const res = await fetchWithTimeout(url, 10000, {
+      const res = await fetchWithTimeout(url, 7000, {
         headers: { accept: "text/html" },
       });
       if (!res.ok) throw new Error(`Search HTTP ${res.status}`);

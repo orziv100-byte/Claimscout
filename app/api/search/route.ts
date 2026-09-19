@@ -30,7 +30,7 @@ export async function GET(request: Request) {
         kinds: validKinds,
         statuses: validStatuses,
         chain,
-      }),
+      }, request.signal),
     coalesceKey,
   );
 }

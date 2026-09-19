@@ -48,7 +48,7 @@ export async function searchGitHub(query: string): Promise<{
 
   try {
     const data = await cached(`gh:${q}`, 5 * 60_000, async () => {
-      const res = await fetchWithTimeout(url, 10000, { headers: githubHeaders() });
+      const res = await fetchWithTimeout(url, 7000, { headers: githubHeaders() });
       const json = (await readJsonLimited(res, 400_000)) as GithubSearch;
       if (!res.ok) {
         throw new Error(json.message || `GitHub HTTP ${res.status}`);

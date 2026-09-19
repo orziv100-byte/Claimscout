@@ -20,7 +20,7 @@ export async function searchArchiveOrg(query: string): Promise<{
 
   try {
     const json = await cached(`ia:${q}`, 10 * 60_000, async () => {
-      const res = await fetchWithTimeout(url, 10000);
+      const res = await fetchWithTimeout(url, 7000);
       if (!res.ok) throw new Error(`archive.org HTTP ${res.status}`);
       return (await readJsonLimited(res, 400_000)) as { response?: { docs?: ArchiveDoc[] } };
     });
@@ -30,7 +30,9 @@ export async function searchArchiveOrg(query: string): Promise<{
       if (!doc.identifier) continue;
       const page = `https://archive.org/details/${doc.identifier}`;
       const title = doc.title || doc.identifier;
-      const summary = (doc.description || "Internet Archive item").replace(/<[^>]+>/g, "").slice(0, 280);
+      const summary = String(doc.description || "Internet Archive item")
+        .replace(/<[^>]+>/g, "")
+        .slice(0, 280);
       const blocked = shouldBlockDiscovery({ title, summary, url: page });
       if (blocked.blocked) continue;
       items.push({

@@ -1,6 +1,6 @@
 "use client";
 
-import { isHexAddress } from "@/lib/onchain";
+import { isHexAddress } from "@/lib/address";
 import { getAddress } from "viem";
 import {
   createContext,

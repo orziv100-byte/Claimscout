@@ -20,7 +20,7 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
   let bodySample = "";
 
   try {
-    const res = await fetchWithTimeout(url, 10000, { redirect: "follow" });
+    const res = await fetchWithTimeout(url, 8000, { redirect: "follow" });
     statusCode = res.status;
     live = res.ok;
     finalUrl = res.url;
