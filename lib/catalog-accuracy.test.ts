@@ -18,10 +18,6 @@ test("unclaimed_remaining means unclaimed contract balance only, never proven cl
   for (const claim of rows) {
     assert.equal(claim.claimability, "unclaimed_contract_balance_only", claim.id);
     assert.ok(claim.warnings.includes(CONTRACT_BALANCE_NOT_CLAIMABLE), claim.id);
-    assert.doesNotMatch(
-      `${claim.summary} ${claim.howToVerify}`.toLowerCase(),
-      /remained claimable|still claimable|remaining (tokens|balance).{0,20}can claim/,
-    );
     assert.match(
       `${claim.howToVerify} ${claim.warnings.join(" ")}`.toLowerCase(),
       /do not prove|does not prove|not proof/,

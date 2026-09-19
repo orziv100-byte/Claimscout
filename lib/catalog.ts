@@ -251,7 +251,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     eligibility:
       "Users with historical trading activity on dYdX in the published snapshot.",
     howToVerify:
-      "Use official dYdX claim documentation and inspect the distributor’s remaining DYDX balance. Remaining balance is not proof this is still claimable.",
+      "Use official dYdX claim documentation and inspect the distributor’s remaining DYDX balance. Remaining balance is not proof this is claimable.",
     warnings: ["Claim portals other than official dYdX domains should be treated as hostile."],
     sources: [
       {

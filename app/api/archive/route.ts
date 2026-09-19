@@ -1,6 +1,6 @@
 import { guardedJson } from "@/lib/api-guard";
-import { limitExpensiveEndpoint, rateLimitedResponse } from "@/lib/rate-limit";
-import { isResponse, requireScan } from "@/lib/request-guard";
+import { limitExpensiveEndpoint } from "@/lib/rate-limit";
+import { isResponse, rateLimitedResponse, requireScan } from "@/lib/request-guard";
 import { cdxSearch, waybackAvailable } from "@/lib/sources/wayback";
 import { NextResponse } from "next/server";
 

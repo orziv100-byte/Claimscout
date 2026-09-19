@@ -6,6 +6,7 @@ import { sameOrigin } from "./csrf.ts";
 import { inspectEnv } from "./env.ts";
 import { scansAreOpen } from "./ops.ts";
 import { SESSION_COOKIE, sessionCookieOptions } from "./session-cookie.ts";
+import { rateLimitHeaders, type RateLimitResult } from "./rate-limit.ts";
 
 export type Authed = { user: UserRecord; publicUser: PublicUser };
 
@@ -76,6 +77,11 @@ export function requireScan(request: Request): Authed | NextResponse {
 
 export function isResponse(value: Authed | NextResponse): value is NextResponse {
   return value instanceof NextResponse;
+}
+
+export function rateLimitedResponse(result: Extract<RateLimitResult, { ok: false }>): NextResponse {
+  const limited = rateLimitHeaders(result);
+  return NextResponse.json(limited.body, { status: limited.status, headers: limited.headers });
 }
 
 export function attachSessionCookie(res: NextResponse, cookie: string): NextResponse {

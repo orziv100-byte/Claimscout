@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { APP_VERSION } from "./app-info.ts";
 
 type Bucket = { count: number; resetAt: number };
@@ -52,13 +51,18 @@ export function limitExpensiveEndpoint(
   return rateLimit(`expensive:${endpoint}:ip:${ip}`, limits.ip, limits.windowMs, now);
 }
 
-export function rateLimitedResponse(result: Extract<RateLimitResult, { ok: false }>): NextResponse {
-  return NextResponse.json(
-    {
+export function rateLimitHeaders(result: Extract<RateLimitResult, { ok: false }>): {
+  status: 429;
+  body: { error: string; code: "RATE_LIMIT"; version: string };
+  headers: { "Retry-After": string; "Cache-Control": string };
+} {
+  return {
+    status: 429,
+    body: {
       error: "Too many requests. Wait, then try once — do not retry in a loop.",
       code: "RATE_LIMIT",
       version: APP_VERSION,
     },
-    { status: 429, headers: { "Retry-After": String(result.retryAfterSec), "Cache-Control": "no-store" } },
-  );
+    headers: { "Retry-After": String(result.retryAfterSec), "Cache-Control": "no-store" },
+  };
 }

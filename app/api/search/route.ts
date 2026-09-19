@@ -1,8 +1,8 @@
 import { guardedJson } from "@/lib/api-guard";
 import { publicEntitlement, withEntitlementCookie } from "@/lib/entitlement";
 import { capSources } from "@/lib/plan";
-import { limitExpensiveEndpoint, rateLimitedResponse } from "@/lib/rate-limit";
-import { isResponse, requireScan } from "@/lib/request-guard";
+import { limitExpensiveEndpoint } from "@/lib/rate-limit";
+import { isResponse, rateLimitedResponse, requireScan } from "@/lib/request-guard";
 import { runSearch } from "@/lib/search";
 import { trackScan, trackSourceFailure } from "@/lib/telemetry";
 import { CLAIM_KINDS, CLAIM_STATUSES, SOURCE_KINDS } from "@/lib/types";

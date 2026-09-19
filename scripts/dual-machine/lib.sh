@@ -19,6 +19,35 @@ load_config() {
   scripts_dir="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
   root="$(cd "$scripts_dir/../.." && pwd)"
 
+  local saved_role="${POOLINDEX_ROLE-}"
+  local saved_root="${POOLINDEX_ROOT-}"
+  local saved_backup="${POOLINDEX_BACKUP_ROOT-}"
+  local saved_keep="${POOLINDEX_KEEP_SNAPSHOTS-}"
+  local saved_min="${POOLINDEX_MIN_SNAPSHOTS-}"
+  local saved_shrink="${POOLINDEX_SHRINK_LIMIT-}"
+  local saved_ram="${POOLINDEX_MIN_RAM_MB-}"
+  local saved_load="${POOLINDEX_MAX_LOAD_PER_CPU-}"
+  local saved_disk="${POOLINDEX_MAX_DISK_PCT-}"
+
+  local cfg="${scripts_dir}/config.env"
+  if [[ -f "$cfg" ]]; then
+    # shellcheck disable=SC1090
+    set -a
+    # Do not source secrets files from the app tree.
+    source "$cfg"
+    set +a
+  fi
+
+  [[ -n "$saved_role" ]] && POOLINDEX_ROLE="$saved_role"
+  [[ -n "$saved_root" ]] && POOLINDEX_ROOT="$saved_root"
+  [[ -n "$saved_backup" ]] && POOLINDEX_BACKUP_ROOT="$saved_backup"
+  [[ -n "$saved_keep" ]] && POOLINDEX_KEEP_SNAPSHOTS="$saved_keep"
+  [[ -n "$saved_min" ]] && POOLINDEX_MIN_SNAPSHOTS="$saved_min"
+  [[ -n "$saved_shrink" ]] && POOLINDEX_SHRINK_LIMIT="$saved_shrink"
+  [[ -n "$saved_ram" ]] && POOLINDEX_MIN_RAM_MB="$saved_ram"
+  [[ -n "$saved_load" ]] && POOLINDEX_MAX_LOAD_PER_CPU="$saved_load"
+  [[ -n "$saved_disk" ]] && POOLINDEX_MAX_DISK_PCT="$saved_disk"
+
   POOLINDEX_ROLE="${POOLINDEX_ROLE:-linux}"
   POOLINDEX_ROOT="${POOLINDEX_ROOT:-$root}"
   if [[ -z "${POOLINDEX_BACKUP_ROOT:-}" ]]; then
@@ -33,15 +62,6 @@ load_config() {
   POOLINDEX_MIN_RAM_MB="${POOLINDEX_MIN_RAM_MB:-3072}"
   POOLINDEX_MAX_LOAD_PER_CPU="${POOLINDEX_MAX_LOAD_PER_CPU:-1.75}"
   POOLINDEX_MAX_DISK_PCT="${POOLINDEX_MAX_DISK_PCT:-88}"
-
-  local cfg="${scripts_dir}/config.env"
-  if [[ -f "$cfg" ]]; then
-    # shellcheck disable=SC1090
-    set -a
-    # Do not source secrets files from the app tree.
-    source "$cfg"
-    set +a
-  fi
 
   POOLINDEX_ROOT="$(cd "${POOLINDEX_ROOT}" && pwd)"
   mkdir -p "${POOLINDEX_BACKUP_ROOT}"
