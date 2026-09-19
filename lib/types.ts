@@ -180,4 +180,12 @@ export type SearchResponse = {
   tookMs: number;
   degraded?: boolean;
   resourceNote?: string;
+  plan?: {
+    id: "free" | "paid";
+    name: string;
+    allowedSources: string[];
+    lockedSources: string[];
+    reservedSources: string[];
+    maxWallets: number;
+  };
 };

@@ -5,9 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { CLAIM_KINDS } from "@/lib/types";
 import { KIND_LABEL } from "@/lib/labels";
+import { usePlan } from "@/components/plan-provider";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SOURCES = [
   { id: "catalog", label: "Catalog" },
@@ -38,9 +39,19 @@ export function SearchForm({
   compact?: boolean;
 }) {
   const router = useRouter();
+  const { sources: planSources, sourceAccessFor, plan } = usePlan();
   const [query, setQuery] = useState(defaultQuery);
-  const [sources, setSources] = useState<string[]>(() => selectedIds(defaultSources, SOURCE_IDS, [...SOURCE_IDS]));
+  const [sources, setSources] = useState<string[]>(() =>
+    selectedIds(defaultSources, SOURCE_IDS, [...SOURCE_IDS]),
+  );
   const [kinds, setKinds] = useState<string[]>(() => selectedIds(defaultKinds, CLAIM_KINDS, []));
+
+  useEffect(() => {
+    setSources((current) => {
+      const next = current.filter((id) => sourceAccessFor(id) === "allowed");
+      return next.length ? next : [...planSources];
+    });
+  }, [plan, planSources, sourceAccessFor]);
 
   function toggle(list: string[], value: string, setter: (next: string[]) => void) {
     setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -75,15 +86,26 @@ export function SearchForm({
         <div className="flex flex-col gap-3 text-sm">
           <fieldset className="flex flex-wrap items-center gap-3">
             <legend className="sr-only">Sources</legend>
-            {SOURCES.map((source) => (
+            {SOURCES.map((source) => {
+              const access = sourceAccessFor(source.id);
+              const locked = access !== "allowed";
+              return (
               <label key={source.id} className="inline-flex items-center gap-2 text-muted-foreground">
                 <Checkbox
-                  checked={sources.includes(source.id)}
+                  checked={!locked && sources.includes(source.id)}
+                  disabled={locked}
                   onCheckedChange={() => toggle(sources, source.id, setSources)}
                 />
                 {source.label}
+                {access === "upgrade" ? (
+                  <span className="text-[10px] uppercase tracking-wide">Scout+</span>
+                ) : null}
+                {access === "reserved" ? (
+                  <span className="text-[10px] uppercase tracking-wide">Later</span>
+                ) : null}
               </label>
-            ))}
+              );
+            })}
           </fieldset>
           <fieldset className="flex flex-wrap items-center gap-3">
             <legend className="text-xs font-medium text-muted-foreground">Offer type</legend>

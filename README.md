@@ -49,9 +49,24 @@ No API keys are required for the catalog, Wayback CDX, archive.org, or read-only
 2. **Live scan** — query GitHub, Wayback Machine, archive.org, Reddit, and Bitcointalk. Secret-looking hits, claim bots, and airdrop hunters are dropped.
 3. **Catalog** — filter curated public offers by type and status.
 4. **Claim page** — sources, archive links, URL inspector, eligibility.
-5. **Wallet check** — paste a `0x` address or connect a browser wallet; scan remaining on-chain pools.
+5. **Wallet check** — paste a `0x` address or connect a browser wallet; scan remaining on-chain pools. Catalog watch snapshots remaining pools daily and shows what changed.
+
+## Plans
+
+- **Free** — catalog + GitHub, eligibility for **one** wallet.
+- **Scout+ ($40)** — 4 of 6 scan sources (~70%): catalog, GitHub, Wayback, Archive.org, and **up to five** wallets.
+- Reddit and Bitcointalk stay reserved.
+
+Activate Scout+ at `/upgrade` with a license key (`CLAIM_SCOUT_PAID_KEYS`). In `next dev` the demo key is `scout-plus-demo`.
 
 Merkle airdrops open the **official** claim UI. This app does not reconstruct merkle proofs.
+
+Daily catalog watch (Linux, once a day, no retry loop):
+
+```bash
+npm run watch:digest
+bash scripts/dual-machine/install-linux-watch-timer.sh
+```
 
 ## Stack
 

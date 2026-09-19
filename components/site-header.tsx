@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePlan } from "@/components/plan-provider";
 import { useWallet } from "@/components/wallet-provider";
 import { shortAddress } from "@/lib/labels";
 import { ShieldCheck, Wallet } from "lucide-react";
@@ -14,12 +15,14 @@ const NAV = [
   { href: "/discover", label: "Live scan" },
   { href: "/catalog", label: "Catalog" },
   { href: "/wallet", label: "Wallet check" },
+  { href: "/upgrade", label: "Scout+" },
   { href: "/safety", label: "Rules" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
   const { address, mode, connectInjected, setReadonlyAddress, disconnect, error } = useWallet();
+  const { name: planName, wallets, maxWallets } = usePlan();
   const [draft, setDraft] = useState("");
 
   return (
@@ -53,6 +56,9 @@ export function SiteHeader() {
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs">
                 <ShieldCheck className="size-3.5 text-primary" />
                 {mode === "injected" ? "Connected" : "Read-only"} {shortAddress(address)}
+                <span className="text-muted-foreground">
+                  · {planName} {wallets.length}/{maxWallets}
+                </span>
               </span>
               <Button size="sm" variant="ghost" onClick={disconnect}>
                 Clear

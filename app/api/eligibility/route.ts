@@ -1,4 +1,5 @@
 import { guardedJson } from "@/lib/api-guard";
+import { entitlementFromRequest, gateWallet, withEntitlementCookie } from "@/lib/entitlement";
 import { checkEligibility, isHexAddress } from "@/lib/onchain";
 import { getAddress } from "viem";
 import { NextResponse } from "next/server";
@@ -17,11 +18,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "address must be a 0x-prefixed 20-byte hex string" }, { status: 400 });
   }
 
-  return guardedJson(
+  const checksum = getAddress(address);
+  const gated = gateWallet(entitlementFromRequest(request), checksum);
+  if (!gated.ok) {
+    return NextResponse.json(gated.body, { status: gated.status });
+  }
+
+  const res = await guardedJson(
     request,
     "eligibility",
     "light",
-    () => checkEligibility(claimId, getAddress(address)),
-    `eligibility:${claimId}:${address.toLowerCase()}`,
+    () => checkEligibility(claimId, checksum),
+    `eligibility:${claimId}:${checksum.toLowerCase()}`,
   );
+  return withEntitlementCookie(res, gated.entitlement);
 }

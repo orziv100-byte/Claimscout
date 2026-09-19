@@ -34,6 +34,8 @@ Operational defaults for this repo:
 - Do not spawn extra subagents or parallel scans when RAM available is under ~3 GiB or load average is high for this 4-core host.
 - If a command OOMs, hangs, or restarts itself, stop and diagnose; never retry it in a loop.
 - Live scans, Wayback CDX, and on-chain pool checks are serialized in-app (`lib/resource-guard.ts`, `/api/health`). Do not add unbounded `Promise.all` fan-out.
+- Catalog watch (`scripts/watch-digest.sh`, `/api/watch?refresh=1`) is one light sequential pool read. Do not stack it with `next build` or a live scan. Failed watch runs are skipped until the next daily timer — no retry loop.
+- Never log Scout+ license keys or `CLAIM_SCOUT_PLAN_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
 
 # Dual-machine workload + backup — high priority
 

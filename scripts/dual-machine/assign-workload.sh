@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gate a heavy task. Prefer one stable job at a time.
-# Usage: assign-workload.sh <dev|build|scan|backup> [--run -- command...]
+# Usage: assign-workload.sh <dev|build|scan|backup|watch> [--run -- command...]
 set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/lib.sh"
 load_config
@@ -8,7 +8,7 @@ load_config
 task="${1:-}"
 shift || true
 if [[ -z "$task" ]]; then
-  echo "Usage: $0 <dev|build|scan|backup> [--run -- cmd...]"
+  echo "Usage: $0 <dev|build|scan|backup|watch> [--run -- cmd...]"
   exit 1
 fi
 
@@ -35,8 +35,9 @@ case "$task" in
     echo "ASSIGN: Linux server (${CLAIM_SCOUT_ROLE}) for $task — independent of the Windows editor."
     echo "ASSIGN: do not also start next build/scan on Windows at the same time."
     ;;
-  backup)
-    echo "ASSIGN: backup is light; run snapshot.sh on the machine that holds the newer valid copy."
+  backup|watch)
+    echo "ASSIGN: $task is light; run on the machine that holds the live catalog copy."
+    echo "ASSIGN: do not stack with next build or a live scan."
     ;;
   *)
     echo "unknown task $task"

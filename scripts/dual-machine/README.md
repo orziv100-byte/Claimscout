@@ -29,3 +29,12 @@ Windows: `New-Snapshot.ps1`, then `Install-BackupTask.ps1`. After OpenSSH is con
 Excluded: `node_modules`, `.next`, `.git` objects (git stays on origin + working copy), `.env` secrets, keys. Included: source, `.env.example`, `logs/`, `var/results/`, config examples.
 
 Restore extracts beside the live tree. `--replace-live` still refuses if the snapshot is older than the working copy, and always snapshots live first.
+
+## Catalog watch (daily, light)
+
+```bash
+npm run watch:digest
+scripts/dual-machine/install-linux-watch-timer.sh   # 06:00 daily, no retry loop
+```
+
+Writes `var/results/watch/latest.json` and `digest-latest.md`. Does not store wallet addresses. Skip the run if resources are unsafe or a heavy lock exists.

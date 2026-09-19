@@ -1,4 +1,6 @@
 import { guardedJson } from "@/lib/api-guard";
+import { entitlementFromRequest, publicEntitlement, withEntitlementCookie } from "@/lib/entitlement";
+import { capSources } from "@/lib/plan";
 import { runSearch } from "@/lib/search";
 import { CLAIM_KINDS, CLAIM_STATUSES, SOURCE_KINDS } from "@/lib/types";
 
@@ -16,21 +18,40 @@ export async function GET(request: Request) {
   const validSources = sources?.filter((s) => s === "catalog" || (SOURCE_KINDS as readonly string[]).includes(s));
   const validKinds = kinds?.filter((k) => (CLAIM_KINDS as readonly string[]).includes(k));
   const validStatuses = statuses?.filter((s) => (CLAIM_STATUSES as readonly string[]).includes(s));
+  const ent = entitlementFromRequest(request);
+  const capped = capSources(ent.plan, validSources);
+  const plan = publicEntitlement(ent);
 
-  const coalesceKey = `search:${query}|${(validSources ?? []).join(",")}|${(validKinds ?? []).join(",")}|${(validStatuses ?? []).join(",")}|${chain ?? ""}`;
+  const coalesceKey = `search:${ent.plan}:${query}|${capped.allowed.join(",")}|${(validKinds ?? []).join(",")}|${(validStatuses ?? []).join(",")}|${chain ?? ""}`;
 
-  return guardedJson(
+  const res = await guardedJson(
     request,
     "live-scan",
     "heavy",
-    () =>
-      runSearch({
-        query,
-        sources: validSources,
-        kinds: validKinds,
-        statuses: validStatuses,
-        chain,
-      }, request.signal),
+    async () => {
+      const result = await runSearch(
+        {
+          query,
+          sources: capped.allowed,
+          kinds: validKinds,
+          statuses: validStatuses,
+          chain,
+        },
+        request.signal,
+      );
+      return {
+        ...result,
+        plan: {
+          id: plan.plan,
+          name: plan.name,
+          allowedSources: capped.allowed,
+          lockedSources: capped.locked,
+          reservedSources: capped.reserved,
+          maxWallets: plan.maxWallets,
+        },
+      };
+    },
     coalesceKey,
   );
+  return withEntitlementCookie(res, ent);
 }

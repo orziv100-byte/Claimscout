@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PlanProvider } from "@/components/plan-provider";
 import { WalletProvider } from "@/components/wallet-provider";
 import "./globals.css";
 
@@ -39,11 +40,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
-          <WalletProvider>
-            <SiteHeader />
-            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-            <SiteFooter />
-          </WalletProvider>
+          <PlanProvider>
+            <WalletProvider>
+              <SiteHeader />
+              <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+              <SiteFooter />
+            </WalletProvider>
+          </PlanProvider>
         </TooltipProvider>
       </body>
     </html>

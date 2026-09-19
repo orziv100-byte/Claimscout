@@ -29,8 +29,12 @@ export default function HomePage() {
         </div>
         <SearchForm compact />
         <p className="text-xs text-muted-foreground">
-          Sources: Bitcointalk, Reddit, GitHub, Internet Archive / Wayback, project sites, blogs, and public explorers.
-          Private keys, seed phrases, and other people&apos;s wallets are out of scope.
+          Free: catalog + GitHub, one wallet.{" "}
+          <Link href="/upgrade" className="text-primary hover:underline">
+            Scout+ ($40)
+          </Link>
+          : about 70% of sources and up to five wallets. Private keys, seed phrases, and other people&apos;s wallets are
+          out of scope.
         </p>
       </section>
 

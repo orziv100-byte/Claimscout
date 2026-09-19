@@ -1,6 +1,7 @@
 "use client";
 
 import { isHexAddress } from "@/lib/address";
+import { usePlan } from "@/components/plan-provider";
 import { getAddress } from "viem";
 import {
   createContext,
@@ -35,6 +36,7 @@ const WalletContext = createContext<WalletState | null>(null);
 const SESSION_KEY = "claimscout.address";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  const { bindAddress } = usePlan();
   const [address, setAddress] = useState<string | null>(null);
   const [mode, setMode] = useState<WalletMode>("disconnected");
   const [chainId, setChainId] = useState<number | null>(null);
@@ -42,14 +44,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
-    if (saved && isHexAddress(saved)) {
-      const checksum = getAddress(saved);
-      queueMicrotask(() => {
-        setAddress(checksum);
-        setMode("readonly");
-      });
-    }
-  }, []);
+    if (!saved || !isHexAddress(saved)) return;
+    const checksum = getAddress(saved);
+    void bindAddress(checksum).then((bound) => {
+      if (!bound.ok) {
+        setError(bound.error || "Wallet limit reached.");
+        persist(null);
+        return;
+      }
+      setAddress(checksum);
+      setMode("readonly");
+    });
+  }, [bindAddress]);
 
   const persist = (next: string | null) => {
     if (next) sessionStorage.setItem(SESSION_KEY, next);
@@ -70,6 +76,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       return;
     }
     const checksum = getAddress(account);
+    const bound = await bindAddress(checksum);
+    if (!bound.ok) {
+      setError(bound.error || "Wallet limit reached.");
+      return;
+    }
     setAddress(checksum);
     setMode("injected");
     persist(checksum);
@@ -79,26 +90,35 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } catch {
       setChainId(null);
     }
-  }, []);
+  }, [bindAddress]);
 
-  const setReadonlyAddress = useCallback((value: string) => {
-    setError(null);
-    const trimmed = value.trim();
-    if (!trimmed) {
-      setAddress(null);
-      setMode("disconnected");
-      persist(null);
-      return;
-    }
-    if (!isHexAddress(trimmed)) {
-      setError("Enter a 0x-prefixed Ethereum address. Seed phrases and private keys are rejected.");
-      return;
-    }
-    const checksum = getAddress(trimmed);
-    setAddress(checksum);
-    setMode("readonly");
-    persist(checksum);
-  }, []);
+  const setReadonlyAddress = useCallback(
+    (value: string) => {
+      setError(null);
+      const trimmed = value.trim();
+      if (!trimmed) {
+        setAddress(null);
+        setMode("disconnected");
+        persist(null);
+        return;
+      }
+      if (!isHexAddress(trimmed)) {
+        setError("Enter a 0x-prefixed Ethereum address. Seed phrases and private keys are rejected.");
+        return;
+      }
+      const checksum = getAddress(trimmed);
+      void bindAddress(checksum).then((bound) => {
+        if (!bound.ok) {
+          setError(bound.error || "Wallet limit reached.");
+          return;
+        }
+        setAddress(checksum);
+        setMode("readonly");
+        persist(checksum);
+      });
+    },
+    [bindAddress],
+  );
 
   const disconnect = useCallback(() => {
     setAddress(null);

@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SearchResponse } from "@/lib/types";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export function LiveSearch({
@@ -88,6 +89,24 @@ export function LiveSearch({
                     </li>
                   ))}
                 </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {data.plan && (data.plan.lockedSources.length || data.plan.reservedSources.length) ? (
+            <Alert>
+              <AlertTitle>
+                {data.plan.id === "free" ? "Free scan uses catalog + GitHub" : "Scout+ scans about 70% of sources"}
+              </AlertTitle>
+              <AlertDescription>
+                {data.plan.lockedSources.length
+                  ? `Upgrade to Scout+ ($40) for ${data.plan.lockedSources.join(", ")}. `
+                  : null}
+                {data.plan.reservedSources.length
+                  ? `${data.plan.reservedSources.join(", ")} stay reserved for a later plan. `
+                  : null}
+                <Link href="/upgrade" className="text-primary hover:underline">
+                  See plans
+                </Link>
               </AlertDescription>
             </Alert>
           ) : null}

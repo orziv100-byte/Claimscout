@@ -1,5 +1,6 @@
 import { guardedJson } from "@/lib/api-guard";
 import { CATALOG } from "@/lib/catalog";
+import { entitlementFromRequest, gateWallet, withEntitlementCookie } from "@/lib/entitlement";
 import { checkEligibility, isHexAddress, scanCatalogPools } from "@/lib/onchain";
 import { readResourceSnapshot } from "@/lib/resource-guard";
 import { getAddress } from "viem";
@@ -17,11 +18,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "invalid address" }, { status: 400 });
   }
 
+  const ent = entitlementFromRequest(request);
+  let nextEnt = ent;
+  if (address && !poolsOnly) {
+    const gated = gateWallet(ent, getAddress(address));
+    if (!gated.ok) {
+      return NextResponse.json(gated.body, { status: gated.status });
+    }
+    nextEnt = gated.entitlement;
+  }
+
   const kind = poolsOnly || !address ? "light" : "heavy";
   const name = poolsOnly || !address ? "onchain-pools" : "onchain-eligibility";
   const coalesceKey = poolsOnly || !address ? "onchain:pools" : `onchain:${address.toLowerCase()}`;
 
-  return guardedJson(request, name, kind, async () => {
+  const res = await guardedJson(request, name, kind, async () => {
     if (poolsOnly || !address) {
       return { pools: await scanCatalogPools() };
     }
@@ -44,4 +55,5 @@ export async function GET(request: Request) {
     }
     return { address: checksum, eligibility };
   }, coalesceKey);
+  return withEntitlementCookie(res, nextEnt);
 }
