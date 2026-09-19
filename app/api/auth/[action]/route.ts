@@ -77,7 +77,7 @@ export async function POST(request: Request, context: { params: Promise<{ action
 
   try {
     if (action === "register") {
-      const blocked = limited(`register:${ip}`, 8, 60 * 60 * 1000);
+      const blocked = limited(`register:${ip}`, 30, 60 * 60 * 1000);
       if (blocked) return blocked;
       const created = await registerAccount({
         email: String(body.email || ""),
