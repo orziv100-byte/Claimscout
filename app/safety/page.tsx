@@ -22,8 +22,8 @@ export default function SafetyPage() {
         <AlertTitle>Hard refusals</AlertTitle>
         <AlertDescription>
           Private-key brute force, seed-phrase search or recovery, accessing wallets you do not control, exploiting
-          contracts or sites, and auto-signing transactions are all out of scope. Pasting a seed or 64-byte hex key is
-          rejected.
+          contracts or sites, claim automation / airdrop hunters, and auto-signing transactions are all out of scope.
+          Pasting a seed or 64-byte hex key is rejected.
         </AlertDescription>
       </Alert>
 

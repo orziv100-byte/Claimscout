@@ -21,7 +21,7 @@ export default async function DiscoverPage({
         <h1 className="font-heading text-3xl tracking-tight">Live claim scan</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Catalog first, then GitHub, Wayback Machine, archive.org, Reddit, and Bitcointalk. Hits that look like seed
-          phrases, private keys, drainers, or key-hunting tools are dropped before they reach the UI.
+          phrases, private keys, drainers, claim bots, or airdrop hunters are dropped before they reach the UI.
         </p>
       </div>
       <LiveSearch

@@ -46,7 +46,7 @@ No API keys are required for the catalog, Wayback CDX, archive.org, or read-only
 ## Using it
 
 1. **Scout** — search the catalog and jump into a live scan.
-2. **Live scan** — query GitHub, Wayback Machine, archive.org, Reddit, and Bitcointalk. Secret-looking hits are dropped.
+2. **Live scan** — query GitHub, Wayback Machine, archive.org, Reddit, and Bitcointalk. Secret-looking hits, claim bots, and airdrop hunters are dropped.
 3. **Catalog** — filter curated public offers by type and status.
 4. **Claim page** — sources, archive links, URL inspector, eligibility.
 5. **Wallet check** — paste a `0x` address or connect a browser wallet; scan remaining on-chain pools.

@@ -11,8 +11,20 @@ const UNICH = {
 test("looksLikeAutomation matches auto mining / auto task / auto ref", () => {
   assert.equal(looksLikeAutomation(UNICH.summary), true);
   assert.equal(looksLikeAutomation("auto-claim faucet script"), true);
+  assert.equal(looksLikeAutomation("obryen/airdrop-hunter"), true);
+  assert.equal(looksLikeAutomation("thomas613/crypto-airdrops-hunter"), true);
   assert.equal(looksLikeAutomation("merkle distributor for UNI token airdrop"), false);
   assert.equal(looksLikeAutomation("Official public claim portal"), false);
+});
+
+test("shouldBlockDiscovery blocks airdrop-hunter repos", () => {
+  const hunter = shouldBlockDiscovery({
+    title: "obryen/airdrop-hunter",
+    summary: "Hunt and collect crypto airdrops.",
+    url: "https://github.com/obryen/airdrop-hunter",
+  });
+  assert.equal(hunter.blocked, true);
+  if (hunter.blocked) assert.equal(hunter.reason, "automation");
 });
 
 test("shouldBlockDiscovery blocks the Unich_Airdrop automation repo", () => {

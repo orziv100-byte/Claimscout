@@ -85,7 +85,7 @@ export function isBlockedHost(url: string): boolean {
 }
 
 const AUTOMATION_RE =
-  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto[- ]?(?:connect|farm|claim|mining|mine|task|ref|click))\b/i;
+  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto[- ]?(?:connect|farm|claim|mining|mine|task|ref|click)|airdrops?[- ]?hunter|claim[- ]?hunter|(?:mass|multi)[- ]?claimer|scraper)\b/i;
 
 export function looksLikeAutomation(text: string): boolean {
   return AUTOMATION_RE.test(text);
@@ -101,7 +101,7 @@ export function scanTextFlags(text: string): VerificationFlag[] {
     flags.push({
       severity: "danger",
       code: "automation",
-      message: "Result describes claim automation, auto-mining, or bots. Out of scope.",
+      message: "Result describes claim automation, airdrop hunters, or bots. Out of scope.",
     });
   }
   for (const rule of SCAM_PATTERNS) {
