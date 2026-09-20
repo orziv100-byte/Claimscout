@@ -81,7 +81,11 @@ export function UpgradeForm() {
             key. Paste it here. The server stores a signed cookie, not the key.
           </p>
           <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => void submit(e)}>
+            <label htmlFor="pro-license" className="sr-only">
+              Poolindex Pro license key
+            </label>
             <Input
+              id="pro-license"
               value={license}
               onChange={(e) => setLicense(e.target.value)}
               placeholder="Poolindex Pro license key"
@@ -92,7 +96,11 @@ export function UpgradeForm() {
               {plan === "paid" ? "Activated" : "Activate"}
             </Button>
           </form>
-          {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p className="mt-2 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </div>

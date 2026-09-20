@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PlanProvider } from "@/components/plan-provider";
 import { WalletProvider } from "@/components/wallet-provider";
 import { COPYRIGHT } from "@/lib/app-info";
+import { LegalReacceptBanner } from "@/components/legal-reaccept-banner";
+import { SkipLink } from "@/components/skip-link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,13 +43,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`dark ${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <SkipLink />
         <TooltipProvider>
           <AuthProvider>
             <PlanProvider>
               <WalletProvider>
                 <MaintenanceBanner />
+                <LegalReacceptBanner />
                 <SiteHeader />
-                <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+                <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" tabIndex={-1}>
+                  {children}
+                </main>
                 <SiteFooter />
               </WalletProvider>
             </PlanProvider>

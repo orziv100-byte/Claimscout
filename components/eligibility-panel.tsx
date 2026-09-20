@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ExternalClaimWarning } from "@/components/external-claim-warning";
 import { useWallet } from "@/components/wallet-provider";
 import type { CatalogClaim, EligibilityResult } from "@/lib/types";
 import { LoaderCircle } from "lucide-react";
@@ -56,11 +57,16 @@ export function EligibilityPanel({ claim }: { claim: CatalogClaim }) {
         {!address ? (
           <p className="text-sm">Paste or connect an address in the header to check this offer.</p>
         ) : (
-          <Button onClick={() => void run()} disabled={loading}>
-            {loading ? <LoaderCircle className="animate-spin" /> : `Check ${address.slice(0, 6)}…`}
+          <Button onClick={() => void run()} disabled={loading} aria-busy={loading}>
+            {loading ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : null}
+            {loading ? "Checking…" : `Check ${address.slice(0, 6)}…`}
           </Button>
         )}
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
         {result ? (
           <Alert>
             <AlertTitle className="capitalize">{result.status.replaceAll("_", " ")}</AlertTitle>
@@ -91,9 +97,12 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
 
   if (claim.action.type === "official_ui") {
     return (
-      <Button render={<a href={claim.action.url} target="_blank" rel="noreferrer" />}>
-        {claim.action.label}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <ExternalClaimWarning compact />
+        <Button render={<a href={claim.action.url} target="_blank" rel="noreferrer" />}>
+          {claim.action.label} (third-party page)
+        </Button>
+      </div>
     );
   }
 
@@ -122,7 +131,8 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
             <DialogTitle>Submit public claim?</DialogTitle>
             <DialogDescription>
               This will ask your wallet to sign a transaction. Poolindex never stores keys and will not send a
-              transaction until you approve it in the wallet prompt.
+              transaction until you approve it in the wallet prompt. Blockchain transactions are irreversible. Network
+              fees are charged by the chain, not by Poolindex. Poolindex does not execute the transaction for you.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">
@@ -138,7 +148,11 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
                 Paste-only mode cannot sign. Connect an injected wallet first.
               </p>
             ) : null}
-            {error ? <p className="text-destructive">{error}</p> : null}
+            {error ? (
+              <p className="text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
             {txHash ? (
               <p>
                 Submitted: <code className="font-mono text-xs">{txHash}</code>
@@ -167,7 +181,8 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
                 }
               }}
             >
-              {busy ? <LoaderCircle className="animate-spin" /> : "Approve in wallet"}
+              {busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : null}
+              {busy ? "Waiting for wallet…" : "Approve in wallet"}
             </Button>
           </DialogFooter>
         </DialogContent>

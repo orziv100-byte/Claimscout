@@ -35,7 +35,7 @@ export function requireUser(
   if (!session) {
     return NextResponse.json({ error: "Sign in required.", code: "UNAUTHENTICATED", version: APP_VERSION }, { status: 401 });
   }
-  if (session.user.status === "disabled" || session.user.status === "suspended") {
+  if (session.user.status === "disabled" || session.user.status === "suspended" || session.user.deletionStatus === "completed") {
     return NextResponse.json(
       { error: "This account is not allowed to continue.", code: "ACCOUNT_DISABLED", version: APP_VERSION },
       { status: 403 },

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { APP_VERSION } from "@/lib/app-info";
 import { createInvite, listInvites, listUsers, updateUser } from "@/lib/auth";
+import { listDeletionRequests, listPrivacyRequests, processDeletionRequest } from "@/lib/deletion";
+import { legalReadiness } from "@/lib/legal-gate";
 import { parseAdminFeedbackPatch, parseAdminInviteInput, parseAdminOpsPatch, parseAdminUserPatch } from "@/lib/admin-input";
 import { readErrors, readSecurity, readTelemetry } from "@/lib/beta-store";
 import { listFeedback, publicFeedback, updateFeedbackStatus } from "@/lib/feedback";
@@ -33,6 +35,9 @@ export async function GET(request: Request, context: { params: Promise<{ action:
       sourceFeedback: aggregateFeedbackBySource(),
       users: listUsers(),
       invites: listInvites(),
+      deletionRequests: listDeletionRequests(),
+      privacyRequests: listPrivacyRequests(),
+      legal: legalReadiness(),
     });
   }
 
@@ -92,6 +97,14 @@ export async function GET(request: Request, context: { params: Promise<{ action:
     });
   }
 
+  if (action === "deletions") {
+    return NextResponse.json({
+      version: APP_VERSION,
+      deletionRequests: listDeletionRequests(),
+      privacyRequests: listPrivacyRequests(),
+    });
+  }
+
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
@@ -148,6 +161,24 @@ export async function POST(request: Request, context: { params: Promise<{ action
       const hunt = await adminStopHunt(huntId);
       recordSecurity({ type: "admin_hunt_stop", userId: authed.user.id, detail: huntId });
       return NextResponse.json({ ok: true, hunt: { id: hunt.id, status: hunt.status, userId: hunt.userId }, version: APP_VERSION });
+    }
+
+    if (action === "deletions") {
+      const requestId = typeof body.requestId === "string" ? body.requestId.trim() : "";
+      const decision = body.decision === "reject" ? "reject" : body.decision === "complete" ? "complete" : "";
+      if (!requestId || !decision) {
+        return NextResponse.json(
+          { error: "requestId and decision (complete|reject) are required.", code: "INVALID_DELETION", version: APP_VERSION },
+          { status: 400 },
+        );
+      }
+      const row = await processDeletionRequest({
+        requestId,
+        actorId: authed.user.id,
+        decision,
+        note: typeof body.note === "string" ? body.note : "",
+      });
+      return NextResponse.json({ ok: true, request: row, version: APP_VERSION });
     }
   } catch (err) {
     return guardFailed(err);

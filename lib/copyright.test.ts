@@ -24,11 +24,13 @@ test("copyright names Lior Elbaz, Israel and forbids copy, sale, and commercial 
   assert.doesNotMatch(COPYRIGHT_NOTICE, /034486852|identity number/i);
 });
 
-test("terms lead with ownership and a new acceptance version", () => {
-  assert.equal(TERMS_SECTIONS[0]?.heading, "Ownership and copyright");
-  assert.match(TERMS_SECTIONS[0]?.body ?? "", /Lior Elbaz, Israel/);
-  assert.match(TERMS_SECTIONS[0]?.body ?? "", /may not copy, sell, distribute, sublicense, or make commercial use/);
-  assert.match(TERMS_VERSION, /^beta-2026-09-20$/);
+test("terms include ownership and a new acceptance version", () => {
+  assert.equal(TERMS_SECTIONS[0]?.heading, "Service operator");
+  const ip = TERMS_SECTIONS.find((section) => section.heading === "Intellectual property");
+  assert.ok(ip);
+  assert.match(ip.body, /Lior Elbaz, Israel/);
+  assert.match(ip.body, /may not copy, sell, distribute, sublicense, or make commercial use/);
+  assert.equal(TERMS_VERSION, "beta-2026-09-20.2");
 });
 
 test("LICENSE and COPYRIGHT.md do not publish a national identity number", () => {

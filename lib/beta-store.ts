@@ -19,6 +19,8 @@ const EMPTY: BetaState = {
   tokens: [],
   ops: { ...DEFAULT_OPS },
   feedback: [],
+  deletionRequests: [],
+  privacyRequests: [],
 };
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -49,11 +51,19 @@ export function readBetaState(root = betaRoot()): BetaState {
   try {
     const parsed = JSON.parse(readFileSync(statePath(root), "utf8")) as BetaState;
     return {
-      users: Array.isArray(parsed.users) ? parsed.users : [],
+      users: Array.isArray(parsed.users)
+        ? parsed.users.map((user) => ({
+            ...user,
+            deletionRequestedAt: user.deletionRequestedAt ?? null,
+            deletionStatus: user.deletionStatus ?? "none",
+          }))
+        : [],
       invites: Array.isArray(parsed.invites) ? parsed.invites : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
       tokens: Array.isArray(parsed.tokens) ? parsed.tokens : [],
       feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
+      deletionRequests: Array.isArray(parsed.deletionRequests) ? parsed.deletionRequests : [],
+      privacyRequests: Array.isArray(parsed.privacyRequests) ? parsed.privacyRequests : [],
       ops: { ...DEFAULT_OPS, ...(parsed.ops ?? {}) },
     };
   } catch {

@@ -60,7 +60,10 @@ export default function SafetyPage() {
         <h2 className="font-heading text-2xl">Wallet policy</h2>
         <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
           <li>Connecting or pasting an address is read-only (balance / mapping calls).</li>
-          <li>The address is kept in session storage only — never a private key.</li>
+          <li>
+            The address you are checking is kept in browser session storage. The same public address is also stored on
+            your account for plan wallet limits — never a private key.
+          </li>
           <li>On-chain submit is disabled until a read-only check says the address is eligible.</li>
           <li>Merkle airdrops open the official claim UI. This app does not forge merkle proofs.</li>
           <li>If a page asks for a seed phrase, Poolindex flags it as blocked.</li>

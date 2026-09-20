@@ -54,8 +54,14 @@ export function LoginForm() {
         Password
         <Input className="mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
       </label>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      <Button type="submit" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</Button>
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <Button type="submit" disabled={loading} aria-busy={loading}>
+        {loading ? "Signing in…" : "Sign in"}
+      </Button>
       <p className="text-xs text-muted-foreground">
         <Link href="/forgot" className="hover:text-foreground">Forgot password</Link>
         {" · "}
@@ -124,19 +130,41 @@ export function RegisterForm() {
         <Input className="mt-1" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} required autoComplete="off" />
       </label>
       <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" className="mt-1" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
+        <input
+          id="accept-terms"
+          type="checkbox"
+          className="mt-1"
+          checked={acceptTerms}
+          onChange={(e) => setAcceptTerms(e.target.checked)}
+          required
+        />
         <span>
           I accept the <Link href="/terms" className="text-primary hover:underline">Terms of Use</Link> ({TERMS_VERSION}).
         </span>
       </label>
       <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" className="mt-1" checked={acceptPrivacy} onChange={(e) => setAcceptPrivacy(e.target.checked)} />
+        <input
+          id="accept-privacy"
+          type="checkbox"
+          className="mt-1"
+          checked={acceptPrivacy}
+          onChange={(e) => setAcceptPrivacy(e.target.checked)}
+          required
+        />
         <span>
-          I accept the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> ({PRIVACY_VERSION}).
+          I accept the <Link href="/privacy" className="text-primary hover:underline">Privacy Notice</Link> ({PRIVACY_VERSION}).
         </span>
       </label>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          {notice}
+        </p>
+      ) : null}
       <Button type="submit" disabled={loading}>{loading ? "Creating…" : "Create Beta account"}</Button>
     </form>
   );
@@ -166,7 +194,11 @@ export function ForgotForm() {
         <Input className="mt-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </label>
       <Button type="submit">Send reset link</Button>
-      {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
+      {notice ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          {notice}
+        </p>
+      ) : null}
       {resetUrl ? (
         <p className="text-sm">
           Dev reset link: <Link className="text-primary hover:underline" href={resetUrl}>{resetUrl}</Link>
@@ -202,7 +234,11 @@ export function ResetForm({ token }: { token: string }) {
         New password
         <Input className="mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} />
       </label>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
       <Button type="submit">Reset password</Button>
     </form>
   );

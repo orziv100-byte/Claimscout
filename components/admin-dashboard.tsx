@@ -38,8 +38,18 @@ type Summary = {
     scanCounts: { started: number; completed: number; failed: number };
     lastLoginAt: string | null;
     firstScanAt: string | null;
+    deletionStatus?: string;
   }>;
   invites: Array<{ code: string; email: string | null; usedBy: string[]; maxUses: number; disabled: boolean }>;
+  deletionRequests?: Array<{
+    id: string;
+    userId: string;
+    status: string;
+    requestedAt: string;
+    processedAt: string | null;
+  }>;
+  privacyRequests?: Array<{ id: string; userId: string; type: string; status: string; createdAt: string }>;
+  legal?: { ok: boolean; blockers: string[]; notes: string[]; missingContacts: string[] };
 };
 
 type FeedbackRow = {
@@ -117,7 +127,13 @@ export function AdminDashboard() {
     await load();
   }
 
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
+  if (error) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {error}
+      </p>
+    );
+  }
   if (!summary) return <p className="text-sm text-muted-foreground">Loading control center…</p>;
 
   return (
@@ -152,7 +168,10 @@ export function AdminDashboard() {
           maintenance {summary.ops.maintenanceMode ? "on" : "off"}
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" />
+          <label htmlFor="ops-reason" className="sr-only">
+            Reason
+          </label>
+          <Input id="ops-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" />
           <Button variant="destructive" onClick={() => void patchOps({ scansEnabled: false, reason })}>
             Stop new scans
           </Button>
@@ -227,7 +246,10 @@ export function AdminDashboard() {
       <section className="rounded-xl border border-border/80 bg-card p-5">
         <h2 className="font-heading text-xl">Invites</h2>
         <form className="mt-3 flex gap-2" onSubmit={createInvite}>
-          <Input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Optional bound email" />
+          <label htmlFor="invite-email" className="sr-only">
+            Optional invite email
+          </label>
+          <Input id="invite-email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Optional bound email" />
           <Button type="submit">Create invite</Button>
         </form>
         <ul className="mt-3 space-y-1 text-sm">
@@ -293,10 +315,73 @@ export function AdminDashboard() {
       </section>
 
       <section className="rounded-xl border border-border/80 bg-card p-5">
+        <h2 className="font-heading text-xl">Account closure requests</h2>
+        {summary.legal && !summary.legal.ok ? (
+          <p className="mt-2 text-sm text-destructive" role="status">
+            Legal readiness blockers: {summary.legal.blockers.join(" ")}
+          </p>
+        ) : null}
+        <ul className="mt-3 space-y-2 text-sm">
+          {(summary.deletionRequests ?? []).map((row) => (
+            <li key={row.id} className="rounded-md border border-border/60 p-3">
+              <p>
+                {row.userId} · {row.status} · {row.requestedAt}
+              </p>
+              {row.status === "requested" ? (
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      void fetch("/api/admin/deletions", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ requestId: row.id, decision: "complete" }),
+                      }).then(load)
+                    }
+                    aria-label={`Process closure for ${row.userId}`}
+                  >
+                    Process closure
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      void fetch("/api/admin/deletions", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ requestId: row.id, decision: "reject" }),
+                      }).then(load)
+                    }
+                    aria-label={`Reject closure for ${row.userId}`}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <h3 className="mt-4 text-sm font-medium">Privacy requests</h3>
+        <ul className="mt-2 text-xs text-muted-foreground">
+          {(summary.privacyRequests ?? []).map((row) => (
+            <li key={row.id}>
+              {row.type} · {row.status} · {row.userId} · {row.createdAt}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-xl border border-border/80 bg-card p-5">
         <h2 className="font-heading text-xl">Feedback queue</h2>
         <div className="mt-3 flex gap-2">
-          <Input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="type" />
-          <Input value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} placeholder="status" />
+          <label htmlFor="feedback-type" className="sr-only">
+            Feedback type filter
+          </label>
+          <Input id="feedback-type" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="type" />
+          <label htmlFor="feedback-status" className="sr-only">
+            Feedback status filter
+          </label>
+          <Input id="feedback-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} placeholder="status" />
         </div>
         <ul className="mt-3 space-y-3">
           {feedback.map((row) => (

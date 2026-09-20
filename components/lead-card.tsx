@@ -2,7 +2,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalClaimWarning } from "@/components/external-claim-warning";
 import { ResultFeedback } from "@/components/result-feedback";
+import { LEAD_RESEARCH_DISCLAIMER } from "@/lib/disclosures";
 import { LEAD_STATUS_LABEL } from "@/lib/labels";
 import type { LeadRecord } from "@/lib/intelligence/types";
 
@@ -14,7 +16,9 @@ export function LeadCard({ lead }: { lead: LeadRecord }) {
           <Badge variant="outline">{LEAD_STATUS_LABEL[lead.status] ?? lead.status}</Badge>
           <Badge variant="secondary">{lead.opportunityType}</Badge>
           {lead.historicalLayer ? <Badge variant="outline">Historical</Badge> : null}
-          {lead.status === "reviewable" ? <Badge>Safe to review</Badge> : null}
+          {lead.status === "reviewable" ? (
+            <Badge>Safe to review — not a guarantee the destination is safe</Badge>
+          ) : null}
         </div>
         <CardTitle className="mt-2 text-base">{lead.projectName}</CardTitle>
         <CardDescription>
@@ -23,6 +27,7 @@ export function LeadCard({ lead }: { lead: LeadRecord }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-2 text-sm">
         <p>{lead.why}</p>
+        <p className="text-xs text-muted-foreground">{LEAD_RESEARCH_DISCLAIMER}</p>
         <dl className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
           <div>Source confidence: {lead.sourceConfidence.replaceAll("_", " ")}</div>
           <div>Historical evidence: {lead.historicalEvidence}</div>
@@ -42,7 +47,7 @@ export function LeadCard({ lead }: { lead: LeadRecord }) {
                   <>
                     {" "}
                     <a href={row.url} className="text-primary hover:underline" target="_blank" rel="noreferrer">
-                      source
+                      public source
                     </a>
                   </>
                 ) : null}
@@ -54,6 +59,7 @@ export function LeadCard({ lead }: { lead: LeadRecord }) {
           <p className="text-xs text-muted-foreground">No evidence recorded yet.</p>
         )}
         <ResultFeedback source={lead.discoverySource} claimId={lead.catalogId} leadId={lead.id} url={lead.officialDocumentation} />
+        {lead.officialDocumentation ? <ExternalClaimWarning compact /> : null}
       </CardContent>
     </Card>
   );

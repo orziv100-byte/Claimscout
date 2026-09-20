@@ -1,7 +1,9 @@
 "use client";
 
+import { AccountPrivacyControls } from "@/components/account-privacy-controls";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
+import { WALLET_DISCLOSURE } from "@/lib/disclosures";
 import Link from "next/link";
 
 export default function AccountPage() {
@@ -28,9 +30,9 @@ export default function AccountPage() {
         <dt className="text-muted-foreground">Status</dt>
         <dd>{user.status}</dd>
         <dt className="text-muted-foreground">Plan</dt>
-        <dd>{user.plan === "paid" ? "Poolindex Pro" : "Free"}</dd>
-        <dt className="text-muted-foreground">Wallets</dt>
-        <dd className="font-mono text-xs">{user.wallets.join(", ") || "none bound"}</dd>
+        <dd>{user.plan === "paid" ? "Poolindex Pro (operator-issued test license; purchase unavailable)" : "Free"}</dd>
+        <dt className="text-muted-foreground">Public wallets on account</dt>
+        <dd className="font-mono text-xs">{user.wallets.join(", ") || "none stored on this account"}</dd>
         <dt className="text-muted-foreground">Terms</dt>
         <dd>
           {user.termsVersion} / {user.privacyVersion} · {user.acceptedAt}
@@ -43,6 +45,8 @@ export default function AccountPage() {
       {user.status === "pending_verification" ? (
         <p className="text-sm text-amber-700 dark:text-amber-300">Verify your email before running scans.</p>
       ) : null}
+      <p className="text-xs text-muted-foreground">{WALLET_DISCLOSURE}</p>
+      <AccountPrivacyControls deletionStatus={user.deletionStatus} />
       <div className="flex gap-2">
         <Button variant="outline" onClick={() => void logout()}>
           Sign out

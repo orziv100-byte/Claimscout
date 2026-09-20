@@ -131,7 +131,7 @@ export async function registerAccount(input: {
     rejectSecrets(input.password, "password");
     rejectSecrets(displayName, "display name");
     if (!input.acceptTerms || !input.acceptPrivacy) {
-      throw new AuthError(400, "TERMS_REQUIRED", "You must accept the Terms of Use and Privacy Policy.");
+      throw new AuthError(400, "TERMS_REQUIRED", "You must accept the Terms of Use and Privacy Notice.");
     }
     if (!inviteCode) throw new AuthError(403, "INVITE_REQUIRED", "A valid Closed Beta invitation is required.");
 
@@ -174,6 +174,8 @@ export async function registerAccount(input: {
         lastScanAt: null,
         firstScanAt: null,
         scanCounts: emptyScanCounts(),
+        deletionRequestedAt: null,
+        deletionStatus: "none",
       };
       state.users.push(user);
       invite.usedBy.push(user.id);

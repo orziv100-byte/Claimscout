@@ -4,7 +4,7 @@ import { LeadCard } from "@/components/lead-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatElapsed, HUNT_STAGE_LABEL, HUNT_STATUS_LABEL } from "@/lib/labels";
+import { HuntLiveStatus } from "@/components/hunt-live-status";
 import type { HuntRecord, ReturnDigest } from "@/lib/intelligence/types";
 import { useEffect, useState } from "react";
 
@@ -53,7 +53,13 @@ export function HuntDetail({ huntId }: { huntId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hunt?.id, hunt?.status]);
 
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
+  if (error) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {error}
+      </p>
+    );
+  }
   if (!hunt) return <p className="text-sm text-muted-foreground">Loading hunt…</p>;
 
   return (
@@ -61,19 +67,23 @@ export function HuntDetail({ huntId }: { huntId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-heading text-3xl tracking-tight">{hunt.query}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {HUNT_STATUS_LABEL[hunt.status]} · {HUNT_STAGE_LABEL[hunt.stage]} · elapsed {formatElapsed(hunt.elapsedMs)}
-          </p>
+          <div className="mt-2">
+            <HuntLiveStatus hunt={hunt} />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {hunt.status === "running" ? (
-            <Button variant="outline" onClick={() => void act("pause")}>
+            <Button variant="outline" type="button" aria-label="Pause Deep Hunt" onClick={() => void act("pause")}>
               Pause
             </Button>
           ) : null}
-          {hunt.status === "paused" ? <Button onClick={() => void act("resume")}>Resume</Button> : null}
+          {hunt.status === "paused" ? (
+            <Button type="button" aria-label="Resume Deep Hunt" onClick={() => void act("resume")}>
+              Resume
+            </Button>
+          ) : null}
           {hunt.status === "running" || hunt.status === "paused" || hunt.status === "queued" ? (
-            <Button variant="destructive" onClick={() => void act("stop")}>
+            <Button variant="destructive" type="button" aria-label="Stop Deep Hunt" onClick={() => void act("stop")}>
               Stop
             </Button>
           ) : null}

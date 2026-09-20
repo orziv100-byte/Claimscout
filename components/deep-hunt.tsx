@@ -4,7 +4,8 @@ import { LeadCard } from "@/components/lead-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatElapsed, HUNT_STAGE_LABEL, HUNT_STATUS_LABEL } from "@/lib/labels";
+import { HuntLiveStatus } from "@/components/hunt-live-status";
+import { HUNT_STAGE_LABEL, HUNT_STATUS_LABEL } from "@/lib/labels";
 import type { HuntRecord, ReturnDigest, SeedDiscovery } from "@/lib/intelligence/types";
 import type { CatalogClaim, DiscoveredClaim } from "@/lib/types";
 import Link from "next/link";
@@ -88,27 +89,29 @@ export function DeepHuntPanel({
         <div>
           <h2 className="font-heading text-2xl">Deep Hunt</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Continue investigating across additional sources, historical records and public blockchain data.
+            Continue investigating across additional public sources, historical records, and public blockchain data.
+            Continuous Hunt (planned Pro incremental re-check) is off unless you start it. Pause or Stop ends it.
+            Poolindex does not access private chain data.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {!hunt || hunt.status === "completed" || hunt.status === "stopped" ? (
-            <Button onClick={() => void call("start")} disabled={busy || !query}>
+            <Button onClick={() => void call("start")} disabled={busy || !query} aria-label="Start Deep Hunt">
               Start Deep Hunt
             </Button>
           ) : null}
           {hunt?.status === "running" ? (
-            <Button variant="outline" onClick={() => void call("pause")} disabled={busy}>
+            <Button variant="outline" type="button" aria-label="Pause Deep Hunt" onClick={() => void call("pause")} disabled={busy}>
               Pause
             </Button>
           ) : null}
           {hunt?.status === "paused" ? (
-            <Button onClick={() => void call("resume")} disabled={busy}>
+            <Button type="button" aria-label="Resume Deep Hunt" onClick={() => void call("resume")} disabled={busy}>
               Resume
             </Button>
           ) : null}
           {hunt && hunt.status !== "stopped" && hunt.status !== "completed" ? (
-            <Button variant="destructive" onClick={() => void call("stop")} disabled={busy}>
+            <Button variant="destructive" type="button" aria-label="Stop Deep Hunt" onClick={() => void call("stop")} disabled={busy}>
               Stop
             </Button>
           ) : null}
@@ -128,10 +131,10 @@ export function DeepHuntPanel({
       ) : null}
       {hunt ? (
         <>
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">{HUNT_STATUS_LABEL[hunt.status]}</Badge>
             <Badge variant="outline">Current stage: {HUNT_STAGE_LABEL[hunt.stage] ?? hunt.stage}</Badge>
-            <span>Elapsed {formatElapsed(hunt.elapsedMs)}</span>
+            <HuntLiveStatus hunt={hunt} />
             {hunt.id ? (
               <Link href={`/hunts/${hunt.id}`} className="text-primary hover:underline">
                 Open hunt

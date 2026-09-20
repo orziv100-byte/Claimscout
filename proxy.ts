@@ -10,6 +10,7 @@ const PUBLIC_PREFIXES = [
   "/verify",
   "/terms",
   "/privacy",
+  "/accessibility",
   "/safety",
 ];
 

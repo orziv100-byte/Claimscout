@@ -17,7 +17,7 @@ const NAV = [
   { href: "/hunts", label: "Hunts" },
   { href: "/catalog", label: "Catalog" },
   { href: "/wallet", label: "Wallet check" },
-  { href: "/upgrade", label: "Poolindex Pro" },
+  { href: "/upgrade", label: "Pro (planned)" },
   { href: "/safety", label: "Rules" },
 ];
 
@@ -36,13 +36,14 @@ export function SiteHeader() {
             <span className="font-heading text-xl tracking-tight">Poolindex</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">Closed Beta · public claims only</span>
           </Link>
-          <nav className="flex flex-wrap items-center gap-1">
+          <nav className="flex flex-wrap items-center gap-1" aria-label="Main">
             {NAV.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={`rounded-md px-2 py-1 text-sm ${
                     active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -94,7 +95,11 @@ export function SiteHeader() {
                 setReadonlyAddress(draft);
               }}
             >
+              <label htmlFor="header-wallet" className="sr-only">
+                Public 0x wallet address
+              </label>
               <Input
+                id="header-wallet"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Paste 0x address"
@@ -105,7 +110,7 @@ export function SiteHeader() {
               <Button size="sm" variant="outline" type="submit">
                 Check
               </Button>
-              <Button size="sm" type="button" onClick={() => void connectInjected()}>
+              <Button size="sm" type="button" aria-label="Connect injected wallet, public address only" onClick={() => void connectInjected()}>
                 <Wallet data-icon="inline-start" />
                 Connect
               </Button>
@@ -113,7 +118,11 @@ export function SiteHeader() {
           )}
         </div>
       </div>
-      {error ? <p className="mx-auto max-w-6xl px-4 pb-2 text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="mx-auto max-w-6xl px-4 pb-2 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
     </header>
   );
 }

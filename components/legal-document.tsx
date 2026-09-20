@@ -1,4 +1,5 @@
 import { COPYRIGHT } from "@/lib/app-info";
+import { LEGAL_EFFECTIVE_DATE, LEGAL_UPDATED_DATE } from "@/lib/legal";
 
 export function LegalDocument({
   title,
@@ -14,8 +15,9 @@ export function LegalDocument({
       <header>
         <h1 className="font-heading text-3xl tracking-tight">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Version {version}. {COPYRIGHT} No copying, sale, or commercial use without prior written
-          permission from Lior Elbaz.
+          Version {version}. Effective {LEGAL_EFFECTIVE_DATE}. Last updated {LEGAL_UPDATED_DATE}. {COPYRIGHT} No
+          copying, sale, or commercial use without prior written permission from Lior Elbaz. Closed Beta. This
+          document is not a legal certification.
         </p>
       </header>
       {sections.map((section) => (

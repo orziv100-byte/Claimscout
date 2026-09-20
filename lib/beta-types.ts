@@ -47,6 +47,8 @@ export type UserRecord = {
   lastScanAt: string | null;
   firstScanAt: string | null;
   scanCounts: ScanCounts;
+  deletionRequestedAt: string | null;
+  deletionStatus: DeletionStatus;
 };
 
 export type PublicUser = Omit<UserRecord, "passwordHash">;
@@ -146,6 +148,34 @@ export type MailMessage = {
   url?: string;
 };
 
+export const DELETION_STATUSES = ["none", "requested", "completed"] as const;
+export type DeletionStatus = (typeof DELETION_STATUSES)[number];
+
+export const DELETION_REQUEST_STATUSES = ["requested", "processing", "completed", "rejected"] as const;
+export type DeletionRequestStatus = (typeof DELETION_REQUEST_STATUSES)[number];
+
+export type DeletionRequest = {
+  id: string;
+  userId: string;
+  requestedAt: string;
+  status: DeletionRequestStatus;
+  processedAt: string | null;
+  processedBy: string | null;
+  note: string;
+};
+
+export const PRIVACY_REQUEST_TYPES = ["access", "correction", "deletion", "question"] as const;
+export type PrivacyRequestType = (typeof PRIVACY_REQUEST_TYPES)[number];
+
+export type PrivacyRequest = {
+  id: string;
+  userId: string;
+  type: PrivacyRequestType;
+  message: string;
+  createdAt: string;
+  status: "open" | "closed";
+};
+
 export type BetaState = {
   users: UserRecord[];
   invites: InviteRecord[];
@@ -153,4 +183,6 @@ export type BetaState = {
   tokens: TokenRecord[];
   ops: OpsState;
   feedback: FeedbackRecord[];
+  deletionRequests: DeletionRequest[];
+  privacyRequests: PrivacyRequest[];
 };
