@@ -619,7 +619,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     eligibility: "Anyone who creates an account and passes the faucet timer/captcha.",
     howToVerify: "Use the official domain only. Inspect archives for older promotional codes.",
     warnings: [
-      "This is a gambling-adjacent faucet. Poolindex does not endorse wagering.",
+      "This is a gambling-adjacent faucet. PoolIndex does not endorse wagering.",
     ],
     sources: [
       {
@@ -824,7 +824,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     id: "bitcoin-puzzle-2015",
     title: "Bitcoin cryptographic puzzle (2015)",
     summary:
-      "A public puzzle funded in 2015 with increasing-difficulty ranges. Remaining unsolved ranges are first-come-first-served by whoever finds the matching key. Poolindex will not search keys, brute-force ranges, or display partial keys.",
+      "A public puzzle funded in 2015 with increasing-difficulty ranges. Remaining unsolved ranges are first-come-first-served by whoever finds the matching key. PoolIndex will not search keys, brute-force ranges, or display partial keys.",
     kind: "puzzle",
     status: "open",
     legitimacy: "documented_public",
@@ -836,7 +836,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     howToVerify:
       "Inspect the original puzzle funding transaction on a Bitcoin explorer. Do not use key-hunter websites.",
     warnings: [
-      "Poolindex never brute-forces private keys or enumerates puzzle ranges.",
+      "PoolIndex never brute-forces private keys or enumerates puzzle ranges.",
       "Sites that list unsolved ranges next to “auto scan” tooling are out of scope and blocked.",
     ],
     sources: [
@@ -1042,7 +1042,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     id: "tornado-avoided",
     title: "Skipped: mixer / exploit / key-recovery listings",
     summary:
-      "Poolindex will not index mixer refunds, exploit bounties that require attacking a live system, stolen-fund recovery, or anything that needs someone else’s seed.",
+      "PoolIndex will not index mixer refunds, exploit bounties that require attacking a live system, stolen-fund recovery, or anything that needs someone else’s seed.",
     kind: "community",
     status: "expired",
     legitimacy: "suspicious",

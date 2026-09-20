@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth-provider";
 import { usePlan } from "@/components/plan-provider";
 import { useWallet } from "@/components/wallet-provider";
+import { BRAND_NAME } from "@/lib/app-info";
 import { shortAddress } from "@/lib/labels";
 import { ShieldCheck, Wallet } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +34,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center justify-between gap-6">
           <Link href="/" className="flex items-baseline gap-2">
-            <span className="font-heading text-xl tracking-tight">Poolindex</span>
+            <span className="font-heading text-xl tracking-tight">{BRAND_NAME}</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">Closed Beta · public claims only</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-1" aria-label="Main">

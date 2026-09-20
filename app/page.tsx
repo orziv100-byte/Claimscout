@@ -23,7 +23,7 @@ export default function HomePage() {
             Find crypto rewards that were actually offered to the public.
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Poolindex searches current sites and archives for airdrops, faucets, giveaways, redemption links, and
+            PoolIndex searches current sites and archives for airdrops, faucets, giveaways, redemption links, and
             community testnet rewards — then runs a safety check on the URL before you touch a wallet.
           </p>
         </div>
@@ -34,7 +34,7 @@ export default function HomePage() {
           </Link>{" "}
           is invite-only. Free: catalog + GitHub, one wallet.{" "}
           <Link href="/upgrade" className="text-primary hover:underline">
-            Poolindex Pro (planned)
+            PoolIndex Pro (planned)
           </Link>
           : about 70% of sources and up to five wallets. Private keys, seed phrases, and other people&apos;s wallets are
           out of scope.

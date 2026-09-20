@@ -15,6 +15,7 @@ const REQUIRED_DOCS = [
   "docs/PAID_LAUNCH_CHECKLIST.md",
   "docs/LEGAL_AUDIT.md",
   "docs/LEGAL_READINESS.md",
+  "docs/TRADEMARK_READINESS.md",
 ] as const;
 
 const REQUIRED_PAGES = [
@@ -27,7 +28,7 @@ const CLAIM_CHECKS: { id: string; re: RegExp; message: string }[] = [
   { id: "guaranteed-safe", re: /guaranteed safe/i, message: "Absolute 'guaranteed safe' claim" },
   {
     id: "wcag-certified",
-    re: /Poolindex is fully compliant with WCAG|Poolindex is WCAG(?: 2\.1)? AA compliant/i,
+    re: /PoolIndex is fully compliant with WCAG|Poolindex is fully compliant with WCAG|PoolIndex is WCAG(?: 2\.1)? AA compliant/i,
     message: "Unsupported WCAG certification claim",
   },
   {
@@ -49,6 +50,11 @@ const CLAIM_CHECKS: { id: string; re: RegExp; message: string }[] = [
     id: "session-only",
     re: /session storage only/i,
     message: "Wallet wording still says session storage only",
+  },
+  {
+    id: "registered-trademark",
+    re: /(?:is|are) a registered trademark|®/i,
+    message: "Unsupported registered-trademark claim or ® symbol",
   },
 ];
 

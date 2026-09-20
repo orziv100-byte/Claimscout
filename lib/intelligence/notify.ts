@@ -3,14 +3,14 @@ import { sendMail, type MailPurpose } from "../mail.ts";
 import type { HuntRecord, LeadRecord } from "./types.ts";
 
 const HUNT_MAIL: Record<string, { purpose: MailPurpose; subject: string }> = {
-  NEW_LEAD: { purpose: "new_lead", subject: "Poolindex: new research lead" },
-  NEW_STRONG_EVIDENCE: { purpose: "new_strong_evidence", subject: "Poolindex: stronger evidence found" },
-  ELIGIBILITY_AVAILABLE: { purpose: "eligibility_available", subject: "Poolindex: eligibility evidence available" },
-  CLAIM_STATUS_CHANGED: { purpose: "claim_status_changed", subject: "Poolindex: claim status changed" },
-  CLAIM_WINDOW_OPENED: { purpose: "claim_window_opened", subject: "Poolindex: claim window opened" },
-  CLAIM_WINDOW_CLOSING: { purpose: "claim_window_closing", subject: "Poolindex: claim window closing" },
-  SECURITY_WARNING: { purpose: "security_warning", subject: "Poolindex: security warning" },
-  DEEP_HUNT_COMPLETED: { purpose: "deep_hunt_completed", subject: "Poolindex: Deep Hunt completed" },
+  NEW_LEAD: { purpose: "new_lead", subject: "PoolIndex: new research lead" },
+  NEW_STRONG_EVIDENCE: { purpose: "new_strong_evidence", subject: "PoolIndex: stronger evidence found" },
+  ELIGIBILITY_AVAILABLE: { purpose: "eligibility_available", subject: "PoolIndex: eligibility evidence available" },
+  CLAIM_STATUS_CHANGED: { purpose: "claim_status_changed", subject: "PoolIndex: claim status changed" },
+  CLAIM_WINDOW_OPENED: { purpose: "claim_window_opened", subject: "PoolIndex: claim window opened" },
+  CLAIM_WINDOW_CLOSING: { purpose: "claim_window_closing", subject: "PoolIndex: claim window closing" },
+  SECURITY_WARNING: { purpose: "security_warning", subject: "PoolIndex: security warning" },
+  DEEP_HUNT_COMPLETED: { purpose: "deep_hunt_completed", subject: "PoolIndex: Deep Hunt completed" },
 };
 
 export type NotifyFn = typeof sendMail;

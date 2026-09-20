@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Crash / resource safety — highest priority
 
-Continuously protect this machine from overload and crashes while working on Poolindex.
+Continuously protect this machine from overload and crashes while working on PoolIndex.
 
 If you detect any crash, freeze, severe slowdown, process failure, repeated restart, out-of-memory condition, or abnormal CPU/RAM/disk usage:
 
@@ -25,7 +25,7 @@ If you detect any crash, freeze, severe slowdown, process failure, repeated rest
 9. Preserve completed work before stopping or restructuring tasks.
 10. After recovery, verify system stability and then resume from the last safe point.
 
-Stability has priority over speed. Do not allow Poolindex, builds, scans, agents, or background jobs to overload or repeatedly crash this server.
+Stability has priority over speed. Do not allow PoolIndex, builds, scans, agents, or background jobs to overload or repeatedly crash this server.
 
 Operational defaults for this repo:
 
@@ -35,7 +35,7 @@ Operational defaults for this repo:
 - If a command OOMs, hangs, or restarts itself, stop and diagnose; never retry it in a loop.
 - Live scans, Wayback CDX, and on-chain pool checks are serialized in-app (`lib/resource-guard.ts`, `/api/health`). Do not add unbounded `Promise.all` fan-out.
 - Catalog watch (`scripts/watch-digest.sh`, `/api/watch?refresh=1`) is one light sequential pool read. Do not stack it with `next build` or a live scan. Failed watch runs are skipped until the next daily timer — no retry loop.
-- Never log Poolindex Pro license keys, `POOLINDEX_PLAN_SECRET`, or `POOLINDEX_SESSION_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
+- Never log PoolIndex Pro license keys, `POOLINDEX_PLAN_SECRET`, or `POOLINDEX_SESSION_SECRET`. Free vs paid source/wallet caps are enforced in API routes, not only in the UI.
 - Closed Beta accounts and feedback live in `var/beta/` (gitignored). Isolate by user ID. Do not expand live-scan sources during Closed Beta. The admin kill switch pauses scans; it must not delete accounts, logs, or snapshots.
 
 

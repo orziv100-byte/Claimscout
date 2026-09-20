@@ -15,7 +15,7 @@ Pre-implementation audit of HEAD `1adec459b9` (snapshot `20260919T193714Z`).
 | Scanning | EXISTS | Frozen. Not expanded. |
 | Source management | EXISTS | Catalog + six live sources. |
 | Watch | EXISTS | Daily catalog remaining-pool digest. |
-| Server-side limits | EXISTS | Free/Poolindex Pro in `lib/plan.ts` + API routes. |
+| Server-side limits | EXISTS | Free/PoolIndex Pro in `lib/plan.ts` + API routes. |
 | Logging | PARTIAL → added | Security/telemetry/error jsonl. |
 | Telemetry | MISSING → added | Scan/source/resource/app events. |
 | Error handling | PARTIAL | Resource 503 existed; app error journal added. |

@@ -164,9 +164,9 @@ test("legal pages, contacts, and versions are present", () => {
   ]) {
     assert.equal(existsSync(join(root, file)), true, file);
   }
-  assert.equal(TERMS_VERSION, "beta-2026-09-20.2");
-  assert.equal(PRIVACY_VERSION, "beta-2026-09-20.2");
-  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-20.2");
+  assert.equal(TERMS_VERSION, "beta-2026-09-20.3");
+  assert.equal(PRIVACY_VERSION, "beta-2026-09-20.3");
+  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-20.3");
   assert.equal(contactEntry("privacy").address, CONTACT_PLACEHOLDERS.privacy);
   assert.ok(unconfiguredContacts({}).length >= 5);
   const configured = contactEntry("privacy", { POOLINDEX_CONTACT_PRIVACY: "privacy@example.com" });
@@ -197,11 +197,11 @@ test("accessibility basics: skip link, language, labels, Deep Hunt textual statu
   assert.match(card, /LEAD_STATUS_LABEL\[lead\.status\]/);
 });
 
-test("Poolindex Pro stays planned and unpaid", () => {
+test("PoolIndex Pro stays planned and unpaid", () => {
   assert.match(PLANS.paid.summary, /planned/i);
   assert.match(PLANS.paid.summary, /Payment processing is unavailable/);
   const upgrade = readFileSync(new URL("../components/upgrade-form.tsx", import.meta.url), "utf8");
-  assert.match(upgrade, /Poolindex Pro \(planned\)/);
+  assert.match(upgrade, /PoolIndex Pro \(planned\)/);
   assert.doesNotMatch(upgrade, /buy now|purchase now|subscribe now/i);
   const termsPlans = TERMS_SECTIONS.find((section) => section.heading === "Plans");
   assert.match(termsPlans?.body ?? "", /cannot purchase Pro/);
@@ -228,6 +228,7 @@ test("Closed Beta Terms cover research-only crypto limits", () => {
   const headings = TERMS_SECTIONS.map((section) => section.heading);
   for (const heading of [
     "Service operator",
+    "Brand name",
     "Closed Beta",
     "Public wallet addresses only",
     "Deep Hunt and Continuous Hunt",
@@ -237,7 +238,7 @@ test("Closed Beta Terms cover research-only crypto limits", () => {
     assert.ok(headings.includes(heading), heading);
   }
   const crypto = TERMS_SECTIONS.find((section) => section.heading === "Crypto and research limitations");
-  const what = TERMS_SECTIONS.find((section) => section.heading === "What Poolindex is");
+  const what = TERMS_SECTIONS.find((section) => section.heading === "What PoolIndex is");
   assert.match(what?.body ?? "", /does not execute blockchain transactions/i);
   assert.match(crypto?.body ?? "", /irreversible/);
   assert.match(crypto?.body ?? "", /investment, financial, legal, or tax advice/);

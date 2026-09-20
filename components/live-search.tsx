@@ -101,11 +101,11 @@ export function LiveSearch({
           {data.plan && (data.plan.lockedSources.length || data.plan.reservedSources.length) ? (
             <Alert>
               <AlertTitle>
-                {data.plan.id === "free" ? "Free scan uses catalog + GitHub" : "Poolindex Pro scans about 70% of sources"}
+                {data.plan.id === "free" ? "Free scan uses catalog + GitHub" : "PoolIndex Pro scans about 70% of sources"}
               </AlertTitle>
               <AlertDescription>
                 {data.plan.lockedSources.length
-                  ? `Poolindex Pro is planned ($40; payment processing unavailable) for ${data.plan.lockedSources.join(", ")}. `
+                  ? `PoolIndex Pro is planned ($40; payment processing unavailable) for ${data.plan.lockedSources.join(", ")}. `
                   : null}
                 {data.plan.reservedSources.length
                   ? `${data.plan.reservedSources.join(", ")} stay reserved for a later plan. `

@@ -9,7 +9,7 @@ export default function SafetyPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
       <div>
-        <h1 className="font-heading text-3xl tracking-tight">What Poolindex will and will not do</h1>
+        <h1 className="font-heading text-3xl tracking-tight">What PoolIndex will and will not do</h1>
         <p className="mt-3 text-muted-foreground">
           This is a discovery and inspection tool for rewards that were intentionally offered to the public, or that
           the connected wallet is demonstrably eligible to claim. It is not a wallet cracker, a mixer hunter, or a
@@ -50,7 +50,7 @@ export default function SafetyPage() {
       <section className="space-y-3 text-sm leading-relaxed">
         <h2 className="font-heading text-2xl">Host protection</h2>
         <p className="text-muted-foreground">
-          Poolindex refuses to stack live scans, archive lookups, and on-chain checks when this machine is short on
+          PoolIndex refuses to stack live scans, archive lookups, and on-chain checks when this machine is short on
           RAM, CPU, or disk. Overload returns HTTP 503 with a resource snapshot. Failed scans are not retried in a
           loop. Stability comes before speed.
         </p>
@@ -66,7 +66,7 @@ export default function SafetyPage() {
           </li>
           <li>On-chain submit is disabled until a read-only check says the address is eligible.</li>
           <li>Merkle airdrops open the official claim UI. This app does not forge merkle proofs.</li>
-          <li>If a page asks for a seed phrase, Poolindex flags it as blocked.</li>
+          <li>If a page asks for a seed phrase, PoolIndex flags it as blocked.</li>
         </ul>
       </section>
 

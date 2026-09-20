@@ -196,8 +196,8 @@ export async function registerAccount(input: {
     });
     await sendMail({
       to: created.email,
-      subject: "Verify your Poolindex Beta account",
-      text: `Welcome to Poolindex Closed Beta. Verify your email: ${created.verifyUrl}`,
+      subject: "Verify your PoolIndex Beta account",
+      text: `Welcome to PoolIndex Closed Beta. Verify your email: ${created.verifyUrl}`,
       url: created.verifyUrl,
       purpose: "verify_email",
     });
@@ -296,7 +296,7 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ sent: tr
     const resetUrl = `/reset?token=${encodeURIComponent(raw)}`;
     await sendMail({
       to: user.email,
-      subject: "Reset your Poolindex password",
+      subject: "Reset your PoolIndex password",
       text: `Reset your password (valid for 1 hour): ${resetUrl}`,
       url: resetUrl,
       purpose: "reset_password",

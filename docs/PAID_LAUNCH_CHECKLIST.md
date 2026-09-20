@@ -1,8 +1,8 @@
-# Poolindex Pro paid-launch checklist (future work)
+# PoolIndex Pro paid-launch checklist (future work)
 
 Payment processing is **not** implemented. Do not treat this as live billing.
 
-When (and only when) the operator decides to sell Poolindex Pro, review:
+When (and only when) the operator decides to sell PoolIndex Pro, review:
 
 - Subscription price disclosure (currently a planned $40 target — confirm before charging)
 - Billing interval (one-time vs recurring)
@@ -11,7 +11,7 @@ When (and only when) the operator decides to sell Poolindex Pro, review:
 - Consumer disclosures required in the tester's / operator's jurisdiction
 - Business identification (legal name, address, registration) — OWNER CONFIRMATION REQUIRED
 - Tax / invoice / receipt requirements — LEGAL REVIEW REQUIRED
-- Payment processor terms and PCI/scoping — do not store card data in Poolindex
+- Payment processor terms and PCI/scoping — do not store card data in PoolIndex
 - Paid-plan Terms update and re-acceptance
 - Clear “you are purchasing” vs “operator issued a test license”
 - Accessibility of the checkout flow

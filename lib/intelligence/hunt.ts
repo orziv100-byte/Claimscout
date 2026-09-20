@@ -198,7 +198,7 @@ export async function startHunt(input: {
   const limits = huntLimits(input.plan);
   if (!limits.deepHunt) throw new AuthError(403, "PLAN_LIMIT", "Deep Hunt is not available on this plan.");
   if (mode === "continuous" && !limits.continuous) {
-    throw new AuthError(403, "PLAN_LIMIT", "Continuous Hunt is a Poolindex Pro planned feature.");
+    throw new AuthError(403, "PLAN_LIMIT", "Continuous Hunt is a PoolIndex Pro planned feature.");
   }
   let wallet: string | undefined;
   if (input.wallet) {

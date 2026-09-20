@@ -1,4 +1,4 @@
-# Poolindex data retention (product policy)
+# PoolIndex data retention (product policy)
 
 This is a **product policy** for Closed Beta file stores under `var/beta/`. It is **not** a statement of statutory retention. LEGAL REQUIREMENT TO CONFIRM / OWNER/LAWYER DECISION REQUIRED before treating these periods as legal obligations.
 

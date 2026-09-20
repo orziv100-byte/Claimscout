@@ -1,4 +1,4 @@
-# Poolindex legal audit (pre-implementation snapshot + follow-up)
+# PoolIndex legal audit (pre-implementation snapshot + follow-up)
 
 This audit describes the Closed Beta codebase **before** this hardening pass, then notes what engineering work was added. It is **not** legal advice and **not** a certification of compliance with any law.
 

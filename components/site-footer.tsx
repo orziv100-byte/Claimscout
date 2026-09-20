@@ -1,4 +1,4 @@
-import { COPYRIGHT, COPYRIGHT_OWNER_NAME } from "@/lib/app-info";
+import { BRAND_NAME, COPYRIGHT, COPYRIGHT_OWNER_NAME } from "@/lib/app-info";
 import Link from "next/link";
 
 export function SiteFooter() {
@@ -7,7 +7,8 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <p>
           {COPYRIGHT} No copying, sale, or commercial use without prior written permission from{" "}
-          {COPYRIGHT_OWNER_NAME}. Poolindex is a research tool. It never asks for a seed phrase or
+          {COPYRIGHT_OWNER_NAME}. {BRAND_NAME} is a research tool. Copyright in the source code is not a
+          trademark registration of the {BRAND_NAME} name. It never asks for a seed phrase or
           private key.
         </p>
         <div className="flex flex-wrap gap-4">

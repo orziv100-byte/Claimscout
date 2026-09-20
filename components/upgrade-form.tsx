@@ -23,9 +23,9 @@ export function UpgradeForm() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
       <div>
-        <h1 className="font-heading text-3xl tracking-tight">Free and Poolindex Pro</h1>
+        <h1 className="font-heading text-3xl tracking-tight">Free and PoolIndex Pro</h1>
         <p className="mt-3 text-muted-foreground">
-          Free scans a short source list against one wallet. Poolindex Pro is a planned $40 plan for about 70% of
+          Free scans a short source list against one wallet. PoolIndex Pro is a planned $40 plan for about 70% of
           sources and up to five wallets. Payment processing is unavailable in this Closed Beta. Reddit and Bitcointalk
           stay reserved.
         </p>
@@ -51,7 +51,7 @@ export function UpgradeForm() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Poolindex Pro (planned)</CardTitle>
+            <CardTitle>PoolIndex Pro (planned)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p className="text-2xl font-heading text-foreground">${PLANS.paid.priceUsd}</p>
@@ -65,7 +65,7 @@ export function UpgradeForm() {
               <li>Wallet history intelligence, Continuous Hunt, change detection (planned Pro)</li>
             </ul>
             {plan === "paid" ? (
-              <p className="text-xs text-foreground">Poolindex Pro is active. {wallets.length}/{maxWallets} wallets bound.</p>
+              <p className="text-xs text-foreground">PoolIndex Pro is active. {wallets.length}/{maxWallets} wallets bound.</p>
             ) : null}
           </CardContent>
         </Card>
@@ -73,7 +73,7 @@ export function UpgradeForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Activate Poolindex Pro (planned)</CardTitle>
+          <CardTitle>Activate PoolIndex Pro (planned)</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">
@@ -82,13 +82,13 @@ export function UpgradeForm() {
           </p>
           <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => void submit(e)}>
             <label htmlFor="pro-license" className="sr-only">
-              Poolindex Pro license key
+              PoolIndex Pro license key
             </label>
             <Input
               id="pro-license"
               value={license}
               onChange={(e) => setLicense(e.target.value)}
-              placeholder="Poolindex Pro license key"
+              placeholder="PoolIndex Pro license key"
               className="font-mono"
               autoComplete="off"
             />

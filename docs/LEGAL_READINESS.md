@@ -1,6 +1,6 @@
-# Poolindex Closed Beta — legal + privacy + accessibility readiness report
+# PoolIndex Closed Beta — legal + privacy + accessibility readiness report
 
-This is an **engineering / legal-documentation readiness** report. It is **not** legal advice, **not** a certification of compliance with any law, and **not** a claim that Poolindex is WCAG AA certified.
+This is an **engineering / legal-documentation readiness** report. It is **not** legal advice, **not** a certification of compliance with any law, and **not** a claim that PoolIndex is WCAG AA certified.
 
 Date: 2026-09-20. App version: 0.1.0. Document versions: Terms / Privacy / Accessibility `beta-2026-09-20.2`. Effective and last updated: 2026-09-20.
 
@@ -8,7 +8,7 @@ Operator attribution in product copy: **Copyright © 2026 Lior Elbaz, Israel. Al
 
 ## 1. Copyright status
 
-PASS for original Poolindex code attribution. LICENSE, COPYRIGHT.md, README, package.json, footer, and Terms intellectual-property section name Lior Elbaz, Israel. Original code is distinguished from third-party packages. No Israeli national identity number is published.
+PASS for original PoolIndex code attribution. LICENSE, COPYRIGHT.md, README, package.json, footer, and Terms intellectual-property section name Lior Elbaz, Israel. Original code is distinguished from third-party packages. No Israeli national identity number is published.
 
 ## 2. Ownership notices
 
@@ -52,7 +52,7 @@ PASS in Terms/Privacy. Public wallet + public sources/archives/(planned Pro) pub
 
 ## 12. Crypto disclaimers
 
-PASS at Terms plus `EXTERNAL_CLAIM_WARNING` before official third-party claim links, and on-chain dialog copy that Poolindex does not execute the transaction. Lead cards: research lead, not money owed.
+PASS at Terms plus `EXTERNAL_CLAIM_WARNING` before official third-party claim links, and on-chain dialog copy that PoolIndex does not execute the transaction. Lead cards: research lead, not money owed.
 
 ## 13. Security disclosure
 

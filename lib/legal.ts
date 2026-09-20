@@ -1,26 +1,30 @@
-import { COPYRIGHT, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER } from "./app-info.ts";
+import { BRAND_NAME, COPYRIGHT, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER, TRADEMARK_STATUS_NOTE } from "./app-info.ts";
 import { contactLine } from "./contacts.ts";
 
-export const TERMS_VERSION = "beta-2026-09-20.2";
-export const PRIVACY_VERSION = "beta-2026-09-20.2";
-export const ACCESSIBILITY_VERSION = "beta-2026-09-20.2";
+export const TERMS_VERSION = "beta-2026-09-20.3";
+export const PRIVACY_VERSION = "beta-2026-09-20.3";
+export const ACCESSIBILITY_VERSION = "beta-2026-09-20.3";
 export const LEGAL_EFFECTIVE_DATE = "2026-09-20";
 export const LEGAL_UPDATED_DATE = "2026-09-20";
 
-export const TERMS_TITLE = "Poolindex Closed Beta Terms of Use";
-export const PRIVACY_TITLE = "Poolindex Privacy Notice";
-export const ACCESSIBILITY_TITLE = "Poolindex Accessibility Statement";
+export const TERMS_TITLE = `${BRAND_NAME} Closed Beta Terms of Use`;
+export const PRIVACY_TITLE = `${BRAND_NAME} Privacy Notice`;
+export const ACCESSIBILITY_TITLE = `${BRAND_NAME} Accessibility Statement`;
 
 export type LegalSection = { heading: string; body: string };
 
 export const TERMS_SECTIONS: LegalSection[] = [
   {
     heading: "Service operator",
-    body: `Poolindex is operated by ${COPYRIGHT_OWNER_NAME}, Israel. No company registration number, VAT number, registered office, or telephone number is published in this Closed Beta. OWNER CONFIRMATION REQUIRED before a public launch if a registered business name or address must appear. Contact: ${contactLine("legal")}.`,
+    body: `${BRAND_NAME} is operated by ${COPYRIGHT_OWNER_NAME}, Israel. No company registration number, VAT number, registered office, or telephone number is published in this Closed Beta. OWNER CONFIRMATION REQUIRED before a public launch if a registered business name or address must appear. Contact: ${contactLine("legal")}.`,
   },
   {
-    heading: "What Poolindex is",
-    body: "Poolindex is a Closed Beta research, discovery, and safety-check tool. It helps invited testers search, organize, and review publicly described claims, airdrops, faucets, and similar offers from public and external sources. It is not a wallet, exchange, broker, custodian, claims processor, payment processor, or investment, legal, or tax adviser. Poolindex does not execute blockchain transactions for you. Any later signing happens only in your own wallet after you choose to approve it.",
+    heading: "Brand name",
+    body: `${TRADEMARK_STATUS_NOTE} Copyright in original ${BRAND_NAME} source code and materials does not grant or prove trademark registration or exclusive ownership of the ${BRAND_NAME} name. Software changes cannot establish trademark registration. See TRADEMARK_READINESS.md.`,
+  },
+  {
+    heading: "What PoolIndex is",
+    body: "PoolIndex is a Closed Beta research, discovery, and safety-check tool. It helps invited testers search, organize, and review publicly described claims, airdrops, faucets, and similar offers from public and external sources. It is not a wallet, exchange, broker, custodian, claims processor, payment processor, or investment, legal, or tax adviser. PoolIndex does not execute blockchain transactions for you. Any later signing happens only in your own wallet after you choose to approve it.",
   },
   {
     heading: "Closed Beta",
@@ -28,7 +32,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Eligibility and minimum age",
-    body: "You may use Poolindex only if you are invited and legally able to agree to these Terms. MINIMUM USER AGE: LEGAL REVIEW REQUIRED. Until the operator confirms an age rule with counsel, do not invite testers who cannot enter a contract in their jurisdiction.",
+    body: "You may use PoolIndex only if you are invited and legally able to agree to these Terms. MINIMUM USER AGE: LEGAL REVIEW REQUIRED. Until the operator confirms an age rule with counsel, do not invite testers who cannot enter a contract in their jurisdiction.",
   },
   {
     heading: "Account responsibility and invites",
@@ -36,31 +40,31 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Acceptable use",
-    body: "Use Poolindex only on wallets and research you are authorized to review. Do not use it to attack systems, steal credentials, collect other people's secrets, bypass access controls, or automate claims. Do not paste seed phrases, recovery phrases, private keys, or wallet passwords.",
+    body: "Use PoolIndex only on wallets and research you are authorized to review. Do not use it to attack systems, steal credentials, collect other people's secrets, bypass access controls, or automate claims. Do not paste seed phrases, recovery phrases, private keys, or wallet passwords.",
   },
   {
     heading: "Public wallet addresses only",
-    body: "Wallet features accept public 0x addresses only. The browser may keep the address you are currently checking in session storage. The same public address is also stored on your account so Free/Pro wallet limits can be enforced. Addresses are not private keys. Poolindex never requests or stores private keys, seed phrases, recovery phrases, or wallet passwords.",
+    body: "Wallet features accept public 0x addresses only. The browser may keep the address you are currently checking in session storage. The same public address is also stored on your account so Free/Pro wallet limits can be enforced. Addresses are not private keys. PoolIndex never requests or stores private keys, seed phrases, recovery phrases, or wallet passwords.",
   },
   {
     heading: "Deep Hunt and Continuous Hunt",
-    body: "If you start a Deep Hunt, Poolindex may continue researching public catalog, source, archive, and (on Poolindex Pro, when enabled) public blockchain information related to your query and any public wallet address you supplied. Continuous Hunt, when available on a planned Pro path, is periodic incremental research of stored public leads — not access to private chain data. You can pause or stop a hunt. Findings are research leads, not money owed to you.",
+    body: "If you start a Deep Hunt, PoolIndex may continue researching public catalog, source, archive, and (on PoolIndex Pro, when enabled) public blockchain information related to your query and any public wallet address you supplied. Continuous Hunt, when available on a planned Pro path, is periodic incremental research of stored public leads — not access to private chain data. You can pause or stop a hunt. Findings are research leads, not money owed to you.",
   },
   {
     heading: "Third-party services and links",
-    body: "Scans and hunts may query public third-party services (for example GitHub, Wayback Machine, Internet Archive, and public RPC endpoints). Those providers have their own terms. External pages can change after Poolindex records a snapshot. A link in Poolindex is not an endorsement and is not a guarantee that the destination is safe or still offering a claim.",
+    body: "Scans and hunts may query public third-party services (for example GitHub, Wayback Machine, Internet Archive, and public RPC endpoints). Those providers have their own terms. External pages can change after PoolIndex records a snapshot. A link in PoolIndex is not an endorsement and is not a guarantee that the destination is safe or still offering a claim.",
   },
   {
     heading: "Crypto and research limitations",
-    body: "Poolindex does not provide investment, financial, legal, or tax advice. It does not act as a broker, custodian, or wallet manager. It does not claim tokens for you. It does not guarantee eligibility, reward, profit, value, completeness, or that information remains current. You must independently verify destinations, contracts, and claim windows before connecting a wallet or signing anything. Blockchain transactions are irreversible. Network/gas fees are charged by the network, not by Poolindex. Phishing and scam pages exist; a Safety Check is not a guarantee that a third-party site is safe.",
+    body: "PoolIndex does not provide investment, financial, legal, or tax advice. It does not act as a broker, custodian, or wallet manager. It does not claim tokens for you. It does not guarantee eligibility, reward, profit, value, completeness, or that information remains current. You must independently verify destinations, contracts, and claim windows before connecting a wallet or signing anything. Blockchain transactions are irreversible. Network/gas fees are charged by the network, not by PoolIndex. Phishing and scam pages exist; a Safety Check is not a guarantee that a third-party site is safe.",
   },
   {
     heading: "Plans",
-    body: "The Free plan is limited to a smaller source set and one public wallet address. Poolindex Pro is a planned paid plan (target $40) with more sources and up to five wallets. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Plan limits are enforced on the server.",
+    body: "The Free plan is limited to a smaller source set and one public wallet address. PoolIndex Pro is a planned paid plan (target $40) with more sources and up to five wallets. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Plan limits are enforced on the server.",
   },
   {
     heading: "Availability, errors, and interruption",
-    body: "The service may pause, fail, or return HTTP 503 when the host is under resource pressure. Failed scans are not retried in a loop. We may suspend scanning without deleting accounts. You should not rely on Poolindex as the only record of your research.",
+    body: "The service may pause, fail, or return HTTP 503 when the host is under resource pressure. Failed scans are not retried in a loop. We may suspend scanning without deleting accounts. You should not rely on PoolIndex as the only record of your research.",
   },
   {
     heading: "Suspension, termination, and account closure",
@@ -68,15 +72,15 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Intellectual property",
-    body: `Poolindex original product, source code, operations, user interface, visual design, documentation, and related materials are the exclusive property of ${COPYRIGHT_RIGHTS_HOLDER}. ${COPYRIGHT} You may not copy, sell, distribute, sublicense, or make commercial use of Poolindex without prior written permission from ${COPYRIGHT_OWNER_NAME}. Closed Beta access is not a license to copy or commercialize the product. Third-party packages remain under their own licenses.`,
+    body: `PoolIndex original product, source code, operations, user interface, visual design, documentation, and related materials are the exclusive property of ${COPYRIGHT_RIGHTS_HOLDER}. ${COPYRIGHT} You may not copy, sell, distribute, sublicense, or make commercial use of PoolIndex without prior written permission from ${COPYRIGHT_OWNER_NAME}. Closed Beta access is not a license to copy or commercialize the product. Third-party packages remain under their own licenses.`,
   },
   {
     heading: "Feedback",
-    body: "If you submit feedback during the Beta, you grant Poolindex a non-exclusive right to use that feedback to operate and improve the product. Do not include secrets in feedback. Feedback is not marketing consent.",
+    body: "If you submit feedback during the Beta, you grant PoolIndex a non-exclusive right to use that feedback to operate and improve the product. Do not include secrets in feedback. Feedback is not marketing consent.",
   },
   {
     heading: "Warranty disclaimer",
-    body: "Poolindex is provided as-is for Closed Beta testing. To the extent permitted by law, we disclaim implied warranties of merchantability, fitness for a particular purpose, and non-infringement. This is not an extreme waiver of rights that cannot be waived in your jurisdiction. LEGAL REVIEW REQUIRED.",
+    body: "PoolIndex is provided as-is for Closed Beta testing. To the extent permitted by law, we disclaim implied warranties of merchantability, fitness for a particular purpose, and non-infringement. This is not an extreme waiver of rights that cannot be waived in your jurisdiction. LEGAL REVIEW REQUIRED.",
   },
   {
     heading: "Limitation of liability",
@@ -84,7 +88,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Changes",
-    body: "We may update Poolindex and these Terms. Material Terms or Privacy changes get a new version identifier. Your accepted versions are stored with your account. If the current version is newer than the version you accepted, you will be asked to review and accept again before continuing. Continued use after that acceptance means you agree to the updated Terms.",
+    body: "We may update PoolIndex and these Terms. Material Terms or Privacy changes get a new version identifier. Your accepted versions are stored with your account. If the current version is newer than the version you accepted, you will be asked to review and accept again before continuing. Continued use after that acceptance means you agree to the updated Terms.",
   },
   {
     heading: "Governing law",
@@ -98,8 +102,8 @@ export const TERMS_SECTIONS: LegalSection[] = [
 
 export const PRIVACY_SECTIONS: LegalSection[] = [
   {
-    heading: "Who operates Poolindex",
-    body: `Poolindex is operated by ${COPYRIGHT_OWNER_NAME}, Israel. Contact for privacy questions: ${contactLine("privacy")}. This notice describes what the running application actually stores. It is not a claim of certification under any privacy statute.`,
+    heading: "Who operates PoolIndex",
+    body: `PoolIndex is operated by ${COPYRIGHT_OWNER_NAME}, Israel. Contact for privacy questions: ${contactLine("privacy")}. This notice describes what the running application actually stores. It is not a claim of certification under any privacy statute.`,
   },
   {
     heading: "Account data",
@@ -111,7 +115,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Public wallet addresses",
-    body: "WHAT: checksummed public 0x addresses you paste or connect. WHY: read-only eligibility/pool checks you request, and Free/Pro wallet-slot limits. WHERE: (1) browser sessionStorage for the address currently in the UI session; (2) the account record (user.wallets) on the server. RETENTION: on the account until you request closure or an operator removes the binding. WHO: you and operators. Poolindex does not request or store private keys, seed phrases, recovery phrases, or wallet passwords. Secret-shaped input is rejected.",
+    body: "WHAT: checksummed public 0x addresses you paste or connect. WHY: read-only eligibility/pool checks you request, and Free/Pro wallet-slot limits. WHERE: (1) browser sessionStorage for the address currently in the UI session; (2) the account record (user.wallets) on the server. RETENTION: on the account until you request closure or an operator removes the binding. WHO: you and operators. PoolIndex does not request or store private keys, seed phrases, recovery phrases, or wallet passwords. Secret-shaped input is rejected.",
   },
   {
     heading: "Sessions and tokens",
@@ -127,7 +131,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Deep Hunt and leads",
-    body: "WHAT: hunt records (query, plan, progress counters, public URLs seen, lead cards, evidence snippets from public sources, optional public wallet used for research, pause/stop state). WHY: persist an investigation you started so it survives refresh. WHERE: var/beta/hunts/{userId}/{huntId}.json. RETENTION: until account closure processing, then operator policy. WHO: you (your hunts) and admins (stop/stats). Continuous Hunt, if enabled later on Pro, re-reads stored public leads. Poolindex does not access private blockchain information.",
+    body: "WHAT: hunt records (query, plan, progress counters, public URLs seen, lead cards, evidence snippets from public sources, optional public wallet used for research, pause/stop state). WHY: persist an investigation you started so it survives refresh. WHERE: var/beta/hunts/{userId}/{huntId}.json. RETENTION: until account closure processing, then operator policy. WHO: you (your hunts) and admins (stop/stats). Continuous Hunt, if enabled later on Pro, re-reads stored public leads. PoolIndex does not access private blockchain information.",
   },
   {
     heading: "Feedback",
@@ -135,7 +139,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Email / outbox",
-    body: "WHAT: verification, password reset, and hunt-notification mail (recipient, subject, body/link, timestamp). WHY: operate the account and optional hunt alerts. WHERE: var/beta/outbox.jsonl and, if configured, an external MailProvider. RETENTION: DATA_RETENTION.md. WHO: operators and the mail provider if one is configured. Terms acceptance is not marketing consent. Poolindex does not send promotional mail in this Beta.",
+    body: "WHAT: verification, password reset, and hunt-notification mail (recipient, subject, body/link, timestamp). WHY: operate the account and optional hunt alerts. WHERE: var/beta/outbox.jsonl and, if configured, an external MailProvider. RETENTION: DATA_RETENTION.md. WHO: operators and the mail provider if one is configured. Terms acceptance is not marketing consent. PoolIndex does not send promotional mail in this Beta.",
   },
   {
     heading: "Admin actions",
@@ -143,7 +147,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "International hosting and APIs",
-    body: "The operator host for this preview is the machine running Poolindex (this Cloud/preview environment is ephemeral; durable copies may live on the operator's Linux backup host). Third-party APIs (GitHub, Internet Archive/Wayback, public Ethereum/Arbitrum RPC, and similar) may process query URLs, repository searches, or public addresses outside that location. LEGAL REVIEW REQUIRED for transfer/legal-basis analysis. See PROCESSORS.md.",
+    body: "The operator host for this preview is the machine running PoolIndex (this Cloud/preview environment is ephemeral; durable copies may live on the operator's Linux backup host). Third-party APIs (GitHub, Internet Archive/Wayback, public Ethereum/Arbitrum RPC, and similar) may process query URLs, repository searches, or public addresses outside that location. LEGAL REVIEW REQUIRED for transfer/legal-basis analysis. See PROCESSORS.md.",
   },
   {
     heading: "Your requests",
@@ -158,7 +162,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
 export const ACCESSIBILITY_SECTIONS: LegalSection[] = [
   {
     heading: "Commitment",
-    body: "Poolindex is being developed with WCAG 2.1 AA accessibility criteria as an engineering target, and with awareness of applicable Israeli web-accessibility expectations. This statement is not a certification and does not claim certified WCAG AA status or compliance with any statute.",
+    body: "PoolIndex is being developed with WCAG 2.1 AA accessibility criteria as an engineering target, and with awareness of applicable Israeli web-accessibility expectations. This statement is not a certification and does not claim certified WCAG AA status or compliance with any statute.",
   },
   {
     heading: "What we test",

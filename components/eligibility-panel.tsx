@@ -130,9 +130,9 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
           <DialogHeader>
             <DialogTitle>Submit public claim?</DialogTitle>
             <DialogDescription>
-              This will ask your wallet to sign a transaction. Poolindex never stores keys and will not send a
+              This will ask your wallet to sign a transaction. PoolIndex never stores keys and will not send a
               transaction until you approve it in the wallet prompt. Blockchain transactions are irreversible. Network
-              fees are charged by the chain, not by Poolindex. Poolindex does not execute the transaction for you.
+              fees are charged by the chain, not by PoolIndex. PoolIndex does not execute the transaction for you.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">

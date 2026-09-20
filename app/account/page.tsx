@@ -30,7 +30,7 @@ export default function AccountPage() {
         <dt className="text-muted-foreground">Status</dt>
         <dd>{user.status}</dd>
         <dt className="text-muted-foreground">Plan</dt>
-        <dd>{user.plan === "paid" ? "Poolindex Pro (operator-issued test license; purchase unavailable)" : "Free"}</dd>
+        <dd>{user.plan === "paid" ? "PoolIndex Pro (operator-issued test license; purchase unavailable)" : "Free"}</dd>
         <dt className="text-muted-foreground">Public wallets on account</dt>
         <dd className="font-mono text-xs">{user.wallets.join(", ") || "none stored on this account"}</dd>
         <dt className="text-muted-foreground">Terms</dt>

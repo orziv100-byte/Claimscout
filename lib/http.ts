@@ -1,7 +1,7 @@
 import { readResourceSnapshot, ResourcePressureError } from "./resource-guard";
 import { fetchSafe, type FetchImpl, type LookupFn } from "./ssrf";
 
-export const UA = "Poolindex/1.0 (public crypto claim discovery; research tool)";
+export const UA = "PoolIndex/1.0 (public crypto claim discovery; research tool)";
 
 const MAX_CACHE_ENTRIES = 48;
 const inflight = new Map<string, Promise<unknown>>();

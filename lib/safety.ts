@@ -4,7 +4,7 @@ const SECRET_PATTERNS: { code: string; re: RegExp; message: string }[] = [
   {
     code: "seed_phrase",
     re: /\b(seed phrase|secret phrase|recovery phrase|mnemonic(?:\s+phrase)?)\b/i,
-    message: "Result mentions seed/recovery phrases. Poolindex never surfaces or recovers secrets.",
+    message: "Result mentions seed/recovery phrases. PoolIndex never surfaces or recovers secrets.",
   },
   {
     code: "private_key",

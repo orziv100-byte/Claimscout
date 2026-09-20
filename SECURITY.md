@@ -1,6 +1,6 @@
 # Responsible security reporting
 
-Poolindex Closed Beta is not a bug-bounty program. There is no promise of payment for reports.
+PoolIndex Closed Beta is not a bug-bounty program. There is no promise of payment for reports.
 
 ## Contact
 
@@ -11,7 +11,7 @@ Send reports to: security@POOLINDEX_DOMAIN (configuration required before launch
 - A short description of the issue
 - Steps to reproduce on a system you are authorized to test
 - Impact (what an attacker could do)
-- Poolindex version if known
+- PoolIndex version if known
 
 Do **not** include real tester passwords, seed phrases, private keys, or other people's personal data in the report.
 

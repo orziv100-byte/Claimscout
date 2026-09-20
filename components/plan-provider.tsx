@@ -84,7 +84,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     });
     const json = (await res.json().catch(() => ({}))) as PlanPayload;
     if (!res.ok) {
-      setError(json.error || "That Poolindex Pro key is not valid.");
+      setError(json.error || "That PoolIndex Pro key is not valid.");
       return false;
     }
     apply(json);
@@ -100,7 +100,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     const json = (await res.json().catch(() => ({}))) as PlanPayload;
     if (res.status === 402) {
       apply(json);
-      return { ok: false, error: json.error || "Wallet limit reached. Upgrade to Poolindex Pro." };
+      return { ok: false, error: json.error || "Wallet limit reached. Upgrade to PoolIndex Pro." };
     }
     if (!res.ok) return { ok: false, error: json.error || "Could not bind wallet" };
     apply(json);

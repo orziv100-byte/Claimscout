@@ -134,7 +134,7 @@ export function formatWatchDigest(input: {
   openPools: WatchOffer[];
 }): string {
   const lines = [
-    `# Poolindex catalog watch`,
+    `# PoolIndex catalog watch`,
     `Captured ${input.capturedAt}`,
     "",
   ];

@@ -301,7 +301,7 @@ test("change detection and Continuous Hunt use stored state, not invented percen
 
   await assert.rejects(
     () => startHunt({ userId: USER_A, plan: "free", query: "uniswap", mode: "continuous" }, DEPS),
-    /Poolindex Pro/,
+    /PoolIndex Pro/,
   );
 
   const next = await startHunt({ userId: USER_A, plan: "paid", query: "uniswap", mode: "continuous" }, DEPS);

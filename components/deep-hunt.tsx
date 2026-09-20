@@ -91,7 +91,7 @@ export function DeepHuntPanel({
           <p className="mt-1 text-sm text-muted-foreground">
             Continue investigating across additional public sources, historical records, and public blockchain data.
             Continuous Hunt (planned Pro incremental re-check) is off unless you start it. Pause or Stop ends it.
-            Poolindex does not access private chain data.
+            PoolIndex does not access private chain data.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

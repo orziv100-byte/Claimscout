@@ -144,7 +144,7 @@ export async function checkEligibility(claimId: string, address: Address): Promi
       address,
       status: "unknown",
       detail:
-        "Public puzzle documented only. Poolindex will not check keys or attempt a solve. Eligibility is whoever first produces a valid solution — not this wallet check.",
+        "Public puzzle documented only. PoolIndex will not check keys or attempt a solve. Eligibility is whoever first produces a valid solution — not this wallet check.",
       officialCheckerUrl,
     };
   }
@@ -193,7 +193,7 @@ export async function checkEligibility(claimId: string, address: Address): Promi
       detail:
         remainingPool && remainingSymbol
           ? `Distributor still holds ${trimAmount(remainingPool)} ${remainingSymbol}. Remaining contract balance does not prove claimability. Individual eligibility needs the official merkle/snapshot checker.`
-          : "Connect the official checker to see if this address is in the snapshot. Poolindex does not reconstruct merkle proofs.",
+          : "Connect the official checker to see if this address is in the snapshot. PoolIndex does not reconstruct merkle proofs.",
       remainingPool,
       remainingSymbol,
       officialCheckerUrl,

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const activated = activatePaidLicense(ent, body.license);
     if (!activated.ok) {
       return NextResponse.json(
-        { error: "That Poolindex Pro key is not valid.", code: "INVALID_LICENSE" },
+        { error: "That PoolIndex Pro key is not valid.", code: "INVALID_LICENSE" },
         { status: 403 },
       );
     }
@@ -58,8 +58,8 @@ export async function POST(request: Request) {
         {
           error:
             ent.plan === "free"
-              ? "Free checks one wallet. Poolindex Pro is planned ($40; payment processing unavailable) and unlocks up to five."
-              : "Poolindex Pro includes up to five wallets.",
+              ? "Free checks one wallet. PoolIndex Pro is planned ($40; payment processing unavailable) and unlocks up to five."
+              : "PoolIndex Pro includes up to five wallets.",
           code: bound.code,
           upgradeUrl: "/upgrade",
           maxWallets: max,

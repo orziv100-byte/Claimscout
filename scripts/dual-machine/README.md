@@ -1,6 +1,6 @@
 # Dual-machine workload and backup
 
-Poolindex has two operator machines:
+PoolIndex has two operator machines:
 
 - **Windows PC** — control and interactive development.
 - **poolindexserver (Linux)** — independent compute, runtime, and durable backup (`~/poolindex`).

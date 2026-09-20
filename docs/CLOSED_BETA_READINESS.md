@@ -1,4 +1,4 @@
-# Poolindex Closed Beta readiness report
+# PoolIndex Closed Beta readiness report
 
 © 2026 Lior Elbaz, Israel. All rights reserved.
 
@@ -8,7 +8,7 @@ Pre-implementation snapshot: `20260919T193714Z` (git `1adec459b9`, tree SHA-256 
 
 ## 1. What existed before this project
 
-Next.js Poolindex with catalog, live sources, safety filters, resource guard, dual-machine snapshots, Poolindex Pro server-side caps, HMAC entitlement cookie, and daily catalog watch. No user accounts, admin, Terms/Privacy, telemetry, or human feedback.
+Next.js PoolIndex with catalog, live sources, safety filters, resource guard, dual-machine snapshots, PoolIndex Pro server-side caps, HMAC entitlement cookie, and daily catalog watch. No user accounts, admin, Terms/Privacy, telemetry, or human feedback.
 
 ## 2. What was added
 
@@ -47,11 +47,11 @@ Footer, README, package description, LICENSE, COPYRIGHT.md, and docs use `© 202
 
 ## 9. Terms/Privacy status
 
-`/terms` and `/privacy`. Registration stores user ID, Terms version `beta-2026-09-20`, Privacy version `beta-2026-09-20`, timestamp. Terms include ownership by Lior Elbaz (Israel) and state Poolindex is a research tool and does not guarantee discovery, eligibility, payment, or profit. Privacy states seed phrases and private keys are not collected.
+`/terms` and `/privacy`. Registration stores user ID, Terms version `beta-2026-09-20`, Privacy version `beta-2026-09-20`, timestamp. Terms include ownership by Lior Elbaz (Israel) and state PoolIndex is a research tool and does not guarantee discovery, eligibility, payment, or profit. Privacy states seed phrases and private keys are not collected.
 
 ## 10. Free/Pro enforcement status
 
-Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and wallets. Free: catalog+GitHub, 1 wallet. Poolindex Pro: 4/6 sources, 5 wallets, $40 planned, no payment processor.
+Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and wallets. Free: catalog+GitHub, 1 wallet. PoolIndex Pro: 4/6 sources, 5 wallets, $40 planned, no payment processor.
 
 ## 11. Resource/crash protection status
 
@@ -83,7 +83,7 @@ Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and
 2. Take a fresh snapshot: `npm run backup:snapshot -- --with-git`.
 3. Register the operator email with the bootstrap invite, verify via outbox, sign in, open `/admin`.
 4. Confirm Stage 1 (cap 10). Create 10 invites (bind email when you can).
-5. Send each person: invite code, `/register`, `/terms`, `/privacy`. Tell them Poolindex never wants a seed phrase.
+5. Send each person: invite code, `/register`, `/terms`, `/privacy`. Tell them PoolIndex never wants a seed phrase.
 6. Confirm each person: register, accept both documents, verify email, sign in, bind one public `0x` address, finish one catalog/GitHub scan, send feedback.
 7. Use Stop new scans if the host is unstable. That does not delete data.
 8. After review, Admin → Stage 2 (20), later Stage 3 (50).

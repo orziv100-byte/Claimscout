@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PlanProvider } from "@/components/plan-provider";
 import { WalletProvider } from "@/components/wallet-provider";
-import { COPYRIGHT } from "@/lib/app-info";
+import { BRAND_NAME, COPYRIGHT } from "@/lib/app-info";
 import { LegalReacceptBanner } from "@/components/legal-reaccept-banner";
 import { SkipLink } from "@/components/skip-link";
 import "./globals.css";
@@ -30,8 +30,8 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   title: {
-    default: "Poolindex",
-    template: "%s · Poolindex",
+    default: BRAND_NAME,
+    template: `%s · ${BRAND_NAME}`,
   },
   description: `Closed Beta research tool for public crypto claim sources. Read-only wallet checks. ${COPYRIGHT}`,
 };

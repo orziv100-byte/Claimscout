@@ -10,7 +10,7 @@ test("free plan is catalog + GitHub and one wallet", () => {
 
 test("paid plan is $40, five wallets, and about 70% of scan sources", () => {
   const coverage = paidSourceCoverage();
-  assert.equal(PLANS.paid.name, "Poolindex Pro");
+  assert.equal(PLANS.paid.name, "PoolIndex Pro");
   assert.equal(PLANS.paid.priceUsd, 40);
   assert.equal(PLANS.paid.maxWallets, 5);
   assert.equal(coverage.used, 4);

@@ -86,7 +86,7 @@ export function WalletDashboard() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <p className="text-muted-foreground">
-            Poolindex accepts public 0x addresses only. The browser keeps the address you are currently checking in
+            PoolIndex accepts public 0x addresses only. The browser keeps the address you are currently checking in
             session storage. The same public address is also stored on your account so plan wallet limits can be
             enforced. It never requests a signature for browsing or eligibility. Private keys, seed phrases, recovery
             phrases, and wallet passwords are rejected if pasted.

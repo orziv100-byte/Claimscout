@@ -90,7 +90,7 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
   if (danger) {
     verdict = "blocked";
     verdictReason =
-      "Poolindex will not assist with this URL. It looks like key material, a drainer, or another out-of-policy request.";
+      "PoolIndex will not assist with this URL. It looks like key material, a drainer, or another out-of-policy request.";
   } else if (!live || warning) {
     verdict = "caution";
     verdictReason = live

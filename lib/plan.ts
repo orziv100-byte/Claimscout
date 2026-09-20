@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "./app-info.ts";
+
 export const SCAN_SOURCES = [
   "catalog",
   "github",
@@ -30,7 +32,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   paid: {
     id: "paid",
-    name: "Poolindex Pro",
+    name: `${BRAND_NAME} Pro`,
     priceUsd: 40,
     maxWallets: 5,
     sources: ["catalog", "github", "wayback", "archive_org"],

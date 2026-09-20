@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
+  APP_NAME,
+  BRAND_NAME,
+  BRAND_REGISTRATION_CLAIMED,
   COPYRIGHT,
   COPYRIGHT_NOTICE,
   COPYRIGHT_OWNER_COUNTRY,
@@ -21,6 +24,11 @@ test("copyright names Lior Elbaz, Israel and forbids copy, sale, and commercial 
   assert.match(COPYRIGHT_RESTRICTION, /operations/);
   assert.match(COPYRIGHT_RESTRICTION, /visual design/);
   assert.match(COPYRIGHT_NOTICE, /exclusive property of Lior Elbaz, Israel/);
+  assert.equal(APP_NAME, "PoolIndex");
+  assert.equal(BRAND_NAME, "PoolIndex");
+  assert.equal(BRAND_REGISTRATION_CLAIMED, false);
+  assert.doesNotMatch(COPYRIGHT_NOTICE, /®/);
+  assert.match(COPYRIGHT_NOTICE, /not a trademark registration/);
   assert.doesNotMatch(COPYRIGHT_NOTICE, /034486852|identity number/i);
 });
 
@@ -30,7 +38,7 @@ test("terms include ownership and a new acceptance version", () => {
   assert.ok(ip);
   assert.match(ip.body, /Lior Elbaz, Israel/);
   assert.match(ip.body, /may not copy, sell, distribute, sublicense, or make commercial use/);
-  assert.equal(TERMS_VERSION, "beta-2026-09-20.2");
+  assert.equal(TERMS_VERSION, "beta-2026-09-20.3");
 });
 
 test("LICENSE and COPYRIGHT.md do not publish a national identity number", () => {

@@ -1,6 +1,6 @@
 # Third-party notices
 
-Poolindex original product, source code, operations, user interface, visual design, and documentation are © 2026 Lior Elbaz, Israel. All rights reserved. That notice does **not** cover third-party software.
+PoolIndex original product, source code, operations, user interface, visual design, and documentation are © 2026 Lior Elbaz, Israel. All rights reserved. That notice does **not** cover third-party software.
 
 This file is an engineering inventory of **direct** runtime and development dependencies, plus flags for notable **transitive production** licenses. Exact versions are in `package-lock.json`. This is not legal advice.
 
@@ -45,6 +45,6 @@ Audited via `package-lock.json` production walk (321 packages): MIT 284, ISC 19,
 | caniuse-lite | 1.0.30001810 | CC-BY-4.0 | ATTRIBUTION REQUIRED (Creative Commons) |
 | argparse | 2.0.1 | Python-2.0 | NON-STANDARD LICENSE |
 
-Fonts: Geist / Geist Mono / Newsreader are loaded from `next/font/google`. Their upstream licenses apply; do not treat them as Poolindex original type.
+Fonts: Geist / Geist Mono / Newsreader are loaded from `next/font/google`. Their upstream licenses apply; do not treat them as PoolIndex original type.
 
-External **data** (GitHub search hits, Wayback snapshots, archive.org items, chain explorer pages, catalog descriptions of third-party projects) remains third-party content. Poolindex does not claim copyright over that material.
+External **data** (GitHub search hits, Wayback snapshots, archive.org items, chain explorer pages, catalog descriptions of third-party projects) remains third-party content. PoolIndex does not claim copyright over that material.

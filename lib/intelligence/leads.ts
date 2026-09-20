@@ -91,11 +91,11 @@ export function whyFromEvidence(lead: LeadRecord): string {
   } else if (lead.walletRelevance === "related_interaction") {
     lines.push(`Your wallet has a related on-chain signal for ${lead.projectName}.`);
   } else if (lead.walletRelevance === "possible_relevance") {
-    lines.push(`Poolindex checked this wallet against ${lead.projectName}; relevance is possible, not confirmed.`);
+    lines.push(`PoolIndex checked this wallet against ${lead.projectName}; relevance is possible, not confirmed.`);
   }
   const catalog = lead.evidence.find((row) => row.type === "catalog");
   if (catalog) {
-    lines.push(`Poolindex catalog lists ${lead.projectName} as a documented ${lead.opportunityType} research target.`);
+    lines.push(`PoolIndex catalog lists ${lead.projectName} as a documented ${lead.opportunityType} research target.`);
   }
   const archive = lead.evidence.find((row) => row.type === "archive" || row.type === "historical");
   if (archive) {
@@ -122,7 +122,7 @@ export function whyFromEvidence(lead: LeadRecord): string {
     lines.push("The documented claim window appears closed or expired.");
   }
   if (!lines.length) {
-    lines.push("Poolindex stored this as a lead from a public source. Evidence is still limited.");
+    lines.push("PoolIndex stored this as a lead from a public source. Evidence is still limited.");
   }
   return lines.join(" ");
 }
@@ -304,7 +304,7 @@ export function ingestCatalogClaim(hunt: HuntRecord, claim: CatalogClaim, at?: s
     sourceKind: "catalog",
     sourceTier: tierForSource("catalog"),
     url: claim.officialUrl,
-    label: "Poolindex catalog",
+    label: "PoolIndex catalog",
     detail: claim.summary,
     at: stamp,
   });
