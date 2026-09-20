@@ -2,13 +2,15 @@
   "name": "poolindex",
   "version": "0.1.0",
   "private": true,
-  "description": "Poolindex Closed Beta — public-claim research tool. © 2026 Poolindex. All rights reserved.",
+  "author": "Lior Elbaz, Israel",
+  "license": "UNLICENSED",
+  "description": "Poolindex Closed Beta — public-claim research tool. © 2026 Lior Elbaz, Israel. All rights reserved.",
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=2048' next dev --hostname 0.0.0.0 --port 43147",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "NODE_OPTIONS='--max-old-space-size=2048' next start --hostname 0.0.0.0 --port 43147",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --experimental-default-type=module --test-concurrency=1 --test lib/resource-guard.test.ts lib/safety.test.ts lib/watch.test.ts lib/plan.test.ts lib/auth.test.ts lib/ssrf.test.ts lib/hardening.test.ts lib/catalog-accuracy.test.ts lib/intelligence.test.ts && bash scripts/dual-machine/backup.test.sh",
+    "test": "node --experimental-strip-types --experimental-default-type=module --test-concurrency=1 --test lib/resource-guard.test.ts lib/safety.test.ts lib/watch.test.ts lib/plan.test.ts lib/auth.test.ts lib/ssrf.test.ts lib/hardening.test.ts lib/catalog-accuracy.test.ts lib/intelligence.test.ts lib/copyright.test.ts && bash scripts/dual-machine/backup.test.sh",
     "backup:snapshot": "bash scripts/dual-machine/snapshot.sh",
     "backup:verify": "bash scripts/dual-machine/verify.sh",
     "watch:digest": "bash scripts/watch-digest.sh"

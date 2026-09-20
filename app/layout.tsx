@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PlanProvider } from "@/components/plan-provider";
 import { WalletProvider } from "@/components/wallet-provider";
+import { COPYRIGHT } from "@/lib/app-info";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,8 +31,7 @@ export const metadata: Metadata = {
     default: "Poolindex",
     template: "%s · Poolindex",
   },
-  description:
-    "Closed Beta research tool for public crypto claim sources. Read-only wallet checks. © 2026 Poolindex. All rights reserved.",
+  description: `Closed Beta research tool for public crypto claim sources. Read-only wallet checks. ${COPYRIGHT}`,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

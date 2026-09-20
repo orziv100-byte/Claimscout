@@ -1,6 +1,6 @@
 # Poolindex product
 
-© 2026 Poolindex. All rights reserved.
+© 2026 Lior Elbaz, Israel. All rights reserved.
 
 ## Concept
 

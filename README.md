@@ -1,6 +1,6 @@
 # Poolindex
 
-© 2026 Poolindex. All rights reserved.
+© 2026 Lior Elbaz, Israel. All rights reserved.
 
 Web tool for discovering and verifying **publicly claimable** cryptocurrency rewards — airdrops, historical faucets, giveaways, redemption links, community testnet drips, and documented public puzzles.
 
@@ -87,4 +87,4 @@ Next.js, TypeScript, Tailwind CSS, shadcn/ui, viem.
 
 ## License notice
 
-© 2026 Poolindex. All rights reserved. Third-party packages: `THIRD_PARTY_NOTICES.md`.
+© 2026 Lior Elbaz, Israel. All rights reserved. Copying, sale, or commercial use without prior written permission from Lior Elbaz is prohibited. Third-party packages: `THIRD_PARTY_NOTICES.md`. See `COPYRIGHT.md` and `LICENSE`.

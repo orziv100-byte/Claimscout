@@ -1,6 +1,6 @@
 # Restore procedure
 
-© 2026 Poolindex. All rights reserved.
+© 2026 Lior Elbaz, Israel. All rights reserved.
 
 This Cloud VM is ephemeral. Durable backups live on **poolindexserver** (`~/poolindex-backups`) and any copies kept on the Windows control PC.
 

@@ -25,4 +25,4 @@ Poolindex includes the following direct runtime and development dependencies. Th
 | tailwindcss, @tailwindcss/postcss | CSS |
 | @types/node, @types/react, @types/react-dom | Types |
 
-Exact versions are in `package-lock.json`. Do not copy this notice into vendor code. Poolindex original code is © 2026 Poolindex. All rights reserved.
+Exact versions are in `package-lock.json`. Do not copy this notice into vendor code. Poolindex original product, source code, operations, user interface, visual design, and documentation are © 2026 Lior Elbaz, Israel. All rights reserved. Copying, sale, or commercial use without prior written permission from Lior Elbaz is prohibited.

@@ -1,6 +1,6 @@
 # Poolindex Closed Beta readiness report
 
-© 2026 Poolindex. All rights reserved.
+© 2026 Lior Elbaz, Israel. All rights reserved.
 
 Date: 2026-09-19. App version: 0.1.0. Branch: `cursor/closed-beta-release-415b`.
 
@@ -43,11 +43,11 @@ Stage 1/2/3 caps 10/20/50. Metrics: invites, registrations, verified, first scan
 
 ## 8. IP/Copyright status
 
-Footer, README, package description, and docs use `© 2026 Poolindex. All rights reserved.` Product architecture: `docs/PRODUCT.md`. Third-party packages: `THIRD_PARTY_NOTICES.md`. Git history kept. No copyright headers added to vendor code.
+Footer, README, package description, LICENSE, COPYRIGHT.md, and docs use `© 2026 Lior Elbaz, Israel. All rights reserved.` Rights holder: Lior Elbaz, Israel. Copying, sale, or commercial use without written permission from Lior Elbaz is prohibited. Product architecture: `docs/PRODUCT.md`. Third-party packages: `THIRD_PARTY_NOTICES.md`. Git history kept. No copyright headers added to vendor code. No national identity numbers in source.
 
 ## 9. Terms/Privacy status
 
-`/terms` and `/privacy`. Registration stores user ID, Terms version `beta-2026-09-19`, Privacy version `beta-2026-09-19`, timestamp. Terms state Poolindex is a research tool and does not guarantee discovery, eligibility, payment, or profit. Privacy states seed phrases and private keys are not collected.
+`/terms` and `/privacy`. Registration stores user ID, Terms version `beta-2026-09-20`, Privacy version `beta-2026-09-20`, timestamp. Terms include ownership by Lior Elbaz (Israel) and state Poolindex is a research tool and does not guarantee discovery, eligibility, payment, or profit. Privacy states seed phrases and private keys are not collected.
 
 ## 10. Free/Pro enforcement status
 

@@ -1,6 +1,6 @@
 # Closed Beta audit and rollout
 
-© 2026 Poolindex. All rights reserved.
+© 2026 Lior Elbaz, Israel. All rights reserved.
 
 Pre-implementation audit of HEAD `1adec459b9` (snapshot `20260919T193714Z`).
 

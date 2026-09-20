@@ -1,10 +1,20 @@
-export const TERMS_VERSION = "beta-2026-09-19";
-export const PRIVACY_VERSION = "beta-2026-09-19";
+import {
+  COPYRIGHT,
+  COPYRIGHT_OWNER_NAME,
+  COPYRIGHT_RIGHTS_HOLDER,
+} from "./app-info.ts";
+
+export const TERMS_VERSION = "beta-2026-09-20";
+export const PRIVACY_VERSION = "beta-2026-09-20";
 
 export const TERMS_TITLE = "Poolindex Beta Terms of Use";
 export const PRIVACY_TITLE = "Poolindex Privacy Policy";
 
 export const TERMS_SECTIONS: { heading: string; body: string }[] = [
+  {
+    heading: "Ownership and copyright",
+    body: `Poolindex — including the product, source code, operations, user interface, visual design, documentation, and related materials — is the exclusive property of ${COPYRIGHT_RIGHTS_HOLDER}. ${COPYRIGHT} You may not copy, sell, distribute, sublicense, or make commercial use of Poolindex or these materials without prior written permission from ${COPYRIGHT_OWNER_NAME}. Access to this Closed Beta is not a license to copy or commercialize the product. Third-party packages remain under their own licenses. This notice does not claim copyright over abstract ideas, only over the original expression and materials of Poolindex.`,
+  },
   {
     heading: "What Poolindex is",
     body: "Poolindex is a research and source-scanning tool. It helps you search, organize, and review information from public and external sources about publicly described claims, airdrops, faucets, and similar offers. It is not a wallet, exchange, broker, or claims processor.",
@@ -78,6 +88,6 @@ export const PRIVACY_SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "Contact",
-    body: "Use in-product feedback or your Beta operator contact to ask questions about this policy. We will post a new Privacy version if collection practices change.",
+    body: `Poolindex is operated by ${COPYRIGHT_OWNER_NAME}, Israel. Use in-product feedback or your Beta operator contact to ask questions about this policy. We will post a new Privacy version if collection practices change.`,
   },
 ];
