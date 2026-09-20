@@ -158,7 +158,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
 export const ACCESSIBILITY_SECTIONS: LegalSection[] = [
   {
     heading: "Commitment",
-    body: "Poolindex is being developed with WCAG 2.1 AA accessibility criteria as an engineering target, and with awareness of applicable Israeli web-accessibility expectations. This statement is not a certification and does not claim that Poolindex is fully compliant with WCAG AA or any statute.",
+    body: "Poolindex is being developed with WCAG 2.1 AA accessibility criteria as an engineering target, and with awareness of applicable Israeli web-accessibility expectations. This statement is not a certification and does not claim certified WCAG AA status or compliance with any statute.",
   },
   {
     heading: "What we test",

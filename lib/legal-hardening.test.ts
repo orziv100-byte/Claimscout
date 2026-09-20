@@ -237,7 +237,8 @@ test("Closed Beta Terms cover research-only crypto limits", () => {
     assert.ok(headings.includes(heading), heading);
   }
   const crypto = TERMS_SECTIONS.find((section) => section.heading === "Crypto and research limitations");
-  assert.match(crypto?.body ?? "", /does not execute blockchain transactions/i);
+  const what = TERMS_SECTIONS.find((section) => section.heading === "What Poolindex is");
+  assert.match(what?.body ?? "", /does not execute blockchain transactions/i);
   assert.match(crypto?.body ?? "", /irreversible/);
   assert.match(crypto?.body ?? "", /investment, financial, legal, or tax advice/);
 });

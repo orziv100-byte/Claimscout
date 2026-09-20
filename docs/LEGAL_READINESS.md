@@ -88,7 +88,7 @@ Documented in `docs/PAID_LAUNCH_CHECKLIST.md`. Payment processing is **not** imp
 
 ## 21. Full test results
 
-See the latest `npm test` run recorded after this document. Existing security and product tests must continue to pass.
+`npm test` on 2026-09-20: **78/78 node tests passed**, dual-machine backup script **ALL TESTS PASSED**. Includes prior security/product tests plus `lib/legal-hardening.test.ts` and updated `lib/copyright.test.ts`.
 
 ## 22. Remaining technical blockers
 

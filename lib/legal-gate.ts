@@ -27,7 +27,7 @@ const CLAIM_CHECKS: { id: string; re: RegExp; message: string }[] = [
   { id: "guaranteed-safe", re: /guaranteed safe/i, message: "Absolute 'guaranteed safe' claim" },
   {
     id: "wcag-certified",
-    re: /fully compliant with WCAG|is WCAG(?: 2\.1)? AA compliant/i,
+    re: /Poolindex is fully compliant with WCAG|Poolindex is WCAG(?: 2\.1)? AA compliant/i,
     message: "Unsupported WCAG certification claim",
   },
   {
