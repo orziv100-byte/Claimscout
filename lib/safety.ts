@@ -77,6 +77,16 @@ export function hostOf(url: string): string | null {
   }
 }
 
+function reservedLookupHost(host: string): string | null {
+  if (host === "example.com" || host === "example.org" || host === "example.net" || host.endsWith(".example")) {
+    return "This is a documentation placeholder (example.com/org), not a real claim site.";
+  }
+  if (host.endsWith(".invalid") || host.endsWith(".test") || host.endsWith(".localhost")) {
+    return "This hostname uses a reserved TLD and cannot exist on the public internet.";
+  }
+  return null;
+}
+
 export function isBlockedHost(url: string): boolean {
   const host = hostOf(url);
   if (!host) return true;
@@ -85,7 +95,7 @@ export function isBlockedHost(url: string): boolean {
 }
 
 const AUTOMATION_RE =
-  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto[- ]?(?:connect|farm|claim|mining|mine|task|ref|click)|airdrops?[- ]?hunter|claim[- ]?hunter|(?:mass|multi)[- ]?claimer|scraper)\b/i;
+  /\b(auto-?claim|autoclaimer|automator|faucetware|auto-?booster|clicker|\w*bot|auto[- ]?(?:connect|farm|claim|mining|mine|task|ref|click)|airdrops?[- ]?hunter|airdrops?[- ]?claimer|airdrops?[- ]?rescue|claim[- ]?hunter|claim[- ]?bot|(?:mass|multi|bulk)[- ]?claimer|claimer|scraper|several wallets|transfer all the tokens)\b/i;
 
 export function looksLikeAutomation(text: string): boolean {
   return AUTOMATION_RE.test(text);
@@ -122,6 +132,14 @@ export function scanUrlFlags(url: string): VerificationFlag[] {
       message: "URL could not be parsed.",
     });
     return flags;
+  }
+  const reserved = reservedLookupHost(host);
+  if (reserved) {
+    flags.push({
+      severity: "warning",
+      code: "reserved_host",
+      message: reserved,
+    });
   }
   if (isBlockedHost(url)) {
     flags.push({
@@ -167,6 +185,9 @@ export function shouldBlockDiscovery(input: {
     return { blocked: true, reason: "blocked_host" };
   }
   const blob = `${input.title}\n${input.summary}\n${input.url}`;
+  if (looksLikeDeveloperTooling(input.title, input.summary)) {
+    return { blocked: true, reason: "developer_tooling" };
+  }
   const danger = scanTextFlags(blob).find((flag) => flag.severity === "danger");
   if (danger) return { blocked: true, reason: danger.code };
   return { blocked: false };
@@ -190,3 +211,13 @@ export function publicOfferHint(text: string): boolean {
     text,
   );
 }
+
+const DEVELOPER_TOOLING =
+  /\b(starter|boilerplate|template|scaffold|hardhat|foundry|forge-std|openzeppelin contracts|merkle-airdrop-starter|multisender|multi-?sender|airdrop-contract|nft-token-drop|erc20-airdrop|merkle-distributor-tutorial)\b/i;
+
+export function looksLikeDeveloperTooling(title: string, summary = ""): boolean {
+  return DEVELOPER_TOOLING.test(`${title} ${summary}`);
+}
+
+export const DEVELOPER_TOOLING_FLAG =
+  "Developer tooling — a repo for building airdrops, not a claim you can redeem from this page.";

@@ -453,16 +453,25 @@ export const ENGINE_WALLET_LEVEL_CATALOG_IDS = new Set(
   ENGINE_SOURCES.filter((source) => source.catalogId && source.walletLevel).map((source) => source.catalogId as string),
 );
 
+/** Adapters that look this address up in an official merkle/CSV/JSON — not bytecode-only catalog rows. */
+export const ADDRESS_LOOKUP_AIRDROP_IDS = new Set(["airdrop-uni-merkle", "airdrop-cow-vcow", "airdrop-ens-merkle"]);
+
+export function airdropHasAddressLookup(sourceId: string): boolean {
+  return ADDRESS_LOOKUP_AIRDROP_IDS.has(sourceId);
+}
+
 export function getEngineSource(id: string): EngineSource | undefined {
   return ENGINE_SOURCES.find((source) => source.id === id);
 }
 
-/** Always check natives, Ethereum tokens, airdrops, and protocol claims. Other-chain tokens only if that chain has native balance. */
+/** Natives, Ethereum tokens, protocol claims, and per-address airdrop lookups always. Documented catalog airdrops and other-chain tokens only on chains with native balance. */
 export function selectEngineSources(activeChainIds: Iterable<number>): EngineSource[] {
   const active = new Set(activeChainIds);
   return ENGINE_SOURCES.filter((source) => {
-    if (source.category === "native_balance" || source.category === "airdrop" || source.category === "protocol_claim") {
-      return true;
+    if (source.category === "native_balance" || source.category === "protocol_claim") return true;
+    if (source.category === "airdrop") {
+      if (airdropHasAddressLookup(source.id)) return true;
+      return active.has(source.chainId);
     }
     if (source.chainId === 1) return true;
     return active.has(source.chainId);

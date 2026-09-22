@@ -43,10 +43,10 @@ function scanFixture(): EngineScan {
         category: "airdrop",
         chainId: 1,
         chainLabel: "Ethereum",
-        verification: "uncertain",
-        eligibility: "unable_to_verify",
+        verification: "verified",
+        eligibility: "ineligible",
         title: "UNI airdrop",
-        detail: "Merkle tree miss. Uncertain until official proof is complete.",
+        detail: "Address is not in the official Uniswap merkle chunks, so it is not eligible for that distribution.",
         officialUrl: "https://app.uniswap.org/",
         sourceStatus: "ok",
       },
@@ -163,7 +163,7 @@ test("get_findings matches stored scan statuses and never marks a balance claima
   })) as { findings: { id: string; type: string; status: string }[] };
   const airdrop = payload.findings.find((row) => row.id === "airdrop-uni-merkle:1");
   const balance = payload.findings.find((row) => row.type === "balance");
-  assert.equal(airdrop?.status, "unable_to_verify");
+  assert.equal(airdrop?.status, "not_eligible");
   assert.ok(balance);
   assert.equal(balance.status, "holding");
   assert.notEqual(balance.status, "verified_claimable");

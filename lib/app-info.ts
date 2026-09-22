@@ -21,7 +21,7 @@ export const COPYRIGHT_RESTRICTION =
 export const COPYRIGHT_NOTICE = `${COPYRIGHT} ${APP_NAME} original product, source code, operations, user interface, visual design, documentation, and related materials are the exclusive property of ${COPYRIGHT_RIGHTS_HOLDER}. ${COPYRIGHT_RESTRICTION} Third-party packages remain under their own licenses. This notice covers original expression and materials, not abstract ideas. Copyright in the source code is not a trademark registration of the PoolIndex name.`;
 
 export const TRADEMARK_STATUS_NOTE =
-  "PoolIndex is the product/brand name. Source-code copyright is not a trademark registration of that name. This Closed Beta does not use a registered-mark symbol. Trademark clearance and registration: LEGAL REVIEW REQUIRED.";
+  "PoolIndex is the product name. Copyright in the source code is not a trademark registration of that name. This Closed Beta does not use a registered-mark symbol.";
 
 export const BETA_STAGES = {
   1: { name: "Stage 1", cap: 10, summary: "First 10 invited testers." },

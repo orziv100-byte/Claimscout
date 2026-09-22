@@ -1,4 +1,5 @@
 import type { CatalogClaim, Claimability } from "./types";
+import { distinctiveSearchTokens } from "./query";
 
 export const CONTRACT_BALANCE_NOT_CLAIMABLE =
   "Remaining tokens in a distributor contract do not prove this is claimable. Eligibility, a valid proof, and an open claim path must be confirmed independently.";
@@ -1219,7 +1220,8 @@ export function getClaimById(id: string): CatalogClaim | undefined {
 export function searchCatalog(query: string): CatalogClaim[] {
   const q = query.trim().toLowerCase();
   if (!q) return CATALOG.filter((c) => c.id !== "tornado-avoided");
-  const parts = q.split(/\s+/).filter(Boolean);
+  const parts = distinctiveSearchTokens(query);
+  if (parts.length === 0) return CATALOG.filter((c) => c.id !== "tornado-avoided");
   return CATALOG.filter((c) => {
     if (c.id === "tornado-avoided") return false;
     const hay = [

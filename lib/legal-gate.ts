@@ -47,6 +47,11 @@ const CLAIM_CHECKS: { id: string; re: RegExp; message: string }[] = [
     message: "Pro shown as purchasable without billing",
   },
   {
+    id: "pay-fix-broken",
+    re: /pay(?:ment)? to fix broken sources/i,
+    message: "Paid SKU framed as fixing broken sources",
+  },
+  {
     id: "session-only",
     re: /session storage only/i,
     message: "Wallet wording still says session storage only",

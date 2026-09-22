@@ -88,14 +88,18 @@ export async function verifyUrl(url: string): Promise<VerificationReport> {
     "Safety check found no secret-harvesting or blocked-host signals. This is not a guarantee the URL is safe. Inspect the official source before connecting a wallet.";
 
   if (danger) {
+    const first = flags.find((f) => f.severity === "danger");
     verdict = "blocked";
-    verdictReason =
-      "PoolIndex will not assist with this URL. It looks like key material, a drainer, or another out-of-policy request.";
+    verdictReason = first?.message
+      ?? "PoolIndex will not assist with this URL. Out-of-policy request.";
   } else if (!live || warning) {
+    const reserved = flags.find((f) => f.code === "reserved_host");
     verdict = "caution";
-    verdictReason = live
-      ? "Review the warnings before interacting. Prefer the official project domain and a Wayback copy."
-      : "Page is not live from this server. Use an archive snapshot if you need to read the original offer.";
+    verdictReason = reserved
+      ? reserved.message
+      : live
+        ? "Review the warnings before interacting. Prefer the official project domain and a Wayback copy."
+        : "Page is not live from this server. Use an archive snapshot if you need to read the original offer.";
   }
 
   return {

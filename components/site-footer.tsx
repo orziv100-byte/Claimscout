@@ -30,6 +30,9 @@ export function SiteFooter() {
           <Link href="/catalog" className="hover:text-foreground">
             Catalog
           </Link>
+          <Link href="/coverage" className="hover:text-foreground">
+            Coverage
+          </Link>
         </div>
       </div>
     </footer>

@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { DEV_SESSION_SECRET, isLocalDevRuntime } from "./env.ts";
 
 export const SESSION_COOKIE = "poolindex_session";
 export const SESSION_TTL_SEC = 7 * 24 * 60 * 60;
@@ -12,9 +13,9 @@ export type SessionClaims = {
 
 export function sessionSecret(): string {
   const fromEnv = process.env.POOLINDEX_SESSION_SECRET?.trim();
-  if (fromEnv) return fromEnv;
-  if (process.env.NODE_ENV === "production") return "";
-  return "dev-only-poolindex-session-secret";
+  if (fromEnv && fromEnv !== DEV_SESSION_SECRET) return fromEnv;
+  if (isLocalDevRuntime()) return DEV_SESSION_SECRET;
+  return "";
 }
 
 function sign(payload: string, secret: string): string {

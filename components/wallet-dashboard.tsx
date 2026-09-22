@@ -15,8 +15,12 @@ import {
 import { useWallet } from "@/components/wallet-provider";
 import { CATALOG } from "@/lib/catalog";
 import { catalogCheckKind, walletEligibilityLabel } from "@/lib/eligibility-status";
-import { shortAddress } from "@/lib/labels";
-import type { EligibilityResult } from "@/lib/types";
+import { isAddressHoldingFinding, isAddressOfferFinding, relatedProgramHints } from "@/lib/engine/profile";
+import { scanHeadline, userCheckLabel } from "@/lib/engine/result-summary";
+import { catalogIsRelevantToWallet, findingIsRelevantToWallet, walletActivity } from "@/lib/engine/relevance";
+import { usePlan } from "@/components/plan-provider";
+import { formatIsraelDateTime, formatTokenAmount, shortAddress } from "@/lib/labels";
+import type { CatalogClaim, EligibilityResult } from "@/lib/types";
 import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -25,6 +29,7 @@ import { notifyWalletScanChange, requestWalletNotifications } from "@/lib/browse
 
 type EngineFindingView = {
   id: string;
+  sourceId?: string;
   title: string;
   verification?: string;
   eligibility?: string;
@@ -33,6 +38,7 @@ type EngineFindingView = {
   category?: string;
   catalogId?: string;
   detail?: string;
+  sourceStatus?: string;
   sourceConfidence?: string;
   officialUrl?: string;
   deadlineLabel?: string;
@@ -47,6 +53,7 @@ type EngineView = {
   scannedAt?: string;
   previousScannedAt?: string;
   nextScanAt?: string;
+  durationMs?: number;
   counters?: {
     sourcesChecked: number;
     chainsChecked: number;
@@ -135,22 +142,132 @@ function formatElapsed(ms: number): string {
 }
 
 function isOfferFinding(finding: EngineFindingView): boolean {
-  if (finding.category === "airdrop" || finding.category === "protocol_claim") return true;
-  if (finding.category === "native_balance" || finding.category === "forgotten_token") return false;
-  return Boolean(finding.eligibility);
+  return isAddressOfferFinding({
+    category: (finding.category as "airdrop") ?? "airdrop",
+    eligibility: finding.eligibility as "eligible" | "ineligible" | "already_claimed" | "window_closed" | undefined,
+    sourceId: finding.sourceId ?? finding.id,
+    sourceStatus: finding.sourceStatus === "failed" ? "failed" : "ok",
+  });
 }
 
 function isHoldingFinding(finding: EngineFindingView): boolean {
-  return finding.category === "native_balance" || finding.category === "forgotten_token";
+  return isAddressHoldingFinding({
+    category: (finding.category as "native_balance" | "forgotten_token" | "protocol_claim") ?? "forgotten_token",
+    amount: finding.amount,
+    sourceStatus: finding.sourceStatus === "failed" ? "failed" : "ok",
+  });
 }
 
-function FindingRows({ findings }: { findings: EngineFindingView[] }) {
+function OfferTable({ findings, address }: { findings: EngineFindingView[]; address: string | null }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Program</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Official / archive</TableHead>
+          <TableHead>Estimate</TableHead>
+          <TableHead>Deadline</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <FindingRows findings={findings} address={address} />
+      </TableBody>
+    </Table>
+  );
+}
+
+function CatalogClaimRows({
+  claims,
+  rows,
+  pools,
+  loading,
+  address,
+  onScan,
+}: {
+  claims: CatalogClaim[];
+  rows: EligibilityResult[] | null;
+  pools: Record<string, { remaining?: string; symbol?: string; error?: string }>;
+  loading: boolean;
+  address: string | null;
+  onScan: () => void;
+}) {
+  return claims.map((claim) => {
+    const elig = rows?.find((r) => r.claimId === claim.id);
+    const pool = pools[claim.id];
+    const kind = elig?.checkKind ?? catalogCheckKind(claim);
+    return (
+      <TableRow key={claim.id}>
+        <TableCell>
+          <Link href={`/claims/${claim.id}`} className="hover:underline">
+            {claim.title}
+          </Link>
+          <div className="text-xs text-muted-foreground">{claim.asset}</div>
+        </TableCell>
+        <TableCell>
+          <StatusBadge status={claim.status} />
+        </TableCell>
+        <TableCell className="max-w-sm text-xs text-muted-foreground">
+          {elig ? (
+            <>
+              <div className="font-medium text-foreground">{walletEligibilityLabel(elig.status)}</div>
+              {elig.detail}
+              <div className="mt-1 text-[11px] uppercase tracking-wide">
+                {kind === "wallet_level" ? "Wallet-level check" : "Catalog only"}
+              </div>
+            </>
+          ) : loading && address ? (
+            <span className="inline-flex items-center gap-1">
+              <LoaderCircle className="size-3 animate-spin" />
+              Checking this address…
+            </span>
+          ) : address ? (
+            <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => onScan()}>
+              Scan this address
+            </Button>
+          ) : (
+            "No address"
+          )}
+        </TableCell>
+        <TableCell>
+          <OfficialSourceLinks
+            officialUrl={claim.officialUrl || claim.sources[0]?.url}
+            archiveUrl={claim.archiveUrl}
+            showWarning={false}
+          />
+        </TableCell>
+        <TableCell className="font-mono text-xs">
+          {pool?.remaining && pool.symbol
+            ? `${Number(pool.remaining).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${pool.symbol}`
+            : pool?.error
+              ? pool.error.startsWith("Unsupported")
+                ? "Unverifiable"
+                : "n/a"
+              : "—"}
+        </TableCell>
+      </TableRow>
+    );
+  });
+}
+
+function FindingRows({ findings, address }: { findings: EngineFindingView[]; address: string | null }) {
   return findings.map((finding) => (
         <TableRow key={finding.id}>
           <TableCell>
-            <div className="font-medium">{finding.title}</div>
+            {address && finding.sourceId ? (
+              <Link
+                href={`/wallet/asset?address=${encodeURIComponent(address)}&source=${encodeURIComponent(finding.sourceId)}`}
+                className="font-medium hover:underline"
+              >
+                {finding.title}
+              </Link>
+            ) : (
+              <div className="font-medium">{finding.title}</div>
+            )}
             <div className="text-xs text-muted-foreground">
-              {finding.amount && finding.symbol ? `${finding.amount} ${finding.symbol}` : null}
+              {finding.amount && finding.symbol
+                ? `${formatTokenAmount(finding.amount)} ${finding.symbol}`
+                : null}
               {finding.detail ? (
                 <span className={finding.amount && finding.symbol ? "block" : undefined}>{finding.detail}</span>
               ) : null}
@@ -158,17 +275,19 @@ function FindingRows({ findings }: { findings: EngineFindingView[] }) {
           </TableCell>
           <TableCell className="text-xs">
             <div className="font-medium text-foreground">
-              {finding.eligibility
-                ? walletEligibilityLabel(finding.eligibility as Parameters<typeof walletEligibilityLabel>[0])
-                : finding.verification || "—"}
+              {userCheckLabel({
+                category: (finding.category as "airdrop") ?? "airdrop",
+                eligibility: finding.eligibility as
+                  | "eligible"
+                  | "ineligible"
+                  | "already_claimed"
+                  | "window_closed"
+                  | "unable_to_verify"
+                  | undefined,
+                sourceStatus: finding.sourceStatus === "failed" ? "failed" : "ok",
+                amount: finding.amount,
+              })}
             </div>
-            {finding.verification ? (
-              <div className="text-muted-foreground">
-                {finding.verification === "verified" && finding.eligibility === "unable_to_verify"
-                  ? "check incomplete"
-                  : finding.verification}
-              </div>
-            ) : null}
           </TableCell>
           <TableCell className="text-xs">
             <OfficialSourceLinks
@@ -218,6 +337,7 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 
 export function WalletDashboard() {
   const { address, mode, connectInjected, setReadonlyAddress, error: walletError, errorUpgradeUrl } = useWallet();
+  const { plan } = usePlan();
   const [draft, setDraft] = useState("");
   const [rows, setRows] = useState<EligibilityResult[] | null>(null);
   const [engine, setEngine] = useState<EngineView | null>(null);
@@ -226,6 +346,7 @@ export function WalletDashboard() {
   const [loading, setLoading] = useState(false);
   const [poolLoading, setPoolLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formHint, setFormHint] = useState<string | null>(null);
   const [poolError, setPoolError] = useState<string | null>(null);
   const runAbort = useRef<AbortController | null>(null);
 
@@ -356,17 +477,69 @@ export function WalletDashboard() {
 
   async function onPasteScan(e: React.FormEvent) {
     e.preventDefault();
+    if (!draft.trim()) {
+      setFormHint(address ? "Paste a new public 0x address to replace this one." : "Paste a public 0x address first.");
+      return;
+    }
+    setFormHint(null);
     const ok = await setReadonlyAddress(draft);
     if (ok) setDraft("");
   }
 
   const visible = CATALOG.filter((c) => c.id !== "tornado-avoided");
+  const walletCatalog = visible.filter(
+    (claim) =>
+      claim.kind !== "faucet" &&
+      claim.kind !== "puzzle" &&
+      claim.kind !== "testnet" &&
+      claim.chain !== "bitcoin" &&
+      claim.chain !== "solana",
+  );
   const findings = engine?.findings ?? [];
   const offerFindings = findings.filter(isOfferFinding);
   const holdingFindings = findings.filter(isHoldingFinding);
   const offerCatalogIds = new Set(offerFindings.map((row) => row.catalogId).filter(Boolean) as string[]);
-  const catalogLeftover = visible.filter((claim) => !offerCatalogIds.has(claim.id));
-  const deadlineFindings = offerFindings.filter((row) => row.deadlineLabel && row.deadlineLabel !== "—");
+  const catalogLeftover = walletCatalog.filter((claim) => !offerCatalogIds.has(claim.id));
+  const relatedHints = relatedProgramHints({
+    tokens: (engine?.profile?.tokens ?? []).map((row) => ({
+      chainId: row.chainId,
+      symbol: row.symbol,
+      amount: row.amount,
+      contract: row.contract,
+    })),
+  });
+  const activity = walletActivity({
+    chains: engine?.profile?.chains ?? [],
+    tokens: engine?.profile?.tokens ?? [],
+    protocols: engine?.profile?.protocols ?? [],
+  });
+  const relevantOffers = offerFindings.filter((row) =>
+    findingIsRelevantToWallet(
+      {
+        sourceId: row.sourceId ?? row.id,
+        eligibility: row.eligibility as "eligible" | "ineligible" | "already_claimed" | "window_closed" | undefined,
+        amount: row.amount,
+      },
+      activity,
+    ),
+  );
+  const otherOffers = offerFindings.filter((row) => !relevantOffers.includes(row));
+  const relatedCatalog = catalogLeftover.filter((claim) => catalogIsRelevantToWallet(claim, activity));
+  const generalCatalog = catalogLeftover.filter((claim) => !relatedCatalog.includes(claim));
+  const chainCount = engine?.profile?.chains?.length ?? engine?.counters?.chainsChecked ?? 0;
+  const durationLabel =
+    engine?.durationMs != null
+      ? formatElapsed(engine.durationMs)
+      : null;
+  const headline = scanHeadline(
+    findings.map((row) => ({
+      category: (row.category as "airdrop") ?? "airdrop",
+      eligibility: row.eligibility as "eligible" | undefined,
+      amount: row.amount,
+      sourceStatus: row.sourceStatus === "failed" ? "failed" : "ok",
+    })),
+  );
+  const deadlineFindings = relevantOffers.filter((row) => row.deadlineLabel && row.deadlineLabel !== "—");
 
   return (
     <div className="flex flex-col gap-6">
@@ -412,9 +585,10 @@ export function WalletDashboard() {
               Enable desktop notifications
             </Button>
             <Button variant="outline" onClick={() => void loadPools()} disabled={poolLoading}>
-              {poolLoading ? <LoaderCircle className="animate-spin" /> : "Refresh remaining pools"}
+              {poolLoading ? <LoaderCircle className="animate-spin" /> : "Refresh catalog pool balances"}
             </Button>
           </div>
+          {formHint ? <p className="text-xs text-muted-foreground">{formHint}</p> : null}
           {walletError ? (
             <p className="text-destructive" role="alert">
               {walletError}{" "}
@@ -432,7 +606,7 @@ export function WalletDashboard() {
               <p className="font-medium text-foreground">Wallet scan progress</p>
               <p className="mt-1 text-muted-foreground">
                 Scan time follows this wallet’s complexity. A stuck source times out after 30s and the rest continue.
-                A few minutes is normal.
+                Most wallets finish in 15–40 seconds.
                 {progress?.elapsedMs != null ? ` Elapsed ${formatElapsed(progress.elapsedMs)}.` : ""}
               </p>
               <ol className="mt-3 space-y-2">
@@ -453,25 +627,30 @@ export function WalletDashboard() {
                 ))}
               </ol>
               <p className="mt-2 text-muted-foreground">
-                {progress?.sourcesChecked ?? 0}/{progress?.sourcesTotal ?? 0} sources ·{" "}
-                {progress?.verifiedFindings ?? 0} verified · {progress?.uncertainFindings ?? 0} uncertain ·{" "}
-                {progress?.potentialFindings ?? 0} potential
+                {progress?.sourcesChecked ?? 0}/{progress?.sourcesTotal ?? 0} sources
                 {progress?.sourcesTimedOut ? ` · ${progress.sourcesTimedOut} timed out` : ""}
                 {progress?.sourcesFailed ? ` · ${progress.sourcesFailed} failed` : ""}
               </p>
             </div>
           ) : engine?.summary || engine?.counters ? (
             <div className="rounded-md border p-3 text-xs">
-              <p className="font-medium text-foreground">Scan summary</p>
+              <p className="font-medium text-foreground">What we found</p>
+              <p className="mt-1 text-foreground">{headline.sentence}</p>
               {engine.summary ? (
                 <>
-                  <p className="mt-1 text-muted-foreground">
-                    {engine.summary.adaptersChecked} adapters checked · {engine.summary.adaptersSucceeded} succeeded ·{" "}
-                    {engine.summary.adaptersFailed} failed
+                  <p className="mt-2 text-muted-foreground">
+                    Checked {engine.summary.adaptersChecked} adapters
+                    {chainCount ? ` across ${chainCount} chains` : ""}
+                    {durationLabel ? ` in ${durationLabel}` : ""}. {engine.summary.adaptersSucceeded} succeeded
+                    {engine.summary.adaptersFailed ? ` · ${engine.summary.adaptersFailed} failed` : ""}.
                   </p>
                   <p className="mt-1 text-muted-foreground">
-                    Findings: {engine.summary.verified} Verified · {engine.summary.uncertain} Uncertain ·{" "}
-                    {engine.summary.rejected} Rejected
+                    Hand-written protocol checks, not a crawl of thousands of sources. Rows below are split into
+                    activity on this wallet versus catalog names that are the same for every address.
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    Wallet-specific results: {relevantOffers.length} relevant · {otherOffers.length} no activity
+                    evidence · {holdingFindings.length} holdings · {catalogLeftover.length} catalog-only.
                   </p>
                   {engine.summary.failures?.length ? (
                     <ul className="mt-2 space-y-1 text-destructive">
@@ -487,24 +666,34 @@ export function WalletDashboard() {
                 </>
               ) : engine.counters ? (
                 <p className="mt-1 text-muted-foreground">
-                  {engine.counters.sourcesChecked} sources checked · {engine.counters.chainsChecked} chains ·{" "}
-                  {engine.counters.relevantSources} relevant · {engine.counters.potentialFindings} potential ·{" "}
-                  {engine.counters.verifiedFindings} verified
+                  {engine.counters.sourcesChecked} sources checked · {engine.counters.chainsChecked} chains
                 </p>
               ) : null}
-              {engine.scannedAt ? <p className="mt-1 text-muted-foreground">Last scan: {engine.scannedAt}</p> : null}
+              <div className="mt-3 rounded-md border bg-muted/40 p-3">
+                <p className="font-medium text-foreground">We keep checking this wallet</p>
+                <p className="mt-1 text-muted-foreground">
+                  Next daily monitor: {engine.nextScanAt ?? "daily ~07:00 UTC"}. PoolIndex Pro emails you if a claim
+                  window is closing or a verified finding changes — that is the subscription, not a one-time table.
+                  {plan === "paid" ? " Pro alerts are on for this account." : null}
+                </p>
+                {plan !== "paid" ? (
+                  <p className="mt-1">
+                    <Link href="/upgrade" className="underline">
+                      See PoolIndex Pro
+                    </Link>
+                    {" "}for email alerts. Free still shows dates and this monitor time.
+                  </p>
+                ) : null}
+              </div>
+              {engine.scannedAt ? <p className="mt-2 text-muted-foreground">Last scan: {formatIsraelDateTime(engine.scannedAt)}</p> : null}
               {engine.previousScannedAt ? (
-                <p className="mt-1 text-muted-foreground">Previous scan: {engine.previousScannedAt}</p>
+                <p className="mt-1 text-muted-foreground">Previous scan: {formatIsraelDateTime(engine.previousScannedAt)}</p>
               ) : null}
-              <p className="mt-1 text-muted-foreground">
-                Next wallet monitor: {engine.nextScanAt ?? "daily ~07:00 UTC"}
-              </p>
               {engine.history?.length ? (
                 <ul className="mt-2 space-y-1 text-muted-foreground">
                   {engine.history.slice(0, 5).map((row) => (
                     <li key={row.scannedAt}>
-                      {row.scannedAt} · {row.sourcesChecked} sources · {row.potentialFindings} potential ·{" "}
-                      {row.verifiedFindings} verified
+                      {formatIsraelDateTime(row.scannedAt)} · {row.sourcesChecked} sources
                       {row.sourcesFailed ? ` · ${row.sourcesFailed} failed` : ""}
                     </li>
                   ))}
@@ -526,7 +715,7 @@ export function WalletDashboard() {
                     <p>
                       Tokens:{" "}
                       {engine.profile.tokens
-                        .map((row) => `${row.symbol} ${row.amount}`)
+                        .map((row) => `${row.symbol} ${formatTokenAmount(row.amount)}`)
                         .join(", ")}
                     </p>
                   ) : (
@@ -535,6 +724,20 @@ export function WalletDashboard() {
                   {engine.profile.protocols?.length ? (
                     <p>Protocols with holdings or leftover claims: {engine.profile.protocols.join(", ")}</p>
                   ) : null}
+                  {relatedHints.length ? (
+                    <p>
+                      Related catalog programs from holdings:{" "}
+                      {relatedHints
+                        .map((row) =>
+                          row.hasAddressLookup
+                            ? `${row.symbol} → ${row.protocol} (address lookup)`
+                            : `${row.symbol} → ${row.protocol} (no merkle for this token; not Eligible)`,
+                        )
+                        .join("; ")}
+                    </p>
+                  ) : (
+                    <p>Holdings on this address did not match a catalog airdrop adapter.</p>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -565,31 +768,20 @@ export function WalletDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Offers for this address</CardTitle>
+          <CardTitle>Relevant to this wallet</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-xs text-muted-foreground">
-            Named offers with honest statuses. Remaining contract balance is not eligibility. Inspect the official
-            source and archive before you click.
+            Programs this address actually holds, claimed, or has an official merkle/CSV result after we saw matching
+            activity. Remaining contract balance is not eligibility.
           </p>
-          {offerFindings.length ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Offer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Official / archive</TableHead>
-                  <TableHead>Estimate</TableHead>
-                  <TableHead>Deadline</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <FindingRows findings={offerFindings} />
-              </TableBody>
-            </Table>
+          {relevantOffers.length ? (
+            <OfferTable findings={relevantOffers} address={address} />
           ) : (
             <p className="text-sm text-muted-foreground">
-              {address ? "No offer findings yet. Scan this address." : "Paste a public 0x address to fill this table."}
+              {address
+                ? "No matching activity for a catalog airdrop on this address. Holdings below are separate. Catalog names that are the same for every wallet are folded under Catalog-only."
+                : "Paste a public 0x address to fill this table."}
             </p>
           )}
         </CardContent>
@@ -601,7 +793,8 @@ export function WalletDashboard() {
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-xs text-muted-foreground">
-            Token balances, leftover LP, and protocol positions. These are not airdrop Eligible verdicts.
+            Token balances, leftover LP, and protocol positions actually held by this address. Zero balances are
+            omitted. These are not airdrop Eligible verdicts.
           </p>
           {holdingFindings.length ? (
             <Table>
@@ -615,7 +808,7 @@ export function WalletDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <FindingRows findings={holdingFindings} />
+                <FindingRows findings={holdingFindings} address={address} />
               </TableBody>
             </Table>
           ) : (
@@ -623,6 +816,19 @@ export function WalletDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {otherOffers.length ? (
+        <details className="rounded-xl border p-4">
+          <summary className="cursor-pointer font-heading text-lg">
+            Checked, no activity on this wallet ({otherOffers.length})
+          </summary>
+          <p className="mb-3 mt-2 text-xs text-muted-foreground">
+            Official merkle/CSV still scored this address (usually Not eligible), but we have no token or protocol
+            holding that ties the program to this wallet. Folded so an unused address does not look like a whale.
+          </p>
+          <OfferTable findings={otherOffers} address={address} />
+        </details>
+      ) : null}
 
       {engine?.sources?.length ? (
         <Card>
@@ -632,7 +838,12 @@ export function WalletDashboard() {
           <CardContent>
             <p className="mb-3 text-xs text-muted-foreground">
               Frequency, last failure, and adapter version for this scan. A failed important source does not invent a
-              wallet verdict.
+              wallet verdict. Repairing an adapter that already existed is product maintenance, not a paid add-on.
+              Programs whose merkle PoolIndex does not host are{" "}
+              <a className="underline" href="/coverage">
+                Request Coverage
+              </a>
+              .
             </p>
             <Table>
               <TableHeader>
@@ -672,82 +883,71 @@ export function WalletDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Catalog offers we cannot verify for this address</CardTitle>
+          <CardTitle>Catalog-only programs</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-xs text-muted-foreground">
-            Names stay visible. Unable to verify means PoolIndex has no reliable wallet-level check — not a hidden
-            Eligible. Remaining pool is not eligibility.
+            Named catalog ({catalogLeftover.length}). Not an automatic wallet scan. Catalog only means we did not invent
+            Eligible. Remaining pool is not eligibility. Missing merkle lookups are queued on{" "}
+            <a className="underline" href="/coverage">
+              Request Coverage
+            </a>
+            ; that future payment would buy an adapter, not Eligible.
           </p>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Offer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Eligibility</TableHead>
-                <TableHead>Official / archive</TableHead>
-                <TableHead>Remaining pool</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {catalogLeftover.map((claim) => {
-                const elig = rows?.find((r) => r.claimId === claim.id);
-                const pool = pools[claim.id];
-                const kind = elig?.checkKind ?? catalogCheckKind(claim);
-                return (
-                  <TableRow key={claim.id}>
-                    <TableCell>
-                      <Link href={`/claims/${claim.id}`} className="hover:underline">
-                        {claim.title}
-                      </Link>
-                      <div className="text-xs text-muted-foreground">{claim.asset}</div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={claim.status} />
-                    </TableCell>
-                    <TableCell className="max-w-sm text-xs text-muted-foreground">
-                      {elig ? (
-                        <>
-                          <div className="font-medium text-foreground">{walletEligibilityLabel(elig.status)}</div>
-                          {elig.detail}
-                          <div className="mt-1 text-[11px] uppercase tracking-wide">
-                            {kind === "wallet_level" ? "Wallet-level check" : "Catalog only"}
-                          </div>
-                        </>
-                      ) : loading && address ? (
-                        <span className="inline-flex items-center gap-1">
-                          <LoaderCircle className="size-3 animate-spin" />
-                          Checking this address…
-                        </span>
-                      ) : address ? (
-                        <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => void run()}>
-                          Scan this address
-                        </Button>
-                      ) : (
-                        "No address"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <OfficialSourceLinks
-                        officialUrl={claim.officialUrl || claim.sources[0]?.url}
-                        archiveUrl={claim.archiveUrl}
-                        showWarning={false}
-                      />
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {pool?.remaining && pool.symbol
-                        ? `${Number(pool.remaining).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${pool.symbol}`
-                        : pool?.error
-                          ? pool.error.startsWith("Unsupported")
-                            ? "Unverifiable"
-                            : "n/a"
-                          : "—"}
-                    </TableCell>
+          {relatedCatalog.length ? (
+            <div className="mb-4">
+              <p className="mb-2 text-sm font-medium">Related to holdings on this wallet ({relatedCatalog.length})</p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Offer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Eligibility</TableHead>
+                    <TableHead>Official / archive</TableHead>
+                    <TableHead>Remaining pool</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  <CatalogClaimRows
+                    claims={relatedCatalog}
+                    rows={rows}
+                    pools={pools}
+                    loading={loading}
+                    address={address}
+                    onScan={() => void run()}
+                  />
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+          {generalCatalog.length ? (
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">
+                Same catalog for every address ({generalCatalog.length}) — catalog only, not checked as Eligible
+              </summary>
+              <Table className="mt-3">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Offer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Eligibility</TableHead>
+                    <TableHead>Official / archive</TableHead>
+                    <TableHead>Remaining pool</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <CatalogClaimRows
+                    claims={generalCatalog}
+                    rows={rows}
+                    pools={pools}
+                    loading={loading}
+                    address={address}
+                    onScan={() => void run()}
+                  />
+                </TableBody>
+              </Table>
+            </details>
+          ) : null}
           {address ? (
             <p className="mt-3 text-xs text-muted-foreground">
               Checking {shortAddress(address)} against published public offers only. Remaining contract balance is not

@@ -33,13 +33,19 @@ export default function AccountPage() {
         <dt className="text-muted-foreground">Plan</dt>
         <dd>{user.plan === "paid" ? "PoolIndex Pro (operator-issued test license; purchase unavailable)" : "Free"}</dd>
         <dt className="text-muted-foreground">Public wallets on account</dt>
-        <dd className="font-mono text-xs">{user.wallets.join(", ") || "none stored on this account"}</dd>
+        <dd className="font-mono text-xs">
+          {user.wallets.join(", ") || "none stored on this account"}
+          <span className="mt-1 block font-sans text-muted-foreground">
+            This is the bound account list. The header pill is the address in this browser session — paste a new public
+            0x to replace the Free slot.
+          </span>
+        </dd>
         <dt className="text-muted-foreground">Last scan</dt>
         <dd>{user.lastScanAt || "none yet"}</dd>
-        <dt className="text-muted-foreground">Terms</dt>
-        <dd>
-          {user.termsVersion} / {user.privacyVersion} · {user.acceptedAt}
-        </dd>
+        <dt className="text-muted-foreground">Terms accepted</dt>
+        <dd>{user.termsVersion} · {user.acceptedAt}</dd>
+        <dt className="text-muted-foreground">Privacy accepted</dt>
+        <dd>{user.privacyVersion}</dd>
         <dt className="text-muted-foreground">Scans</dt>
         <dd>
           {user.scanCounts.completed} completed · {user.scanCounts.failed} failed

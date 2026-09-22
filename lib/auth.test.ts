@@ -9,7 +9,7 @@ import { listFeedback, submitFeedback, updateFeedbackStatus } from "./feedback.t
 import { TERMS_VERSION, PRIVACY_VERSION } from "./legal.ts";
 import { betaMetrics, readOps, scansAreOpen, updateOps } from "./ops.ts";
 import { looksLikeSecretMaterial } from "./secrets-guard.ts";
-import { inspectEnv } from "./env.ts";
+import { assertSafeToStart, inspectEnv, ProductionEnvError } from "./env.ts";
 import { readUserScans } from "./beta-store.ts";
 import { trackScan, trackWalletAlert, trackWalletScan } from "./telemetry.ts";
 
@@ -30,6 +30,7 @@ beforeEach(async () => {
   rmSync(dir, { recursive: true, force: true });
   process.env.POOLINDEX_BETA_DIR = dir;
   process.env.POOLINDEX_BETA_STAGE_CAP = "2";
+  process.env.POOLINDEX_ADMIN_EMAILS = "admin@example.com";
 });
 
 after(() => {
@@ -222,6 +223,15 @@ test("admin role is env-gated and kill switch pauses scans without deleting user
   assert.equal(scansAreOpen(), true);
 });
 
+test("login promotes a matching ADMIN_EMAILS account that registered as user", async () => {
+  process.env.POOLINDEX_ADMIN_EMAILS = "other@example.com";
+  await register("later-admin@example.com", { displayName: "Later Admin" });
+  assert.equal(listUsers().find((row) => row.email === "later-admin@example.com")?.role, "user");
+  process.env.POOLINDEX_ADMIN_EMAILS = "later-admin@example.com";
+  const logged = await loginAccount({ email: "later-admin@example.com", password: "correct-battery-staple" });
+  assert.equal(logged.user.role, "admin");
+});
+
 test("beta stage cap blocks extra registrations", async () => {
   process.env.POOLINDEX_BETA_STAGE_CAP = "1";
   await register("one@example.com", { displayName: "One" });
@@ -261,6 +271,26 @@ test("production env validation and invite creation", async () => {
   const report = inspectEnv({ NODE_ENV: "production" });
   assert.equal(report.ok, false);
   assert.ok(report.missing.includes("POOLINDEX_SESSION_SECRET"));
+  const wellKnown = inspectEnv({
+    NODE_ENV: "production",
+    POOLINDEX_SESSION_SECRET: "dev-only-poolindex-session-secret",
+    POOLINDEX_PLAN_SECRET: "dev-only-poolindex-plan-secret",
+    POOLINDEX_ADMIN_EMAILS: "admin@example.com",
+  });
+  assert.equal(wellKnown.ok, false);
+  assert.ok(wellKnown.missing.includes("POOLINDEX_PLAN_SECRET"));
+  const lockedUnset = inspectEnv({ NODE_ENV: undefined });
+  assert.equal(lockedUnset.publicRuntime, true);
+  assert.equal(lockedUnset.ok, false);
+  const demoKeys = inspectEnv({
+    NODE_ENV: "production",
+    POOLINDEX_SESSION_SECRET: "prod-session",
+    POOLINDEX_PLAN_SECRET: "prod-plan",
+    POOLINDEX_ADMIN_EMAILS: "admin@example.com",
+    POOLINDEX_PAID_KEYS: "poolindex-pro-demo",
+  });
+  assert.equal(demoKeys.ok, false);
+  assert.ok(demoKeys.missing.includes("POOLINDEX_PAID_KEYS"));
   const ok = inspectEnv({
     NODE_ENV: "production",
     POOLINDEX_SESSION_SECRET: "prod-session",
@@ -268,6 +298,23 @@ test("production env validation and invite creation", async () => {
     POOLINDEX_ADMIN_EMAILS: "admin@example.com",
   });
   assert.equal(ok.ok, true);
+  assert.throws(
+    () =>
+      assertSafeToStart({
+        NODE_ENV: "production",
+        POOLINDEX_SESSION_SECRET: "dev-only-poolindex-session-secret",
+        POOLINDEX_PLAN_SECRET: "prod-plan",
+        POOLINDEX_ADMIN_EMAILS: "admin@example.com",
+      }),
+    ProductionEnvError,
+  );
+  const started = assertSafeToStart({
+    NODE_ENV: "production",
+    POOLINDEX_SESSION_SECRET: "prod-session",
+    POOLINDEX_PLAN_SECRET: "prod-plan",
+    POOLINDEX_ADMIN_EMAILS: "admin@example.com",
+  });
+  assert.equal(started.ok, true);
   const invite = createInvite({ createdBy: "admin", email: "guest@example.com", maxUses: 1, note: "stage1" });
   const guest = await register("guest@example.com", { displayName: "Guest", inviteCode: invite.code });
   assert.equal(guest.user.inviteCode, invite.code);

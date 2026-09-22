@@ -14,6 +14,7 @@ import {
   buildWalletProfile,
   interestingVerificationCounts,
   isInterestingFinding,
+  isWalletSpecificAirdrop,
   normalizeStoredFinding,
 } from "./profile.ts";
 import { transactionCount } from "./rpc.ts";
@@ -206,6 +207,7 @@ export async function scanWalletEngine(
     changes: [],
     previousScannedAt: previous?.scannedAt,
     sourceHealth: listSourceHealth(ENGINE_SOURCES.map((source) => source.id)),
+    durationMs: Date.now() - startedAt,
   };
   scan.changes = diffScans(previous, scan);
   saveScan(scan);
@@ -217,6 +219,7 @@ export function eligibilityOverlay(scan: EngineScan): EligibilityResult[] {
   const rows: EligibilityResult[] = [];
   for (const finding of scan.findings) {
     if (!finding.catalogId || !finding.eligibility) continue;
+    if (finding.category === "airdrop" && !isWalletSpecificAirdrop(finding)) continue;
     rows.push({
       claimId: finding.catalogId,
       address: scan.address,
@@ -244,6 +247,7 @@ export function publicEngineScan(scan: EngineScan) {
     scannedAt: scan.scannedAt,
     previousScannedAt: scan.previousScannedAt,
     nextScanAt: nextWalletMonitorAt(),
+    durationMs: scan.durationMs,
     counters,
     summary,
     profile: {

@@ -9,7 +9,7 @@ import { CATALOG } from "./catalog.ts";
 import { contentSecurityPolicy, frameAncestorsDirective } from "./csp.ts";
 import { PUBLIC_HEALTH_FORBIDDEN_KEYS, publicHealthBody, publicStatusBody } from "./health.ts";
 import { getMailProvider, resetMailProvider, sendMail, setMailProvider, type MailProvider } from "./mail.ts";
-import { clientIp, clearRateLimit, limitExpensiveEndpoint, rateLimit, resetRateLimitForTests } from "./rate-limit.ts";
+import { clientIp, clearRateLimit, limitAdminMfaAttempt, limitCredentialAttempt, limitExpensiveEndpoint, limitTokenAttempt, rateLimit, resetRateLimitForTests } from "./rate-limit.ts";
 import { ACCOUNT_STATUSES } from "./beta-types.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "poolindex-hardening-"));
@@ -52,8 +52,45 @@ test("public health and status omit RAM CPU disk job and env details", () => {
 
 test("expensive endpoints are limited per user and per IP", () => {
   resetRateLimitForTests();
-  const request = new Request("http://127.0.0.1/api/search", { headers: { "x-forwarded-for": "203.0.113.9" } });
-  assert.equal(clientIp(request), "203.0.113.9");
+  const request = new Request("http://127.0.0.1/api/search", { headers: { "x-real-ip": "203.0.113.9" } });
+  assert.equal(clientIp(request), "unknown");
+  const spoofed = new Request("http://127.0.0.1/api/search", { headers: { "x-forwarded-for": "198.51.100.1" } });
+  assert.equal(clientIp(spoofed), "unknown");
+  process.env.POOLINDEX_TRUST_PROXY = "1";
+  assert.equal(clientIp(request), "unknown");
+  assert.equal(clientIp(spoofed), "unknown");
+  delete process.env.POOLINDEX_TRUST_PROXY;
+  const alt = new Request("http://127.0.0.1/api/search", {
+    headers: {
+      "x-client-ip": "198.51.100.9",
+      forwarded: "for=198.51.100.8",
+      "true-client-ip": "198.51.100.7",
+      "cf-connecting-ip": "198.51.100.6",
+    },
+  });
+  assert.equal(clientIp(alt), "unknown");
+  process.env.POOLINDEX_TRUST_PROXY = "1";
+  assert.equal(clientIp(alt), "198.51.100.6");
+  const mixed = new Request("http://127.0.0.1/api/search", {
+    headers: {
+      "x-real-ip": "203.0.113.9",
+      "x-forwarded-for": "198.51.100.1",
+      "x-client-ip": "198.51.100.9",
+      forwarded: "for=198.51.100.8",
+      "cf-connecting-ip": "203.0.113.77",
+    },
+  });
+  assert.equal(clientIp(mixed), "203.0.113.77");
+  const spoofOnly = new Request("http://127.0.0.1/api/search", {
+    headers: {
+      "x-real-ip": "198.51.100.1",
+      "x-forwarded-for": "198.51.100.2",
+      forwarded: "for=198.51.100.3",
+      "x-client-ip": "198.51.100.4",
+    },
+  });
+  assert.equal(clientIp(spoofOnly), "unknown");
+  delete process.env.POOLINDEX_TRUST_PROXY;
   for (let i = 0; i < 20; i += 1) {
     const hit = limitExpensiveEndpoint(request, "user-a", "search");
     assert.equal(hit.ok, true);
@@ -70,6 +107,38 @@ test("expensive endpoints are limited per user and per IP", () => {
   assert.equal(second.ok, false);
   clearRateLimit("unit");
   assert.equal(rateLimit("unit", 1, 60_000).ok, true);
+});
+
+test("login email bucket survives rotating spoofed X-Real-IP", () => {
+  resetRateLimitForTests();
+  const email = "target@example.com";
+  for (let i = 0; i < 8; i += 1) {
+    const hit = limitCredentialAttempt("login", `198.51.100.${i}`, email);
+    assert.equal(hit.ok, true);
+  }
+  const blocked = limitCredentialAttempt("login", "198.51.100.99", email);
+  assert.equal(blocked.ok, false);
+  const otherEmail = limitCredentialAttempt("login", "198.51.100.99", "other@example.com");
+  assert.equal(otherEmail.ok, true);
+});
+
+test("admin MFA attempts are limited per user", () => {
+  resetRateLimitForTests();
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal(limitAdminMfaAttempt("admin-1").ok, true);
+  }
+  assert.equal(limitAdminMfaAttempt("admin-1").ok, false);
+  assert.equal(limitAdminMfaAttempt("admin-2").ok, true);
+});
+
+test("reset and verify tokens are limited per IP not per token value", () => {
+  resetRateLimitForTests();
+  for (let i = 0; i < 20; i += 1) {
+    assert.equal(limitTokenAttempt("reset", "203.0.113.9").ok, true);
+  }
+  assert.equal(limitTokenAttempt("reset", "203.0.113.9").ok, false);
+  assert.equal(limitTokenAttempt("reset", "203.0.113.10").ok, true);
+  assert.equal(limitTokenAttempt("verify", "203.0.113.9").ok, true);
 });
 
 test("admin mutations reject unknown status, plan, role, and extra fields", () => {

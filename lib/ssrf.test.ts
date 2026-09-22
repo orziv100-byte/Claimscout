@@ -6,6 +6,7 @@ import {
   fetchSafe,
   isBlockedIp,
   isBlockedHostname,
+  pinnedDnsLookup,
   tryParseIPv4,
 } from "./ssrf.ts";
 
@@ -132,6 +133,43 @@ test("follows a safe redirect hop and returns the final public response", async 
   const res = await fetchSafe("https://example.com/go", {}, { fetchImpl, lookup: publicLookup });
   assert.equal(res.status, 200);
   assert.equal(await res.text(), "ok");
+});
+
+test("TOCTOU: public first resolve then metadata/private second resolve does not fetch", async () => {
+  // Scenario: rebind.example A-record 93.184.216.34 on check #1, then 169.254.169.254 on check #2.
+  let resolves = 0;
+  const lookup = async () => {
+    resolves += 1;
+    if (resolves === 1) return ["93.184.216.34"];
+    return ["169.254.169.254"];
+  };
+  const calls: string[] = [];
+  const fetchImpl = async (input: string) => {
+    calls.push(input);
+    return new Response("leaked", { status: 200 });
+  };
+  await assert.rejects(
+    () => fetchSafe("https://rebind.example/meta", {}, { fetchImpl, lookup }),
+    /rebinding|private|link-local|reserved/i,
+  );
+  assert.equal(resolves >= 2, true);
+  assert.deepEqual(calls, []);
+});
+
+test("connect pin: third DNS answer is ignored; socket uses already-public IPs", () => {
+  const pin = pinnedDnsLookup(["93.184.216.34"]);
+  pin("rebind.example", { all: true }, (err, addresses) => {
+    assert.equal(err, null);
+    assert.deepEqual(addresses, [{ address: "93.184.216.34", family: 4 }]);
+  });
+  pin("rebind.example", {}, (err, address, family) => {
+    assert.equal(err, null);
+    assert.equal(address, "93.184.216.34");
+    assert.equal(family, 4);
+  });
+  pin("rebind.example", { family: 6 }, (err) => {
+    assert.equal(err?.code, "ENOTFOUND");
+  });
 });
 
 test("parses decimal and short-form IPv4 used in SSRF bypasses", () => {

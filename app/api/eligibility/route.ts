@@ -14,7 +14,7 @@ export const maxDuration = 20;
 export async function GET(request: Request) {
   const authed = requireScan(request);
   if (isResponse(authed)) return authed;
-  const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain");
+  const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain", { email: authed.user.email });
   if (!limited.ok) return rateLimitedResponse(limited);
 
   const { searchParams } = new URL(request.url);
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   }
 
   const checksum = getAddress(address);
-  const gated = gateWallet({ plan: authed.user.plan, wallets: authed.user.wallets }, checksum);
+  const gated = gateWallet({ plan: authed.user.plan, wallets: authed.user.wallets }, checksum, authed.user.email);
   if (!gated.ok) {
     return NextResponse.json(gated.body, { status: gated.status });
   }

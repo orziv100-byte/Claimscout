@@ -1,11 +1,11 @@
 import { BRAND_NAME, COPYRIGHT, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER, TRADEMARK_STATUS_NOTE } from "./app-info.ts";
 import { contactLine } from "./contacts.ts";
 
-export const TERMS_VERSION = "beta-2026-09-21.2";
-export const PRIVACY_VERSION = "beta-2026-09-21.2";
-export const ACCESSIBILITY_VERSION = "beta-2026-09-21.1";
+export const TERMS_VERSION = "beta-2026-09-22.1";
+export const PRIVACY_VERSION = "beta-2026-09-22.1";
+export const ACCESSIBILITY_VERSION = "beta-2026-09-22.1";
 export const LEGAL_EFFECTIVE_DATE = "2026-09-20";
-export const LEGAL_UPDATED_DATE = "2026-09-21";
+export const LEGAL_UPDATED_DATE = "2026-09-22";
 
 export const TERMS_TITLE = `${BRAND_NAME} Closed Beta Terms of Use`;
 export const PRIVACY_TITLE = `${BRAND_NAME} Privacy Notice`;
@@ -16,11 +16,11 @@ export type LegalSection = { heading: string; body: string };
 export const TERMS_SECTIONS: LegalSection[] = [
   {
     heading: "Service operator",
-    body: `${BRAND_NAME} is operated by ${COPYRIGHT_OWNER_NAME}, Israel. No company registration number, VAT number, registered office, or telephone number is published in this Closed Beta. OWNER CONFIRMATION REQUIRED before a public launch if a registered business name or address must appear. Contact: ${contactLine("legal")}.`,
+    body: `${BRAND_NAME} is operated by ${COPYRIGHT_OWNER_NAME}, Israel. This Closed Beta does not publish a company registration number, VAT number, registered office, or telephone number. Contact: ${contactLine("legal")}.`,
   },
   {
     heading: "Brand name",
-    body: `${TRADEMARK_STATUS_NOTE} Copyright in original ${BRAND_NAME} source code and materials does not grant or prove trademark registration or exclusive ownership of the ${BRAND_NAME} name. Software changes cannot establish trademark registration. See TRADEMARK_READINESS.md.`,
+    body: `${TRADEMARK_STATUS_NOTE} Copyright in original ${BRAND_NAME} source code and materials does not grant or prove trademark registration or exclusive ownership of the ${BRAND_NAME} name. Software changes cannot establish trademark registration.`,
   },
   {
     heading: "What PoolIndex is",
@@ -32,7 +32,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Eligibility and minimum age",
-    body: "You may use PoolIndex only if you are invited and legally able to agree to these Terms. MINIMUM USER AGE: LEGAL REVIEW REQUIRED. Until the operator confirms an age rule with counsel, do not invite testers who cannot enter a contract in their jurisdiction.",
+    body: "You may use PoolIndex only if you are invited and legally able to agree to these Terms. Do not invite testers who cannot enter a contract in their jurisdiction.",
   },
   {
     heading: "Account responsibility and invites",
@@ -44,7 +44,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Public wallet addresses only",
-    body: "Wallet features accept public 0x addresses only. The browser may keep the address you are currently checking in session storage. The same public address is also stored on your account so Free/Pro wallet limits can be enforced. Addresses are not private keys. PoolIndex never requests or stores private keys, seed phrases, recovery phrases, or wallet passwords.",
+    body: "Wallet features accept public 0x addresses only. The browser may keep the address you are currently checking in session storage. The same public address is stored on your account so Free/Pro wallet limits can be enforced. Free keeps one address; you can replace it yourself by pasting another public 0x address. Pro keeps up to five. Addresses are not private keys. PoolIndex never requests or stores private keys, seed phrases, recovery phrases, or wallet passwords.",
   },
   {
     heading: "Deep Hunt and Continuous Hunt",
@@ -72,7 +72,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Suspension, termination, and account closure",
-    body: "We may suspend or disable accounts that violate these Terms or that abuse the Beta. You may request account closure from your account page after confirming your password and typing DELETE. Closure requests are recorded and processed by an operator. Some security logs and backups may remain for a limited period as described in the Privacy Notice and DATA_RETENTION.md.",
+    body: "We may suspend or disable accounts that violate these Terms or that abuse the Beta. You may request account closure from your account page after confirming your password and typing DELETE. Closure requests are recorded and processed by an operator. Some security logs and backups may remain for a limited period as described in the Privacy Notice.",
   },
   {
     heading: "Intellectual property",
@@ -84,11 +84,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Warranty disclaimer",
-    body: "PoolIndex is provided as-is for Closed Beta testing. To the extent permitted by law, we disclaim implied warranties of merchantability, fitness for a particular purpose, and non-infringement. This is not an extreme waiver of rights that cannot be waived in your jurisdiction. LEGAL REVIEW REQUIRED.",
+    body: "PoolIndex is provided as-is for Closed Beta testing. To the extent permitted by law, we disclaim implied warranties of merchantability, fitness for a particular purpose, and non-infringement. This is not an extreme waiver of rights that cannot be waived in your jurisdiction.",
   },
   {
     heading: "Limitation of liability",
-    body: `To the extent permitted by law, ${COPYRIGHT_OWNER_NAME} is not liable for lost profits, lost tokens, gas fees, failed claims, third-party site changes, or indirect damages arising from Beta use. Nothing in these Terms excludes liability that cannot legally be excluded. LEGAL REVIEW REQUIRED for a jurisdiction-specific cap.`,
+    body: `To the extent permitted by law, ${COPYRIGHT_OWNER_NAME} is not liable for lost profits, lost tokens, gas fees, failed claims, third-party site changes, or indirect damages arising from Beta use. Nothing in these Terms excludes liability that cannot legally be excluded.`,
   },
   {
     heading: "Changes",
@@ -96,7 +96,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Governing law",
-    body: "GOVERNING LAW AND JURISDICTION: LEGAL REVIEW REQUIRED / OWNER DECISION REQUIRED. This Closed Beta does not select a court or governing law until counsel reviews the operator's situation in Israel and any tester locations.",
+    body: "These Closed Beta Terms are operated from Israel. They do not select a court or exclusive governing law for testers in other countries.",
   },
   {
     heading: "Contact",
@@ -111,51 +111,51 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Account data",
-    body: "WHAT: email, scrypt password hash (not the password), optional display name, unique user ID, invite code, role, plan, account status, created/last-login timestamps. WHY: authenticate you, isolate testers, enforce invite and stage caps. WHERE: file store under var/beta/state.json on the operator host. RETENTION: while the account exists, then as in DATA_RETENTION.md. WHO: you (your own record) and Beta operators/admins. THIRD PARTIES: email/outbox delivery if a mail provider is configured.",
+    body: "WHAT: email, password hash (not the password), optional display name, unique user ID, invite code, role, plan, account status, created/last-login timestamps. WHY: authenticate you, isolate testers, enforce invite and stage caps. WHERE: isolated account files on the operator host. RETENTION: while the account exists, then as described in this notice. WHO: you (your own record) and Beta operators/admins. THIRD PARTIES: email/outbox delivery if a mail provider is configured.",
   },
   {
     heading: "Consent records",
-    body: "WHAT: user ID, Terms version, Privacy version, acceptance timestamp. WHY: prove you accepted the documents you were shown; support later re-acceptance when versions change. WHERE: account record in var/beta/state.json. RETENTION: with the account. WHO: you and operators. Checkboxes in the UI are not sufficient by themselves — the server rejects registration without acceptTerms and acceptPrivacy.",
+    body: "WHAT: user ID, Terms version, Privacy version, acceptance timestamp. WHY: prove you accepted the documents you were shown; support later re-acceptance when versions change. WHERE: your account record on the operator host. RETENTION: with the account. WHO: you and operators. Checkboxes in the UI are not sufficient by themselves — the server rejects registration without acceptTerms and acceptPrivacy.",
   },
   {
     heading: "Public wallet addresses",
-    body: "WHAT: checksummed public 0x addresses you paste or connect. WHY: read-only eligibility/pool checks you request, and Free/Pro wallet-slot limits. WHERE: (1) browser sessionStorage for the address currently in the UI session; (2) the account record (user.wallets) on the server. RETENTION: on the account until you request closure or an operator removes the binding. WHO: you and operators. PoolIndex does not request or store private keys, seed phrases, recovery phrases, or wallet passwords. Secret-shaped input is rejected.",
+    body: "WHAT: checksummed public 0x addresses you paste or connect. WHY: read-only eligibility/pool checks you request, and Free/Pro wallet-slot limits. WHERE: (1) browser sessionStorage for the address currently in the UI session; (2) the account record (user.wallets) on the server. RETENTION: on the account until you replace it, request closure, or an operator closes the account. Free testers can replace their one bound address themselves by pasting another public 0x address. WHO: you and operators. PoolIndex does not request or store private keys, seed phrases, recovery phrases, or wallet passwords. Secret-shaped input is rejected.",
   },
   {
     heading: "Sessions and tokens",
-    body: "WHAT: HMAC-signed session cookies, session IDs, email-verify and password-reset token hashes, expiry times, and hashed read-only MCP tokens (name, scopes, created/last-used/revoked). WHY: keep you signed in, complete verification/reset, and let you connect your own agent. WHERE: HTTP-only cookie plus var/beta/state.json and var/beta/agent-tokens.json. RETENTION: sessions expire (about 7 days) or are revoked on logout/disable; unused tokens expire; MCP tokens until you revoke them or the account is closed. WHO: the operator host. The raw MCP token is shown once and is not stored. IP addresses are not stored in the session record.",
+    body: "WHAT: HMAC-signed session cookies, session IDs, email-verify and password-reset token hashes, expiry times, and hashed read-only MCP tokens (name, scopes, created/last-used/revoked). WHY: keep you signed in, complete verification/reset, and let you connect your own agent. WHERE: HTTP-only cookie plus isolated account files on the operator host. RETENTION: sessions expire (about 7 days) or are revoked on logout/disable; unused tokens expire; MCP tokens until you revoke them or the account is closed. WHO: the operator host. The raw MCP token is shown once and is not stored. IP addresses are not stored in the session record.",
   },
   {
     heading: "Agent connection logs",
-    body: "WHAT: MCP tool name, timestamp, optional public wallet address, success/failure. WHY: you can see what your connected agent requested. WHERE: var/beta/mcp-calls/{userId}.jsonl. RETENTION: a short rolling log (about 200 rows). WHO: you (your log) and operators. PoolIndex does not send these calls to a language model.",
+    body: "WHAT: MCP tool name, timestamp, optional public wallet address, success/failure. WHY: you can see what your connected agent requested. WHERE: an isolated per-user log on the operator host. RETENTION: a short rolling log (about 200 rows). WHO: you (your log) and operators. PoolIndex does not send these calls to a language model.",
   },
   {
     heading: "IP and security events",
-    body: "WHAT: security log lines may include event type, user ID, email, optional IP (login attempts), and a short detail code. WHY: detect abuse, lockouts, and admin actions. WHERE: var/beta/security.jsonl. RETENTION: product policy in DATA_RETENTION.md; LEGAL REQUIREMENT TO CONFIRM. WHO: operators. Rate limiting also keeps short-lived in-memory IP counters that are not written as a user profile.",
+    body: "WHAT: security log lines may include event type, user ID, email, optional IP (login attempts), and a short detail code. WHY: detect abuse, lockouts, and admin actions. WHERE: operator security logs. RETENTION: while needed to operate the Closed Beta. WHO: operators. Rate limiting also keeps short-lived in-memory IP counters that are not written as a user profile.",
   },
   {
     heading: "Scan activity and telemetry",
-    body: "WHAT: scan started/completed/failed, query text (truncated), sources used, duration, item counts, blocked counts, source failures, resource-limit events, application errors, app version, user ID. WHY: debug Closed Beta quality and host protection — not advertising. WHERE: var/beta/telemetry.jsonl, var/beta/scans/{userId}.jsonl, var/beta/errors.jsonl. RETENTION: DATA_RETENTION.md. WHO: operators. Queries can be personal; they are stored to investigate failures.",
+    body: "WHAT: scan started/completed/failed, query text (truncated), sources used, duration, item counts, blocked counts, source failures, resource-limit events, application errors, app version, user ID. WHY: debug Closed Beta quality and host protection — not advertising. WHERE: isolated operator logs. RETENTION: while needed to operate the Closed Beta. WHO: operators. Queries can be personal; they are stored to investigate failures.",
   },
   {
     heading: "Deep Hunt and leads",
-    body: "WHAT: hunt records (query, plan, progress counters, public URLs seen, lead cards, evidence snippets from public sources, optional public wallet used for research, pause/stop state). WHY: persist an investigation you started so it survives refresh. WHERE: var/beta/hunts/{userId}/{huntId}.json. RETENTION: until account closure processing, then operator policy. WHO: you (your hunts) and admins (stop/stats). Continuous Hunt, if enabled later on Pro, re-reads stored public leads. PoolIndex does not access private blockchain information.",
+    body: "WHAT: hunt records (query, plan, progress counters, public URLs seen, lead cards, evidence snippets from public sources, optional public wallet used for research, pause/stop state). WHY: persist an investigation you started so it survives refresh. WHERE: isolated per-user hunt files on the operator host. RETENTION: until account closure processing, then operator policy. WHO: you (your hunts) and admins (stop/stats). Continuous Hunt, if enabled later on Pro, re-reads stored public leads. PoolIndex does not access private blockchain information.",
   },
   {
     heading: "Feedback",
-    body: "WHAT: feedback type, optional short note, source name, claim/lead id, result host, app version, status. WHY: judge whether results help testers. WHERE: var/beta/state.json. RETENTION: DATA_RETENTION.md. WHO: you and operators. Notes that look like seed material are rejected.",
+    body: "WHAT: feedback type, optional short note, source name, claim/lead id, result host, app version, status. WHY: judge whether results help testers. WHERE: isolated operator records. RETENTION: while needed to operate the Closed Beta. WHO: you and operators. Notes that look like seed material are rejected.",
   },
   {
     heading: "Email / outbox",
-    body: "WHAT: verification, password reset, and hunt-notification mail (recipient, subject, body/link, timestamp). WHY: operate the account and optional hunt alerts. WHERE: var/beta/outbox.jsonl and, if configured, an external MailProvider. RETENTION: DATA_RETENTION.md. WHO: operators and the mail provider if one is configured. Terms acceptance is not marketing consent. PoolIndex does not send promotional mail in this Beta.",
+    body: "WHAT: verification, password reset, and hunt-notification mail (recipient, subject, body/link, timestamp). WHY: operate the account and optional hunt alerts. WHERE: operator outbox and, if configured, an external mail provider. RETENTION: while needed to operate the Closed Beta. WHO: operators and the mail provider if one is configured. Terms acceptance is not marketing consent. PoolIndex does not send promotional mail in this Beta.",
   },
   {
     heading: "Admin actions",
-    body: "WHAT: invite creation, user status/plan/role patches, kill-switch changes, feedback status, hunt stops, deletion processing. WHY: run a closed test. WHERE: state.json plus security.jsonl. WHO: admin-role operators listed in POOLINDEX_ADMIN_EMAILS.",
+    body: "WHAT: invite creation, user status/plan/role patches, kill-switch changes, feedback status, hunt stops, deletion processing. WHY: run a closed test. WHERE: operator state and security logs. WHO: operators with the admin role.",
   },
   {
     heading: "International hosting and APIs",
-    body: "The operator host for this preview is the machine running PoolIndex (this Cloud/preview environment is ephemeral; durable copies may live on the operator's Linux backup host). Third-party APIs (GitHub, Internet Archive/Wayback, public Ethereum/Arbitrum RPC, and similar) may process query URLs, repository searches, or public addresses outside that location. LEGAL REVIEW REQUIRED for transfer/legal-basis analysis. See PROCESSORS.md.",
+    body: "The operator host for this Closed Beta is the machine running PoolIndex. Third-party APIs (GitHub, Internet Archive/Wayback, public Ethereum/Arbitrum RPC, and similar) may process query URLs, repository searches, or public addresses outside that location.",
   },
   {
     heading: "Your requests",
@@ -178,7 +178,7 @@ export const ACCESSIBILITY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Known limitations",
-    body: "Closed Beta UI is still changing. Some dense tables and third-party dialogs may be harder with a screen reader. Deep Hunt progress updates are summarized rather than announced on every tick to avoid flooding assistive technology. Generated marketing images are decorative when used outside the app. OWNER: expand this list as testers report issues.",
+    body: "Closed Beta UI is still changing. Some dense tables and third-party dialogs may be harder with a screen reader. Deep Hunt progress updates are summarized rather than announced on every tick to avoid flooding assistive technology. Generated marketing images are decorative when used outside the app.",
   },
   {
     heading: "Contact",

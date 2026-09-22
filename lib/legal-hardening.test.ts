@@ -164,16 +164,16 @@ test("legal pages, contacts, and versions are present", () => {
   ]) {
     assert.equal(existsSync(join(root, file)), true, file);
   }
-  assert.equal(TERMS_VERSION, "beta-2026-09-21.2");
-  assert.equal(PRIVACY_VERSION, "beta-2026-09-21.2");
-  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-21.1");
+  assert.equal(TERMS_VERSION, "beta-2026-09-22.1");
+  assert.equal(PRIVACY_VERSION, "beta-2026-09-22.1");
+  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-22.1");
   assert.equal(contactEntry("privacy").address, PUBLIC_CONTACT_DEFAULTS.privacy);
-  assert.equal(contactEntry("privacy").configured, false);
+  assert.equal(contactEntry("privacy").configured, true);
   assert.equal(contactLine("privacy"), "privacy@poolindex.app");
   assert.doesNotMatch(contactLine("privacy"), /POOLINDEX_DOMAIN/);
   assert.doesNotMatch(contactLine("privacy"), /configuration required/);
   assert.equal(CONTACT_PLACEHOLDERS.privacy, "privacy@POOLINDEX_DOMAIN");
-  assert.ok(unconfiguredContacts({}).length >= 5);
+  assert.equal(unconfiguredContacts({}).length, 0);
   const configured = contactEntry("privacy", { POOLINDEX_CONTACT_PRIVACY: "privacy@example.com" });
   assert.equal(configured.configured, true);
   assert.equal(configured.address, "privacy@example.com");
@@ -208,11 +208,18 @@ test("PoolIndex Pro stays planned and unpaid", () => {
   const upgrade = readFileSync(new URL("../components/upgrade-form.tsx", import.meta.url), "utf8");
   assert.match(upgrade, /PoolIndex Pro \(planned\)/);
   assert.doesNotMatch(upgrade, /buy now|purchase now|subscribe now/i);
+  const coverage = readFileSync(new URL("../app/coverage/page.tsx", import.meta.url), "utf8");
+  assert.match(coverage, /Request Coverage/);
+  assert.match(coverage, /does not buy Eligible/i);
+  assert.doesNotMatch(coverage, /Fix broken sources/);
+  const asset = readFileSync(new URL("../components/asset-brief.tsx", import.meta.url), "utf8");
+  assert.match(asset, /does not invent Eligible/i);
+  assert.doesNotMatch(asset, /guaranteed safe/i);
   const termsPlans = TERMS_SECTIONS.find((section) => section.heading === "Plans");
   assert.match(termsPlans?.body ?? "", /cannot purchase Pro/);
 });
 
-test("legal readiness reporter flags production contact placeholders and does not claim certification", () => {
+test("legal readiness reporter uses public contact defaults and does not claim certification", () => {
   const preview = legalReadiness({ NODE_ENV: "test" });
   assert.equal(preview.missingDocuments.length, 0);
   assert.equal(preview.claimIssues.length, 0);
@@ -224,8 +231,8 @@ test("legal readiness reporter flags production contact placeholders and does no
     POOLINDEX_PLAN_SECRET: "prod-plan",
     POOLINDEX_ADMIN_EMAILS: "admin@example.com",
   });
-  assert.equal(production.ok, false);
-  assert.ok(production.blockers.some((row) => /Contact addresses still placeholders/.test(row)));
+  assert.equal(production.missingContacts.length, 0);
+  assert.doesNotMatch(production.blockers.join(" "), /Contact addresses still placeholders/);
   assert.equal(scanProductClaims().length, 0);
 });
 
@@ -247,4 +254,10 @@ test("Closed Beta Terms cover research-only crypto limits", () => {
   assert.match(what?.body ?? "", /does not execute blockchain transactions/i);
   assert.match(crypto?.body ?? "", /irreversible/);
   assert.match(crypto?.body ?? "", /investment, financial, legal, or tax advice/);
+  const publicLegal = `${TERMS_SECTIONS.map((section) => section.body).join("\n")}\n${PRIVACY_SECTIONS.map((section) => section.body).join("\n")}`;
+  assert.doesNotMatch(publicLegal, /OWNER CONFIRMATION REQUIRED/);
+  assert.doesNotMatch(publicLegal, /LEGAL REVIEW REQUIRED/);
+  assert.doesNotMatch(publicLegal, /POOLINDEX_DOMAIN/);
+  assert.doesNotMatch(publicLegal, /var\/beta/);
+  assert.doesNotMatch(publicLegal, /TRADEMARK_READINESS\.md/);
 });

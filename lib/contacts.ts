@@ -37,12 +37,13 @@ export type ContactEntry = {
 export function contactEntry(role: ContactRole, env: NodeJS.ProcessEnv = process.env): ContactEntry {
   const envKey = ENV_KEYS[role];
   const raw = env[envKey]?.trim() ?? "";
-  const configured = Boolean(raw) && !raw.includes("POOLINDEX_DOMAIN");
+  const fromEnv = Boolean(raw) && !raw.includes("POOLINDEX_DOMAIN");
+  const address = fromEnv ? raw : PUBLIC_CONTACT_DEFAULTS[role];
   return {
     role,
     envKey,
-    address: configured ? raw : PUBLIC_CONTACT_DEFAULTS[role],
-    configured,
+    address,
+    configured: !address.includes("POOLINDEX_DOMAIN"),
   };
 }
 
@@ -51,7 +52,7 @@ export function allContacts(env: NodeJS.ProcessEnv = process.env): ContactEntry[
 }
 
 export function unconfiguredContacts(env: NodeJS.ProcessEnv = process.env): ContactEntry[] {
-  return allContacts(env).filter((row) => !row.configured);
+  return allContacts(env).filter((row) => !row.configured || row.address.includes("POOLINDEX_DOMAIN"));
 }
 
 export function contactLine(role: ContactRole, env: NodeJS.ProcessEnv = process.env): string {

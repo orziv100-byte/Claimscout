@@ -46,7 +46,13 @@ function rejectSecrets(value: string, field: string) {
 }
 
 export function publicUser(user: UserRecord): PublicUser {
-  const { passwordHash: _passwordHash, ...rest } = user;
+  const {
+    passwordHash: _passwordHash,
+    totpSecret: _totpSecret,
+    totpRecoveryHashes: _totpRecoveryHashes,
+    totpLastStep: _totpLastStep,
+    ...rest
+  } = user;
   return rest;
 }
 
@@ -103,6 +109,13 @@ function findUserByEmail(state: ReturnType<typeof readBetaState>, email: string)
 
 function isAdminEmail(email: string) {
   return adminEmails().includes(normalizeEmail(email));
+}
+
+/** Promote only. Never demote — an operator removed from the env list keeps admin until a human patches role. */
+function syncAdminRole(user: UserRecord): boolean {
+  if (!isAdminEmail(user.email) || user.role === "admin") return false;
+  user.role = "admin";
+  return true;
 }
 
 function liveUserCount(state: ReturnType<typeof readBetaState>) {
@@ -246,6 +259,7 @@ export async function loginAccount(input: {
     return mutateBetaState((next) => {
       const live = next.users.find((row) => row.id === user.id);
       if (!live) throw new AuthError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
+      if (syncAdminRole(live)) recordSecurity({ type: "admin_role_synced", userId: live.id });
       live.lastLoginAt = nowIso();
       const issued = issueSession(next, live);
       recordSecurity({ type: "login_success", userId: live.id, email: live.email, ip: input.ip });
@@ -356,6 +370,14 @@ export function readSessionUser(request: Request): { user: UserRecord; session: 
   if (Date.parse(session.expiresAt) <= Date.now()) return null;
   const user = state.users.find((row) => row.id === claims.uid) ?? null;
   if (!user) return null;
+  if (isAdminEmail(user.email) && user.role !== "admin") {
+    const promoted = mutateBetaState((next) => {
+      const live = next.users.find((row) => row.id === user.id) ?? null;
+      if (live && syncAdminRole(live)) recordSecurity({ type: "admin_role_synced", userId: live.id });
+      return live;
+    });
+    if (promoted) return { user: promoted, session };
+  }
   return { user, session };
 }
 

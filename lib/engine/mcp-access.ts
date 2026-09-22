@@ -3,7 +3,7 @@ import { parsePublicAddress } from "../address.ts";
 import type { UserRecord } from "../beta-types.ts";
 import { APP_VERSION } from "../app-info.ts";
 import { looksLikeSecretMaterial, SecretMaterialError } from "../secrets-guard.ts";
-import { PLANS, walletLimitMessage } from "../plan.ts";
+import { maxWalletsFor, walletLimitMessage } from "../plan.ts";
 
 export class McpToolError extends Error {
   readonly status: number;
@@ -43,9 +43,9 @@ export function requireBoundWallet(user: UserRecord, raw: unknown): Address {
   }
   const bound = user.wallets.some((wallet) => wallet.toLowerCase() === parsed.address.toLowerCase());
   if (!bound) {
-    throw new McpToolError(402, "WALLET_LIMIT", `This public address is not on your account. ${walletLimitMessage(user.plan)} Bind it in Wallet check first.`, {
+    throw new McpToolError(402, "WALLET_LIMIT", `This public address is not on your account. ${walletLimitMessage(user.plan, user.email)} Bind it in Wallet check first.`, {
       upgradeUrl: "/upgrade",
-      maxWallets: PLANS[user.plan].maxWallets,
+      maxWallets: maxWalletsFor(user.plan, user.email),
       wallets: user.wallets,
     });
   }

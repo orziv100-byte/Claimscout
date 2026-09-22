@@ -139,6 +139,7 @@ export type EngineScan = {
   changes: EngineChange[];
   previousScannedAt?: string;
   sourceHealth?: SourceHealth[];
+  durationMs?: number;
 };
 
 export const SCAN_STAGE_IDS = [
@@ -161,6 +162,7 @@ export type ScanStageView = {
 
 export type ScanProgressFinding = {
   id: string;
+  sourceId?: string;
   title: string;
   verification: EngineVerdict;
   eligibility?: EngineEligibility;
@@ -169,6 +171,8 @@ export type ScanProgressFinding = {
   category?: EngineCategory;
   officialUrl?: string;
   catalogId?: string;
+  sourceStatus?: "ok" | "failed" | "skipped";
+  detail?: string;
 };
 
 export type ScanProgress = {

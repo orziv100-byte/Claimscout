@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const validStatuses = statuses?.filter((s) => (CLAIM_STATUSES as readonly string[]).includes(s));
   const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
   const capped = capSources(ent.plan, validSources);
-  const plan = publicEntitlement(ent);
+  const plan = publicEntitlement(ent, authed.user.email);
   const startedAt = Date.now();
   trackScan(authed.user, { query, sources: capped.allowed, status: "started" });
 

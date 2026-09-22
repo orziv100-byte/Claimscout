@@ -5,7 +5,8 @@ import { recordSecurity } from "../beta-store.ts";
 import { CATALOG } from "../catalog.ts";
 import { listFeedback } from "../feedback.ts";
 import { engineDataRoot, writeEngineAtomic } from "./paths.ts";
-import { ENGINE_SOURCES, ENGINE_WALLET_LEVEL_CATALOG_IDS } from "./sources.ts";
+import { ENGINE_SOURCES } from "./sources.ts";
+import { catalogHasAddressLookup } from "./coverage.ts";
 import type {
   CompetitorRecord,
   LearningState,
@@ -86,17 +87,20 @@ function catalogGapProposals(now: string): SourceProposal[] {
     (claim) =>
       claim.kind === "airdrop" &&
       claim.legitimacy === "official" &&
-      !ENGINE_WALLET_LEVEL_CATALOG_IDS.has(claim.id),
+      !catalogHasAddressLookup(claim.id),
   ).map((claim) => {
     const v1 = V1_CHAINS.has(claim.chain);
+    const engine = ENGINE_SOURCES.some((source) => source.catalogId === claim.id);
     return {
       id: `catalog:${claim.id}`,
       origin: "catalog_gap" as const,
       status: "queued" as const,
       title: claim.title,
-      detail: v1
-        ? `Official catalog airdrop has no wallet-level engine adapter yet. Research only — do not invent eligibility.`
-        : `Official catalog airdrop is outside the current v1 chain set (${claim.chain}). Keep queued; do not add a live adapter from this screen.`,
+      detail: !v1
+        ? `Official catalog airdrop is outside the current v1 chain set (${claim.chain}). Keep queued; do not add a live adapter from this screen.`
+        : engine
+          ? `Official catalog airdrop has an engine row but no hosted merkle/API lookup. Request Coverage — do not invent eligibility.`
+          : `Official catalog airdrop has no wallet-level engine adapter yet. Request Coverage — do not invent eligibility.`,
       catalogId: claim.id,
       chain: claim.chain,
       officialUrl: claim.officialUrl,

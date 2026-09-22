@@ -51,12 +51,12 @@ export function WatchPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Catalog watch</CardTitle>
+          <CardTitle>Catalog pool watch</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">
-          Daily remaining-pool snapshot of documented public offers. This is not a live-web hunt and it does not store
-          your address. Refresh once — do not retry in a loop.
+          Daily remaining-pool snapshot of documented public offers. Remaining pool is not wallet eligibility and this
+          panel does not store your address. Refresh once — do not retry in a loop.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => void load(true)} disabled={loading} size="sm">

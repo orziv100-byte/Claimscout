@@ -37,8 +37,12 @@ type JobRecord = {
 
 const jobs = new Map<string, JobRecord>();
 
-function keyFor(address: string): string {
-  return address.toLowerCase();
+export function walletScanJobKey(userId: string, address: string): string {
+  return `${userId}:${address.toLowerCase()}`;
+}
+
+function keyFor(userId: string | undefined, address: string): string {
+  return walletScanJobKey(userId || "anon", address);
 }
 
 function pruneJobs(now = Date.now()) {
@@ -72,9 +76,9 @@ function view(job: JobRecord): WalletScanJobView {
   };
 }
 
-export function getWalletScanJob(address: string): WalletScanJobView | null {
+export function getWalletScanJob(address: string, userId?: string): WalletScanJobView | null {
   pruneJobs();
-  const job = jobs.get(keyFor(address));
+  const job = jobs.get(keyFor(userId, address));
   return job ? view(job) : null;
 }
 
@@ -94,7 +98,7 @@ function recordJob(job: JobRecord, status: "started" | "completed" | "failed") {
 
 export function startWalletScanJob(address: Address, opts?: { userId?: string }): WalletScanJobView {
   pruneJobs();
-  const key = keyFor(address);
+  const key = keyFor(opts?.userId, address);
   const existing = jobs.get(key);
   if (existing && existing.status === "running") return view(existing);
 
@@ -151,6 +155,17 @@ export function startWalletScanJob(address: Address, opts?: { userId?: string })
   });
 
   return view(job);
+}
+
+export function putWalletScanJobForTests(userId: string, address: Address, status: WalletScanJobStatus = "running") {
+  const startedAt = Date.now();
+  jobs.set(keyFor(userId, address), {
+    address,
+    userId,
+    status,
+    progress: emptyProgress(address, startedAt),
+    startedAt,
+  });
 }
 
 export function resetWalletScanJobsForTests() {

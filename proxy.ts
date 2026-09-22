@@ -14,6 +14,7 @@ const PUBLIC_PREFIXES = [
   "/safety",
   "/desktop",
   "/connect",
+  "/coverage",
 ];
 
 function isPublicPath(pathname: string) {

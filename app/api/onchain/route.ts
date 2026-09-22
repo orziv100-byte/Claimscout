@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   if (poolsOnly || !address) {
     const authed = requireUser(request);
     if (isResponse(authed)) return authed;
-    const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain");
+    const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain", { email: authed.user.email });
     if (!limited.ok) return rateLimitedResponse(limited);
     const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
     const res = await guardedJson(
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   const checksum = parsed.address;
 
   const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
-  const gated = gateWallet(ent, checksum);
+  const gated = gateWallet(ent, checksum, authed.user.email);
   if (!gated.ok) {
     return NextResponse.json(gated.body, { status: gated.status });
   }
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
   if (pollOnly) {
     const limited = limitOnchainPoll(request, authed.user.id);
     if (!limited.ok) return rateLimitedResponse(limited);
-    const job = getWalletScanJob(checksum);
+    const job = getWalletScanJob(checksum, authed.user.id);
     if (!job) {
       return withEntitlementCookie(
         NextResponse.json({ address: checksum, status: "idle" }, { status: 200 }),
@@ -70,9 +70,9 @@ export async function GET(request: Request) {
     return withEntitlementCookie(NextResponse.json(job, { status }), gated.entitlement);
   }
 
-  const existing = getWalletScanJob(checksum);
+  const existing = getWalletScanJob(checksum, authed.user.id);
   if (!existing || existing.status !== "running") {
-    const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain");
+    const limited = limitExpensiveEndpoint(request, authed.user.id, "onchain", { email: authed.user.email });
     if (!limited.ok) return rateLimitedResponse(limited);
   }
 

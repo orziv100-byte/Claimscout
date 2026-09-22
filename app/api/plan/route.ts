@@ -5,7 +5,7 @@ import {
   publicEntitlement,
   withEntitlementCookie,
 } from "@/lib/entitlement";
-import { PLANS, bindWallet, walletLimitMessage } from "@/lib/plan";
+import { bindWallet, isUnlimitedWalletAccount, maxWalletsFor, walletLimitMessage } from "@/lib/plan";
 import { parsePublicAddress } from "@/lib/address";
 import { looksLikeSecretMaterial } from "@/lib/secrets-guard";
 import { NextResponse } from "next/server";
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const authed = requireUser(request, { allowUnverified: true });
   if (isResponse(authed)) return authed;
   const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
-  return withEntitlementCookie(NextResponse.json(publicEntitlement(ent)), ent);
+  return withEntitlementCookie(NextResponse.json(publicEntitlement(ent, authed.user.email)), ent);
 }
 
 export async function POST(request: Request) {
@@ -34,10 +34,19 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
-    const user = updateUser(authed.user.id, { plan: "paid", wallets: activated.entitlement.wallets }, authed.user.id);
+    const user = updateUser(
+      authed.user.id,
+      {
+        plan: "paid",
+        wallets: isUnlimitedWalletAccount(authed.user.email)
+          ? ent.wallets
+          : activated.entitlement.wallets,
+      },
+      authed.user.id,
+    );
     const next = { plan: user.plan, wallets: user.wallets };
     return withEntitlementCookie(
-      NextResponse.json({ ...publicEntitlement(next), activated: true }),
+      NextResponse.json({ ...publicEntitlement(next, user.email), activated: true }),
       next,
     );
   }
@@ -57,12 +66,12 @@ export async function POST(request: Request) {
       );
     }
     const checksum = parsed.address;
-    const max = PLANS[ent.plan].maxWallets;
-    const bound = bindWallet(ent.wallets, max, checksum);
+    const max = maxWalletsFor(ent.plan, authed.user.email);
+    const bound = bindWallet(ent.wallets, max, checksum, { replaceAtCap: max === 1 });
     if (!bound.ok) {
       return NextResponse.json(
         {
-          error: walletLimitMessage(ent.plan),
+          error: walletLimitMessage(ent.plan, authed.user.email),
           code: bound.code,
           upgradeUrl: "/upgrade",
           maxWallets: max,
@@ -73,8 +82,8 @@ export async function POST(request: Request) {
     }
     const user = updateUser(authed.user.id, { wallets: bound.wallets }, authed.user.id);
     const next = { plan: user.plan, wallets: user.wallets };
-    return withEntitlementCookie(NextResponse.json({ ...publicEntitlement(next), added: bound.added }), next);
+    return withEntitlementCookie(NextResponse.json({ ...publicEntitlement(next, user.email), added: bound.added }), next);
   }
 
-  return guardedJson(request, "plan-read", "light", async () => publicEntitlement(ent), `plan:${authed.user.id}`);
+  return guardedJson(request, "plan-read", "light", async () => publicEntitlement(ent, authed.user.email), `plan:${authed.user.id}`);
 }
