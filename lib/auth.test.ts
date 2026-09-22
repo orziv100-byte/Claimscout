@@ -232,6 +232,16 @@ test("login promotes a matching ADMIN_EMAILS account that registered as user", a
   assert.equal(logged.user.role, "admin");
 });
 
+test("login demotes an admin whose email left ADMIN_EMAILS and leaves TOTP fields", async () => {
+  process.env.POOLINDEX_ADMIN_EMAILS = "keep-admin@example.com";
+  const created = await register("keep-admin@example.com", { displayName: "Keep Admin" });
+  assert.equal(created.user.role, "admin");
+  process.env.POOLINDEX_ADMIN_EMAILS = "other-admin@example.com";
+  const logged = await loginAccount({ email: "keep-admin@example.com", password: "correct-battery-staple" });
+  assert.equal(logged.user.role, "user");
+  assert.equal(Boolean(logged.user.totpEnabled), false);
+});
+
 test("beta stage cap blocks extra registrations", async () => {
   process.env.POOLINDEX_BETA_STAGE_CAP = "1";
   await register("one@example.com", { displayName: "One" });

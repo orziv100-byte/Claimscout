@@ -111,10 +111,12 @@ function isAdminEmail(email: string) {
   return adminEmails().includes(normalizeEmail(email));
 }
 
-/** Promote only. Never demote — an operator removed from the env list keeps admin until a human patches role. */
+/** Align role with POOLINDEX_ADMIN_EMAILS. TOTP fields are not touched. */
 function syncAdminRole(user: UserRecord): boolean {
-  if (!isAdminEmail(user.email) || user.role === "admin") return false;
-  user.role = "admin";
+  const shouldBeAdmin = isAdminEmail(user.email);
+  const nextRole: UserRecord["role"] = shouldBeAdmin ? "admin" : "user";
+  if (user.role === nextRole) return false;
+  user.role = nextRole;
   return true;
 }
 
@@ -370,13 +372,15 @@ export function readSessionUser(request: Request): { user: UserRecord; session: 
   if (Date.parse(session.expiresAt) <= Date.now()) return null;
   const user = state.users.find((row) => row.id === claims.uid) ?? null;
   if (!user) return null;
-  if (isAdminEmail(user.email) && user.role !== "admin") {
-    const promoted = mutateBetaState((next) => {
+  const shouldBeAdmin = isAdminEmail(user.email);
+  const outOfSync = shouldBeAdmin ? user.role !== "admin" : user.role === "admin";
+  if (outOfSync) {
+    const aligned = mutateBetaState((next) => {
       const live = next.users.find((row) => row.id === user.id) ?? null;
       if (live && syncAdminRole(live)) recordSecurity({ type: "admin_role_synced", userId: live.id });
       return live;
     });
-    if (promoted) return { user: promoted, session };
+    if (aligned) return { user: aligned, session };
   }
   return { user, session };
 }
