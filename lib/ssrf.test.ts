@@ -136,6 +136,7 @@ test("follows a safe redirect hop and returns the final public response", async 
 
 test("TOCTOU: public first resolve then metadata/private second resolve does not fetch", async () => {
   // Scenario: rebind.example A-record 93.184.216.34 on check #1, then 169.254.169.254 on check #2.
+  // Residual: a third resolve inside Node fetch at connect is not pinned (no undici Agent).
   let resolves = 0;
   const lookup = async () => {
     resolves += 1;

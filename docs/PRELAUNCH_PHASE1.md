@@ -43,17 +43,31 @@ SQLite becomes a candidate source of truth only after **all** of:
 
 Until that gate, Phase 2 may configure prices and refuse checkout. It must not charge, settle credits, or treat SQLite as the ledger.
 
+## TRUST_PROXY / rate-limit (updated after live bypass)
+
+`clientIp()` with `POOLINDEX_TRUST_PROXY=1` reads **only** `CF-Connecting-IP` (Cloudflare overwrites this at the edge). It does not read `X-Real-IP`, `X-Forwarded-For`, `Forwarded`, or `X-Client-IP`. Login/register/forgot also rate-limit by **email**, so rotating spoofed IPs cannot reset the bucket.
+
+Live finding (2026-09-22, Windows, before this change): 8 failed logins without spoof → 429; 12 failed logins same email with rotating `X-Real-IP` → all 401. Root cause: bucket key was `login:${ip}:${email}` plus trusting `X-Real-IP`.
+
+Pass (after fix): same email, rotating `X-Real-IP`/`X-Forwarded-For`/`Forwarded`/`X-Client-IP` must 429 on attempt 9. Unit: `login email bucket survives rotating spoofed X-Real-IP`.
+
+Admin MFA enroll/confirm/verify: 5 attempts / 5 minutes / admin user id.
+
+`:43147` must be probed against the origin host IP (LAN `10.100.102.71`), not Cloudflare anycast. Refused on `172.67.x` / `104.21.x` only proves Cloudflare does not forward that port.
+
 ## TRUST_PROXY check from a real external network (Windows)
 
 Do not run this from claimscoutserver. From the internet:
 
 1. `https://poolindex.app/api/health` → 200.
-2. Direct `http://<server-public-or-LAN-IP>:43147/api/health` → connection refused.
-3. POST `/api/auth/login` (invalid password is fine) with spoofed `X-Forwarded-For`, `X-Real-IP`, `Forwarded`, `X-Client-IP` pointing at a fake IP. The app must not become reachable on `:43147`. Spoof headers must not be readable via a public echo (there is none). Pass = still 200 on HTTPS, still refused on `:43147`, and `clientIp()` unit tests cover those headers.
+2. Direct `http://<origin-LAN-or-public-IP>:43147/api/health` → connection refused. Do not use Cloudflare IPs.
+3. Failed login, same email, eight times, then ninth → 429 even with spoofed `X-Real-IP` / `X-Forwarded-For` / `Forwarded` / `X-Client-IP`. No IP echo in the body.
 
 ## SSRF TOCTOU scenario (unit)
 
 `lib/ssrf.test.ts`: hostname `rebind.example`, resolve #1 `93.184.216.34`, resolve #2 `169.254.169.254`. Pass = `SsrfError`, `fetchImpl` never called.
+
+Residual: Node `fetch` may DNS-resolve a third time at connect. There is no IP pin (`node:undici` is not a builtin on this Node 22). Documented in `lib/ssrf.ts`; not claimed closed.
 
 ## STOP / rollback
 

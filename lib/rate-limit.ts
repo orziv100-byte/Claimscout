@@ -47,19 +47,64 @@ export function trustProxyHeaders(env: NodeJS.ProcessEnv = process.env): boolean
   return env.POOLINDEX_TRUST_PROXY === "1";
 }
 
+function parseSingleIp(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.includes(",")) return null;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(trimmed)) return trimmed;
+  if (trimmed.includes(":") && /^[0-9a-fA-F:.]+$/.test(trimmed)) return trimmed;
+  return null;
+}
+
 /**
- * Rate-limit identity. Untrusted headers (Forwarded, X-Client-IP, True-Client-IP,
- * CF-Connecting-IP) are never read — even with TRUST_PROXY — so a second parser
- * cannot bypass X-Real-IP / X-Forwarded-For gating. With TRUST_PROXY, cloudflared
- * is expected to set X-Real-IP; X-Forwarded-For is the fallback first hop only.
+ * Rate-limit identity. Cloudflare overwrites CF-Connecting-IP at the edge; clients
+ * cannot set it through the tunnel. X-Real-IP, X-Forwarded-For, Forwarded,
+ * X-Client-IP, and True-Client-IP are never read — they pass through spoofed.
+ * Origin must stay on 127.0.0.1 so a client cannot send CF-Connecting-IP directly.
+ * Missing/invalid header → "unknown" (shared bucket), never a fallback spoof header.
  */
 export function clientIp(request: Request, env: NodeJS.ProcessEnv = process.env): string {
   if (!trustProxyHeaders(env)) return "unknown";
-  const real = request.headers.get("x-real-ip")?.trim();
-  if (real) return real;
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
-  return "unknown";
+  return parseSingleIp(request.headers.get("cf-connecting-ip")) || "unknown";
+}
+
+export type CredentialKind = "login" | "register" | "forgot";
+
+const CREDENTIAL_LIMITS: Record<CredentialKind, { email: number; ip: number; windowMs: number }> = {
+  login: { email: 8, ip: 40, windowMs: 15 * 60 * 1000 },
+  register: { email: 10, ip: 30, windowMs: 60 * 60 * 1000 },
+  forgot: { email: 3, ip: 5, windowMs: 60 * 60 * 1000 },
+};
+
+export function normalizeRateLimitEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+/** Email bucket first, so rotating spoofed IPs cannot reset login/register/forgot. */
+export function limitCredentialAttempt(
+  kind: CredentialKind,
+  ip: string,
+  email: string,
+  now = Date.now(),
+): RateLimitResult {
+  const limits = CREDENTIAL_LIMITS[kind];
+  const normalized = normalizeRateLimitEmail(email);
+  if (normalized) {
+    const emailHit = rateLimit(`${kind}:email:${normalized}`, limits.email, limits.windowMs, now);
+    if (!emailHit.ok) return emailHit;
+  }
+  return rateLimit(`${kind}:ip:${ip}`, limits.ip, limits.windowMs, now);
+}
+
+export function clearCredentialEmailLimit(kind: CredentialKind, email: string): void {
+  const normalized = normalizeRateLimitEmail(email);
+  if (normalized) clearRateLimit(`${kind}:email:${normalized}`);
+}
+
+const ADMIN_MFA_LIMIT = { limit: 5, windowMs: 5 * 60 * 1000 };
+
+export function limitAdminMfaAttempt(userId: string, now = Date.now()): RateLimitResult {
+  return rateLimit(`admin-mfa:${userId}`, ADMIN_MFA_LIMIT.limit, ADMIN_MFA_LIMIT.windowMs, now);
 }
 
 export function limitExpensiveEndpoint(

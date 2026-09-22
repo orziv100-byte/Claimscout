@@ -162,6 +162,9 @@ export async function fetchSafe(
       delete requestInit.body;
     }
     const response = await fetchImpl(safe.toString(), requestInit);
+    // Residual TOCTOU: fetchImpl (undici/Node fetch) may resolve DNS a third time at
+    // connect. This process has no node:undici Agent pin. Two explicit public
+    // lookups still fail-closed if the second answer is private/metadata.
     const location = response.headers.get("location");
     const redirected = response.status >= 300 && response.status < 400 && location;
     if (!redirected) return response;

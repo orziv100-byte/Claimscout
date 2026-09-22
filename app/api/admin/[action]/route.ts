@@ -10,6 +10,7 @@ import { betaMetrics, readOps, updateOps } from "@/lib/ops";
 import { publicSnapshot, readResourceSnapshot } from "@/lib/resource-guard";
 import { confirmAdminTotp, enrollAdminTotp, verifyAdminTotp } from "@/lib/admin-mfa";
 import { guardFailed, isResponse, requireAdmin, attachAdminMfaCookie } from "@/lib/request-guard";
+import { limitAdminMfaAttempt, rateLimitHeaders } from "@/lib/rate-limit";
 import { recordSecurity } from "@/lib/beta-store";
 import { aggregateFeedbackBySource } from "@/lib/intelligence/feedback-agg";
 import { adminStopHunt, huntAdminStats } from "@/lib/intelligence/hunt";
@@ -120,6 +121,13 @@ export async function POST(request: Request, context: { params: Promise<{ action
   const allowMissingMfa = action === "mfa-enroll" || action === "mfa-confirm" || action === "mfa-verify";
   const authed = requireAdmin(request, { allowMissingMfa });
   if (isResponse(authed)) return authed;
+  if (allowMissingMfa) {
+    const mfaLimit = limitAdminMfaAttempt(authed.user.id);
+    if (!mfaLimit.ok) {
+      const limited = rateLimitHeaders(mfaLimit);
+      return NextResponse.json(limited.body, { status: limited.status, headers: limited.headers });
+    }
+  }
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
   try {
