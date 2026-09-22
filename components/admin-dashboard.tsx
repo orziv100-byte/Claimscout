@@ -130,6 +130,13 @@ type FeedbackRow = {
   urlHost: string;
 };
 
+type Me = { id: string; email: string; role: string; totpEnabled?: boolean } | null;
+
+function parseOtpauthSecret(otpauth: string): string {
+  const match = otpauth.match(/[?&]secret=([^&]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
 export function AdminDashboard() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
@@ -139,27 +146,103 @@ export function AdminDashboard() {
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
+  const [me, setMe] = useState<Me>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [mfaBusy, setMfaBusy] = useState(false);
+
+  const [enrollOtpauth, setEnrollOtpauth] = useState<string | null>(null);
+  const [enrollCode, setEnrollCode] = useState("");
+  const [enrollError, setEnrollError] = useState<string | null>(null);
+  const [enrollBusy, setEnrollBusy] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
   async function load() {
     setError(null);
-    const [sumRes, feedRes] = await Promise.all([
-      fetch("/api/admin/summary"),
-      fetch(`/api/admin/feedback?type=${encodeURIComponent(typeFilter)}&status=${encodeURIComponent(statusFilter)}`),
-    ]);
-    const sumJson = (await sumRes.json().catch(() => ({}))) as Summary & { error?: string };
-    const feedJson = (await feedRes.json().catch(() => ({}))) as { feedback?: FeedbackRow[]; error?: string };
+    const [meRes, sumRes] = await Promise.all([fetch("/api/auth/me"), fetch("/api/admin/summary")]);
+    const meJson = (await meRes.json().catch(() => ({}))) as { user?: Me };
+    setMe(meJson.user ?? null);
+    const sumJson = (await sumRes.json().catch(() => ({}))) as Summary & { error?: string; code?: string };
     if (!sumRes.ok) {
+      if (sumJson.code === "MFA_REQUIRED") {
+        setMfaRequired(true);
+        return;
+      }
       setError(sumJson.error || "Admin access denied");
       return;
     }
+    setMfaRequired(false);
     setSummary(sumJson);
-    setFeedback(feedJson.feedback ?? []);
     setReason(sumJson.ops.reason || "");
+    const feedRes = await fetch(`/api/admin/feedback?type=${encodeURIComponent(typeFilter)}&status=${encodeURIComponent(statusFilter)}`);
+    const feedJson = (await feedRes.json().catch(() => ({}))) as { feedback?: FeedbackRow[]; error?: string };
+    setFeedback(feedJson.feedback ?? []);
   }
 
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter, statusFilter]);
+
+  async function verifyMfa(e: React.FormEvent) {
+    e.preventDefault();
+    setMfaError(null);
+    setMfaBusy(true);
+    try {
+      const res = await fetch("/api/admin/mfa-verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: mfaCode.trim() }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "That code is not valid.");
+      setMfaCode("");
+      await load();
+    } catch (err) {
+      setMfaError(err instanceof Error ? err.message : "That code is not valid.");
+    } finally {
+      setMfaBusy(false);
+    }
+  }
+
+  async function startEnroll() {
+    setEnrollError(null);
+    setEnrollBusy(true);
+    try {
+      const res = await fetch("/api/admin/mfa-enroll", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      const json = (await res.json().catch(() => ({}))) as { otpauth?: string; error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not start enrollment.");
+      setEnrollOtpauth(json.otpauth ?? null);
+    } catch (err) {
+      setEnrollError(err instanceof Error ? err.message : "Could not start enrollment.");
+    } finally {
+      setEnrollBusy(false);
+    }
+  }
+
+  async function confirmEnroll(e: React.FormEvent) {
+    e.preventDefault();
+    setEnrollError(null);
+    setEnrollBusy(true);
+    try {
+      const res = await fetch("/api/admin/mfa-confirm", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: enrollCode.trim() }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { recoveryCodes?: string[]; error?: string };
+      if (!res.ok) throw new Error(json.error || "That code is not valid.");
+      setRecoveryCodes(json.recoveryCodes ?? []);
+      setEnrollOtpauth(null);
+      setEnrollCode("");
+      await load();
+    } catch (err) {
+      setEnrollError(err instanceof Error ? err.message : "That code is not valid.");
+    } finally {
+      setEnrollBusy(false);
+    }
+  }
 
   const recent = useMemo(() => summary?.users.slice().sort((a, b) => (b.lastLoginAt || "").localeCompare(a.lastLoginAt || "")).slice(0, 8) ?? [], [summary]);
 
@@ -199,6 +282,40 @@ export function AdminDashboard() {
       </p>
     );
   }
+
+  if (mfaRequired) {
+    return (
+      <section className="max-w-md rounded-xl border border-border/80 bg-card p-5">
+        <h2 className="font-heading text-xl">Admin authenticator required</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Enter the 6-digit code from your authenticator app, or one of your saved recovery codes.
+        </p>
+        <form onSubmit={verifyMfa} className="mt-4 flex flex-col gap-3">
+          <label htmlFor="mfa-code" className="text-sm">
+            Code
+            <Input
+              id="mfa-code"
+              className="mt-1"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value)}
+              autoComplete="one-time-code"
+              autoFocus
+              required
+            />
+          </label>
+          {mfaError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {mfaError}
+            </p>
+          ) : null}
+          <Button type="submit" disabled={mfaBusy} aria-busy={mfaBusy}>
+            {mfaBusy ? "Verifying…" : "Verify"}
+          </Button>
+        </form>
+      </section>
+    );
+  }
+
   if (!summary) return <p className="text-sm text-muted-foreground">Loading control center…</p>;
 
   return (
@@ -219,6 +336,94 @@ export function AdminDashboard() {
             <p className="font-heading text-2xl">{value}</p>
           </div>
         ))}
+      </section>
+
+      <section className="rounded-xl border border-border/80 bg-card p-5">
+        <h2 className="font-heading text-xl">Admin security</h2>
+        {me?.totpEnabled ? (
+          <p className="mt-2 text-sm text-muted-foreground">Authenticator app (TOTP) is enabled for this admin account.</p>
+        ) : (
+          <>
+            <p className="mt-2 text-sm text-muted-foreground">
+              No authenticator app enrolled yet. Once enabled, every admin sign-in needs a 6-digit code or a saved
+              recovery code. Regular users never need this.
+            </p>
+            {recoveryCodes ? (
+              <div className="mt-3 rounded-md border border-border/60 p-3">
+                <p className="text-sm font-medium">Save these recovery codes now — shown once</p>
+                <ul className="mt-2 grid grid-cols-2 gap-1 font-mono text-xs sm:grid-cols-4">
+                  {recoveryCodes.map((code) => (
+                    <li key={code}>{code}</li>
+                  ))}
+                </ul>
+                <Button size="sm" className="mt-3" onClick={() => setRecoveryCodes(null)}>
+                  I&apos;ve saved these codes
+                </Button>
+              </div>
+            ) : enrollOtpauth ? (
+              <form onSubmit={confirmEnroll} className="mt-3 flex flex-col gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Add this to an authenticator app (Google Authenticator, 1Password, Authy…), then enter the 6-digit
+                  code to confirm.
+                </p>
+                <p className="break-all rounded-md border border-border/60 bg-muted/40 p-2 font-mono text-xs">{enrollOtpauth}</p>
+                <label htmlFor="enroll-secret" className="text-xs text-muted-foreground">
+                  Manual entry secret
+                  <Input
+                    id="enroll-secret"
+                    className="mt-1 font-mono"
+                    readOnly
+                    value={parseOtpauthSecret(enrollOtpauth)}
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                </label>
+                <label htmlFor="enroll-code" className="text-sm">
+                  6-digit code
+                  <Input
+                    id="enroll-code"
+                    className="mt-1"
+                    value={enrollCode}
+                    onChange={(e) => setEnrollCode(e.target.value)}
+                    autoComplete="one-time-code"
+                    autoFocus
+                    required
+                  />
+                </label>
+                {enrollError ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {enrollError}
+                  </p>
+                ) : null}
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={enrollBusy} aria-busy={enrollBusy}>
+                    {enrollBusy ? "Confirming…" : "Confirm & enable"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEnrollOtpauth(null);
+                      setEnrollError(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <Button className="mt-3" onClick={() => void startEnroll()} disabled={enrollBusy}>
+                  {enrollBusy ? "Starting…" : "Enable authenticator app"}
+                </Button>
+                {enrollError ? (
+                  <p className="mt-2 text-sm text-destructive" role="alert">
+                    {enrollError}
+                  </p>
+                ) : null}
+              </>
+            )}
+          </>
+        )}
       </section>
 
       <section className="rounded-xl border border-border/80 bg-card p-5">
