@@ -236,7 +236,9 @@ export function AdminDashboard() {
       setRecoveryCodes(json.recoveryCodes ?? []);
       setEnrollOtpauth(null);
       setEnrollCode("");
-      await load();
+      setMe((current) => (current ? { ...current, totpEnabled: true } : current));
+      // Do not load() yet: summary is MFA_REQUIRED until a *new* TOTP window, and
+      // load() would hide these one-time recovery codes.
     } catch (err) {
       setEnrollError(err instanceof Error ? err.message : "That code is not valid.");
     } finally {
@@ -280,6 +282,32 @@ export function AdminDashboard() {
       <p className="text-sm text-destructive" role="alert">
         {error}
       </p>
+    );
+  }
+
+  if (recoveryCodes) {
+    return (
+      <section className="max-w-lg rounded-xl border border-border/80 bg-card p-5">
+        <h2 className="font-heading text-xl">Save these recovery codes now</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Shown once. Store them offline. After this, the next authenticator code (wait if the previous 30 seconds
+          already used) unlocks the control center.
+        </p>
+        <ul className="mt-3 grid grid-cols-2 gap-1 font-mono text-xs sm:grid-cols-4">
+          {recoveryCodes.map((code) => (
+            <li key={code}>{code}</li>
+          ))}
+        </ul>
+        <Button
+          className="mt-4"
+          onClick={() => {
+            setRecoveryCodes(null);
+            setMfaRequired(true);
+          }}
+        >
+          I&apos;ve saved these codes
+        </Button>
+      </section>
     );
   }
 
@@ -348,19 +376,7 @@ export function AdminDashboard() {
               No authenticator app enrolled yet. Once enabled, every admin sign-in needs a 6-digit code or a saved
               recovery code. Regular users never need this.
             </p>
-            {recoveryCodes ? (
-              <div className="mt-3 rounded-md border border-border/60 p-3">
-                <p className="text-sm font-medium">Save these recovery codes now — shown once</p>
-                <ul className="mt-2 grid grid-cols-2 gap-1 font-mono text-xs sm:grid-cols-4">
-                  {recoveryCodes.map((code) => (
-                    <li key={code}>{code}</li>
-                  ))}
-                </ul>
-                <Button size="sm" className="mt-3" onClick={() => setRecoveryCodes(null)}>
-                  I&apos;ve saved these codes
-                </Button>
-              </div>
-            ) : enrollOtpauth ? (
+            {enrollOtpauth ? (
               <form onSubmit={confirmEnroll} className="mt-3 flex flex-col gap-3">
                 <p className="text-xs text-muted-foreground">
                   Add this to an authenticator app (Google Authenticator, 1Password, Authy…), then enter the 6-digit
