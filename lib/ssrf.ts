@@ -112,33 +112,44 @@ export async function assertSafeUrl(raw: string, opts: AssertSafeUrlOptions = {}
   return parsed;
 }
 
-type DnsLookupCallback = (
-  err: NodeJS.ErrnoException | null,
-  address?: string | Array<{ address: string; family: number }>,
-  family?: number,
+type PinnedLookup = (
+  hostname: string,
+  options: { family?: number; all?: boolean } | ((err: NodeJS.ErrnoException | null, address: string, family: number) => void),
+  callback?: (err: NodeJS.ErrnoException | null, address: string | Array<{ address: string; family: number }>, family?: number) => void,
 ) => void;
 
 /** Connect-time lookup that returns only IPs already checked public. OS DNS is not consulted again. */
-export function pinnedDnsLookup(addresses: string[]) {
+export function pinnedDnsLookup(addresses: string[]): PinnedLookup {
   const records = addresses
     .map((address) => ({ address, family: isIP(address) }))
     .filter((row) => row.family === 4 || row.family === 6);
-  return function lookup(hostname: string, options: unknown, callback?: DnsLookupCallback) {
-    const cb = typeof options === "function" ? (options as DnsLookupCallback) : callback;
-    const opts = typeof options === "function" || !options ? {} : (options as { family?: number; all?: boolean });
+  return function lookup(hostname, options, callback) {
+    const cb = typeof options === "function" ? options : callback;
+    const opts = typeof options === "function" || !options ? {} : options;
     if (!cb) return;
     if (!records.length) {
       const err = Object.assign(new Error(`No pinned address for ${hostname}.`), { code: "ENOTFOUND" });
-      cb(err as NodeJS.ErrnoException);
+      cb(err as NodeJS.ErrnoException, "", 0);
       return;
     }
     const wanted = opts.family ? records.filter((row) => row.family === opts.family) : records;
-    const list = wanted.length ? wanted : records;
-    if (opts.all) {
-      cb(null, list);
+    if (!wanted.length) {
+      const err = Object.assign(new Error(`No pinned ${opts.family === 6 ? "IPv6" : "IPv4"} address for ${hostname}.`), {
+        code: "ENOTFOUND",
+      });
+      cb(err as NodeJS.ErrnoException, "", 0);
       return;
     }
-    cb(null, list[0]!.address, list[0]!.family);
+    if (opts.all) {
+      (
+        cb as unknown as (
+          err: NodeJS.ErrnoException | null,
+          addresses: Array<{ address: string; family: number }>,
+        ) => void
+      )(null, wanted);
+      return;
+    }
+    cb(null, wanted[0]!.address, wanted[0]!.family);
   };
 }
 
@@ -174,7 +185,7 @@ async function fetchPinned(url: URL, init: RequestInit, addresses: string[]): Pr
   const agent = new Agent({
     connect: {
       servername: url.hostname,
-      lookup: pinnedDnsLookup(addresses),
+      lookup: pinnedDnsLookup(addresses) as never,
     },
   });
   try {
@@ -183,7 +194,11 @@ async function fetchPinned(url: URL, init: RequestInit, addresses: string[]): Pr
       dispatcher: agent,
     } as Parameters<typeof undiciFetch>[1]);
     const body = await response.arrayBuffer();
-    return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+    const headers = new Headers();
+    response.headers.forEach((value, key) => {
+      headers.append(key, value);
+    });
+    return new Response(body, { status: response.status, statusText: response.statusText, headers });
   } finally {
     await agent.close();
   }
@@ -194,6 +209,7 @@ export async function fetchSafe(
   init: RequestInit = {},
   opts: {
     lookup?: LookupFn;
+    /** Tests only. A custom fetchImpl skips the undici IP pin — never pass this from production callers. */
     fetchImpl?: FetchImpl;
     maxRedirects?: number;
   } = {},

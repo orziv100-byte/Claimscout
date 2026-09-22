@@ -167,6 +167,9 @@ test("connect pin: third DNS answer is ignored; socket uses already-public IPs",
     assert.equal(address, "93.184.216.34");
     assert.equal(family, 4);
   });
+  pin("rebind.example", { family: 6 }, (err) => {
+    assert.equal(err?.code, "ENOTFOUND");
+  });
 });
 
 test("parses decimal and short-form IPv4 used in SSRF bypasses", () => {
