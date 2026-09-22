@@ -107,6 +107,11 @@ export function limitAdminMfaAttempt(userId: string, now = Date.now()): RateLimi
   return rateLimit(`admin-mfa:${userId}`, ADMIN_MFA_LIMIT.limit, ADMIN_MFA_LIMIT.windowMs, now);
 }
 
+/** Token endpoints: never key by the token itself (that would reset the bucket per guess). */
+export function limitTokenAttempt(kind: "reset" | "verify", ip: string, now = Date.now()): RateLimitResult {
+  return rateLimit(`${kind}:ip:${ip}`, 20, 15 * 60 * 1000, now);
+}
+
 export function limitExpensiveEndpoint(
   request: Request,
   userId: string,

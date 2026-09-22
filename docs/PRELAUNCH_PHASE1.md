@@ -67,7 +67,7 @@ Do not run this from claimscoutserver. From the internet:
 
 `lib/ssrf.test.ts`: hostname `rebind.example`, resolve #1 `93.184.216.34`, resolve #2 `169.254.169.254`. Pass = `SsrfError`, `fetchImpl` never called.
 
-Residual: Node `fetch` may DNS-resolve a third time at connect. There is no IP pin (`node:undici` is not a builtin on this Node 22). Documented in `lib/ssrf.ts`; not claimed closed.
+Connect pin: default `fetchSafe` uses undici `Agent` `connect.lookup` = `pinnedDnsLookup` of the second public snapshot. OS DNS is not asked a third time. TLS `servername` stays the original hostname. Unit: `connect pin: third DNS answer is ignored`.
 
 ## STOP / rollback
 

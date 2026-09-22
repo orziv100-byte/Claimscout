@@ -9,7 +9,7 @@ import { CATALOG } from "./catalog.ts";
 import { contentSecurityPolicy, frameAncestorsDirective } from "./csp.ts";
 import { PUBLIC_HEALTH_FORBIDDEN_KEYS, publicHealthBody, publicStatusBody } from "./health.ts";
 import { getMailProvider, resetMailProvider, sendMail, setMailProvider, type MailProvider } from "./mail.ts";
-import { clientIp, clearRateLimit, limitAdminMfaAttempt, limitCredentialAttempt, limitExpensiveEndpoint, rateLimit, resetRateLimitForTests } from "./rate-limit.ts";
+import { clientIp, clearRateLimit, limitAdminMfaAttempt, limitCredentialAttempt, limitExpensiveEndpoint, limitTokenAttempt, rateLimit, resetRateLimitForTests } from "./rate-limit.ts";
 import { ACCOUNT_STATUSES } from "./beta-types.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "poolindex-hardening-"));
@@ -129,6 +129,16 @@ test("admin MFA attempts are limited per user", () => {
   }
   assert.equal(limitAdminMfaAttempt("admin-1").ok, false);
   assert.equal(limitAdminMfaAttempt("admin-2").ok, true);
+});
+
+test("reset and verify tokens are limited per IP not per token value", () => {
+  resetRateLimitForTests();
+  for (let i = 0; i < 20; i += 1) {
+    assert.equal(limitTokenAttempt("reset", "203.0.113.9").ok, true);
+  }
+  assert.equal(limitTokenAttempt("reset", "203.0.113.9").ok, false);
+  assert.equal(limitTokenAttempt("reset", "203.0.113.10").ok, true);
+  assert.equal(limitTokenAttempt("verify", "203.0.113.9").ok, true);
 });
 
 test("admin mutations reject unknown status, plan, role, and extra fields", () => {

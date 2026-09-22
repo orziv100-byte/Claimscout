@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth";
 import { APP_VERSION } from "@/lib/app-info";
 import { readOps } from "@/lib/ops";
-import { clearCredentialEmailLimit, clientIp, limitCredentialAttempt, type CredentialKind } from "@/lib/rate-limit";
+import { clearCredentialEmailLimit, clientIp, limitCredentialAttempt, limitTokenAttempt, type CredentialKind } from "@/lib/rate-limit";
 import {
   attachSessionCookie,
   clearSessionCookie,
@@ -26,6 +26,15 @@ const ACTIONS = new Set(["register", "login", "logout", "me", "verify", "forgot"
 
 function limitedCredential(kind: CredentialKind, ip: string, email: string) {
   const result = limitCredentialAttempt(kind, ip, email);
+  if (result.ok) return null;
+  return NextResponse.json(
+    { error: "Too many attempts. Wait and try once.", code: "RATE_LIMIT", version: APP_VERSION },
+    { status: 429, headers: { "Retry-After": String(result.retryAfterSec) } },
+  );
+}
+
+function limitedToken(kind: "reset" | "verify", ip: string) {
+  const result = limitTokenAttempt(kind, ip);
   if (result.ok) return null;
   return NextResponse.json(
     { error: "Too many attempts. Wait and try once.", code: "RATE_LIMIT", version: APP_VERSION },
@@ -53,6 +62,8 @@ export async function GET(request: Request, context: { params: Promise<{ action:
   }
 
   if (action === "verify") {
+    const blocked = limitedToken("verify", clientIp(request));
+    if (blocked) return blocked;
     const token = new URL(request.url).searchParams.get("token") || "";
     try {
       const user = verifyEmailToken(token);
@@ -113,6 +124,8 @@ export async function POST(request: Request, context: { params: Promise<{ action
     }
 
     if (action === "verify") {
+      const blocked = limitedToken("verify", ip);
+      if (blocked) return blocked;
       const user = verifyEmailToken(String(body.token || ""));
       return NextResponse.json({ ok: true, user, version: APP_VERSION });
     }
@@ -127,6 +140,8 @@ export async function POST(request: Request, context: { params: Promise<{ action
     }
 
     if (action === "reset") {
+      const blocked = limitedToken("reset", ip);
+      if (blocked) return blocked;
       const reset = await resetPassword(String(body.token || ""), String(body.password || ""));
       return attachSessionCookie(NextResponse.json({ ok: true, user: reset.user, version: APP_VERSION }), reset.cookie);
     }

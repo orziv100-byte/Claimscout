@@ -1,5 +1,6 @@
 import { promises as dns } from "node:dns";
 import { isIP } from "node:net";
+import { Agent, fetch as undiciFetch } from "undici";
 
 export const SSRF_CODE = "SSRF_BLOCKED" as const;
 
@@ -111,12 +112,47 @@ export async function assertSafeUrl(raw: string, opts: AssertSafeUrlOptions = {}
   return parsed;
 }
 
-/** Second DNS check immediately before connect. First hop already passed assertSafeUrl. */
-export async function assertNoDnsRebinding(
-  hostname: string,
-  lookup: LookupFn,
-): Promise<void> {
-  if (literalAddresses(hostname).length) return;
+type DnsLookupCallback = (
+  err: NodeJS.ErrnoException | null,
+  address?: string | Array<{ address: string; family: number }>,
+  family?: number,
+) => void;
+
+/** Connect-time lookup that returns only IPs already checked public. OS DNS is not consulted again. */
+export function pinnedDnsLookup(addresses: string[]) {
+  const records = addresses
+    .map((address) => ({ address, family: isIP(address) }))
+    .filter((row) => row.family === 4 || row.family === 6);
+  return function lookup(hostname: string, options: unknown, callback?: DnsLookupCallback) {
+    const cb = typeof options === "function" ? (options as DnsLookupCallback) : callback;
+    const opts = typeof options === "function" || !options ? {} : (options as { family?: number; all?: boolean });
+    if (!cb) return;
+    if (!records.length) {
+      const err = Object.assign(new Error(`No pinned address for ${hostname}.`), { code: "ENOTFOUND" });
+      cb(err as NodeJS.ErrnoException);
+      return;
+    }
+    const wanted = opts.family ? records.filter((row) => row.family === opts.family) : records;
+    const list = wanted.length ? wanted : records;
+    if (opts.all) {
+      cb(null, list);
+      return;
+    }
+    cb(null, list[0]!.address, list[0]!.family);
+  };
+}
+
+/** Second DNS check immediately before connect. Returns the public snapshot used to pin the socket. */
+export async function pinnedPublicAddresses(hostname: string, lookup: LookupFn): Promise<string[]> {
+  const literal = literalAddresses(hostname);
+  if (literal.length) {
+    for (const address of literal) {
+      if (isBlockedIp(address)) {
+        throw new SsrfError("Private, loopback, link-local, and reserved addresses are blocked.");
+      }
+    }
+    return literal;
+  }
   let resolved: string[];
   try {
     resolved = await lookup(hostname);
@@ -131,6 +167,26 @@ export async function assertNoDnsRebinding(
       );
     }
   }
+  return resolved;
+}
+
+async function fetchPinned(url: URL, init: RequestInit, addresses: string[]): Promise<Response> {
+  const agent = new Agent({
+    connect: {
+      servername: url.hostname,
+      lookup: pinnedDnsLookup(addresses),
+    },
+  });
+  try {
+    const response = await undiciFetch(url.toString(), {
+      ...init,
+      dispatcher: agent,
+    } as Parameters<typeof undiciFetch>[1]);
+    const body = await response.arrayBuffer();
+    return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+  } finally {
+    await agent.close();
+  }
 }
 
 export async function fetchSafe(
@@ -142,7 +198,7 @@ export async function fetchSafe(
     maxRedirects?: number;
   } = {},
 ): Promise<Response> {
-  const fetchImpl = opts.fetchImpl ?? fetch;
+  const fetchImpl = opts.fetchImpl;
   const maxRedirects = opts.maxRedirects ?? MAX_REDIRECTS;
   const mode = init.redirect ?? "follow";
   let current = url;
@@ -150,9 +206,7 @@ export async function fetchSafe(
   for (let hop = 0; hop <= maxRedirects; hop += 1) {
     const safe = await assertSafeUrl(current, { lookup: opts.lookup });
     const hostname = normalizeHostname(safe.hostname);
-    if (!literalAddresses(hostname).length) {
-      await assertNoDnsRebinding(hostname, opts.lookup ?? defaultLookup);
-    }
+    const pinned = await pinnedPublicAddresses(hostname, opts.lookup ?? defaultLookup);
     const requestInit: RequestInit = {
       ...init,
       redirect: "manual",
@@ -161,10 +215,9 @@ export async function fetchSafe(
       requestInit.method = "GET";
       delete requestInit.body;
     }
-    const response = await fetchImpl(safe.toString(), requestInit);
-    // Residual TOCTOU: fetchImpl (undici/Node fetch) may resolve DNS a third time at
-    // connect. This process has no node:undici Agent pin. Two explicit public
-    // lookups still fail-closed if the second answer is private/metadata.
+    const response = fetchImpl
+      ? await fetchImpl(safe.toString(), requestInit)
+      : await fetchPinned(safe, requestInit, pinned);
     const location = response.headers.get("location");
     const redirected = response.status >= 300 && response.status < 400 && location;
     if (!redirected) return response;

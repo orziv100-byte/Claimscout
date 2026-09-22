@@ -6,6 +6,7 @@ import {
   fetchSafe,
   isBlockedIp,
   isBlockedHostname,
+  pinnedDnsLookup,
   tryParseIPv4,
 } from "./ssrf.ts";
 
@@ -136,7 +137,6 @@ test("follows a safe redirect hop and returns the final public response", async 
 
 test("TOCTOU: public first resolve then metadata/private second resolve does not fetch", async () => {
   // Scenario: rebind.example A-record 93.184.216.34 on check #1, then 169.254.169.254 on check #2.
-  // Residual: a third resolve inside Node fetch at connect is not pinned (no undici Agent).
   let resolves = 0;
   const lookup = async () => {
     resolves += 1;
@@ -154,6 +154,19 @@ test("TOCTOU: public first resolve then metadata/private second resolve does not
   );
   assert.equal(resolves >= 2, true);
   assert.deepEqual(calls, []);
+});
+
+test("connect pin: third DNS answer is ignored; socket uses already-public IPs", () => {
+  const pin = pinnedDnsLookup(["93.184.216.34"]);
+  pin("rebind.example", { all: true }, (err, addresses) => {
+    assert.equal(err, null);
+    assert.deepEqual(addresses, [{ address: "93.184.216.34", family: 4 }]);
+  });
+  pin("rebind.example", {}, (err, address, family) => {
+    assert.equal(err, null);
+    assert.equal(address, "93.184.216.34");
+    assert.equal(family, 4);
+  });
 });
 
 test("parses decimal and short-form IPv4 used in SSRF bypasses", () => {
