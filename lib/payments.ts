@@ -12,7 +12,7 @@ export type CheckoutRefusal = {
   yearlyUsd: number;
 };
 
-/** No Stripe/Lemon/Paddle keys, webhooks, or charges until provider !== none. */
+/** No PayPal/Stripe/MoR charges while provider is none. Sandbox keys in `.env` do not open checkout. */
 export function refuseCheckout(): CheckoutRefusal {
   return {
     ok: false,

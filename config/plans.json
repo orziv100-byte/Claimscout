@@ -2,8 +2,8 @@
   "creditAuthority": "server",
   "payments": {
     "provider": "none",
-    "providers": ["none", "mor", "stripe"],
-    "note": "none = Closed Beta, no checkout. mor = merchant of record (Lemon Squeezy / Paddle). stripe = Stripe Checkout after incorporation. Change provider here only after Lior picks one. No webhooks or charges while provider is none."
+    "providers": ["none", "paypal", "mor", "stripe"],
+    "note": "none = Closed Beta, no checkout. paypal = PayPal Sandbox keys in gitignored .env (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_ENV=sandbox). Charges stay off until explicitly enabled. Live PayPal is not used. mor/stripe remain future options."
   },
   "plans": {
     "free": {
