@@ -60,6 +60,16 @@ export const CHAIN_LABEL: Record<string, string> = {
   offchain: "Off-chain",
 };
 
+export function formatTokenAmount(amount?: string): string {
+  if (amount == null || amount === "") return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return amount;
+  if (n === 0) return "0";
+  if (Math.abs(n) >= 1000) return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  if (Math.abs(n) >= 1) return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  return n.toLocaleString("en-US", { maximumFractionDigits: 6 });
+}
+
 export function shortAddress(value: string): string {
   if (value.length < 12) return value;
   return `${value.slice(0, 6)}…${value.slice(-4)}`;

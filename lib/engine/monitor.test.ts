@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { alertableChanges, belowAlertNet, walletAlertMail } from "./monitor.ts";
+import { alertableChanges, belowAlertNet, dailyMonitorAllowed, walletAlertMail } from "./monitor.ts";
 import type { EngineScan } from "./types.ts";
 
 function scan(partial: Partial<EngineScan> & Pick<EngineScan, "changes" | "findings">): EngineScan {
@@ -35,6 +35,14 @@ function scan(partial: Partial<EngineScan> & Pick<EngineScan, "changes" | "findi
     ...partial,
   };
 }
+
+test("daily monitor skips Free unless explicit opt-in and always includes paid", () => {
+  assert.equal(dailyMonitorAllowed({ plan: "free" }), false);
+  assert.equal(dailyMonitorAllowed({ plan: "free", monitorEnabled: false }), false);
+  assert.equal(dailyMonitorAllowed({ plan: "free", monitorEnabled: true }), true);
+  assert.equal(dailyMonitorAllowed({ plan: "paid" }), true);
+  assert.equal(dailyMonitorAllowed({ plan: "paid", monitorEnabled: false }), true);
+});
 
 test("monitor does not alert on the first baseline scan", () => {
   const first = scan({

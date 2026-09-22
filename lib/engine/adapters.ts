@@ -33,9 +33,21 @@ import {
   VE_CRV,
 } from "./sources.ts";
 import type { EngineFinding, EngineSource } from "./types.ts";
+import { getClaimById } from "../catalog.ts";
 import { liveReadUnavailable } from "./profile.ts";
 import { lookupEnsClaim } from "./ens-claim.ts";
 import { loadUniClaim } from "./uni-merkle.ts";
+
+function publicAdapterError(sourceId: string, err: unknown): string {
+  const raw = err instanceof Error ? err.message : "error";
+  if (/checksum|invalid address/i.test(raw)) {
+    return `${sourceId} could not read the official contract (address format). No Eligible invented.`;
+  }
+  if (/timed out|timeout|fetch/i.test(raw)) {
+    return `${sourceId} timed out talking to the chain. No Eligible invented.`;
+  }
+  return `${sourceId} could not complete this check. No Eligible invented.`;
+}
 
 function failed(source: EngineSource, err: unknown): EngineFinding {
   return {
@@ -46,8 +58,8 @@ function failed(source: EngineSource, err: unknown): EngineFinding {
     chainId: source.chainId,
     chainLabel: source.chainLabel,
     verification: "uncertain",
-    title: source.id,
-    detail: `Adapter RPC/contract error: ${err instanceof Error ? err.message : "error"}`,
+    title: source.catalogId?.replaceAll("-", " ") ?? source.id,
+    detail: publicAdapterError(source.id, err),
     officialUrl: source.officialUrl,
     sourceStatus: "failed",
   };
@@ -361,7 +373,7 @@ async function documentedAirdropFinding(source: EngineSource, address: Address):
   } else if (deadline && Date.parse(`${deadline}T00:00:00.000Z`) < Date.now()) {
     closed = true;
   }
-  const title = source.catalogId?.replaceAll("-", " ") ?? source.id;
+  const title = (source.catalogId && getClaimById(source.catalogId)?.title) || source.catalogId?.replaceAll("-", " ") || source.id;
   const base = {
     id: `${source.id}:${address.toLowerCase()}`,
     sourceId: source.id,
@@ -395,7 +407,7 @@ async function documentedAirdropFinding(source: EngineSource, address: Address):
   }
   return {
     ...base,
-    verification: "uncertain",
+    ...liveReadUnavailable(),
     detail: `${codeNote} Wallet eligibility requires this project's official merkle/API, which PoolIndex does not host. No Eligible/Not eligible invented.`,
   };
 }

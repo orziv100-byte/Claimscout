@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { looksLikeAutomation, scanTextFlags, shouldBlockDiscovery } from "./safety.ts";
+import { looksLikeAutomation, looksLikeDeveloperTooling, scanTextFlags, shouldBlockDiscovery } from "./safety.ts";
 
 const UNICH = {
   title: "Tunzankies/Unich_Airdrop",
@@ -13,6 +13,9 @@ test("looksLikeAutomation matches auto mining / auto task / auto ref", () => {
   assert.equal(looksLikeAutomation("auto-claim faucet script"), true);
   assert.equal(looksLikeAutomation("obryen/airdrop-hunter"), true);
   assert.equal(looksLikeAutomation("thomas613/crypto-airdrops-hunter"), true);
+  assert.equal(looksLikeAutomation("MuzannDev/arbitrum-airdrop-claimer"), true);
+  assert.equal(looksLikeAutomation("codeesura/layerzero-airdrop-rescue"), true);
+  assert.equal(looksLikeAutomation("transfer all the tokens to one address"), true);
   assert.equal(looksLikeAutomation("merkle distributor for UNI token airdrop"), false);
   assert.equal(looksLikeAutomation("Official public claim portal"), false);
 });
@@ -31,6 +34,21 @@ test("shouldBlockDiscovery blocks the Unich_Airdrop automation repo", () => {
   const decision = shouldBlockDiscovery(UNICH);
   assert.equal(decision.blocked, true);
   if (decision.blocked) assert.equal(decision.reason, "automation");
+});
+
+test("shouldBlockDiscovery drops claimer bots and developer tooling", () => {
+  const claimer = shouldBlockDiscovery({
+    title: "WizerZ/arbitrum-airdrop-claimer",
+    summary: "claim several wallets at the same time and transfer all the tokens to one address",
+    url: "https://github.com/WizerZ/arbitrum-airdrop-claimer",
+  });
+  assert.equal(claimer.blocked, true);
+  const starter = shouldBlockDiscovery({
+    title: "foo/merkle-airdrop-starter",
+    summary: "Hardhat merkle drop",
+    url: "https://github.com/foo/merkle-airdrop-starter",
+  });
+  assert.equal(starter.blocked, true);
 });
 
 test("shouldBlockDiscovery keeps a documented public airdrop", () => {
@@ -62,4 +80,10 @@ test("shouldBlockDiscovery still blocks secrets and dump hosts", () => {
 test("scanTextFlags marks automation as danger", () => {
   const flags = scanTextFlags(UNICH.summary);
   assert.ok(flags.some((flag) => flag.code === "automation" && flag.severity === "danger"));
+});
+
+test("developer tooling repos are tagged, not treated as claimable offers", () => {
+  assert.equal(looksLikeDeveloperTooling("foo/merkle-airdrop-starter", "Hardhat merkle drop"), true);
+  assert.equal(looksLikeDeveloperTooling("bar/multisender", "bulk token sender"), true);
+  assert.equal(looksLikeDeveloperTooling("Uniswap UNI airdrop", "Official merkle distributor for UNI token holders."), false);
 });

@@ -51,7 +51,7 @@ export default function HomePage() {
           {
             icon: Radio,
             title: "Address check first",
-            body: "Paste 0x, then a table of named offers. Catalog browse is extra, not the product.",
+            body: "Paste 0x. See what this wallet holds and which programs match its activity — not the same 12 names for every address.",
           },
           {
             icon: Eye,

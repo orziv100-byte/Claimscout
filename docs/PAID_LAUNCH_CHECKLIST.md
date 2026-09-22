@@ -14,6 +14,7 @@ When (and only when) the operator decides to sell PoolIndex Pro, review:
 - Payment processor terms and PCI/scoping — do not store card data in PoolIndex
 - Paid-plan Terms update and re-acceptance
 - Clear “you are purchasing” vs “operator issued a test license”
+- **Request Coverage** (if sold): payment buys a wallet-level adapter for a named catalog gap, never an Eligible verdict. Disclose Not eligible is a valid outcome. Do not sell “fix broken sources”. Adapter-outage repair stays in Pro/SLA, not a separate SKU.
 - Accessibility of the checkout flow
 - Privacy Notice update for the processor as a third party
 

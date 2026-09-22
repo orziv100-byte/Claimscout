@@ -8,7 +8,8 @@ import { readErrors, readSecurity, readTelemetry } from "@/lib/beta-store";
 import { listFeedback, publicFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { betaMetrics, readOps, updateOps } from "@/lib/ops";
 import { publicSnapshot, readResourceSnapshot } from "@/lib/resource-guard";
-import { guardFailed, isResponse, requireAdmin } from "@/lib/request-guard";
+import { confirmAdminTotp, enrollAdminTotp, verifyAdminTotp } from "@/lib/admin-mfa";
+import { guardFailed, isResponse, requireAdmin, attachAdminMfaCookie } from "@/lib/request-guard";
 import { recordSecurity } from "@/lib/beta-store";
 import { aggregateFeedbackBySource } from "@/lib/intelligence/feedback-agg";
 import { adminStopHunt, huntAdminStats } from "@/lib/intelligence/hunt";
@@ -115,12 +116,39 @@ export async function GET(request: Request, context: { params: Promise<{ action:
 }
 
 export async function POST(request: Request, context: { params: Promise<{ action: string }> }) {
-  const authed = requireAdmin(request);
-  if (isResponse(authed)) return authed;
   const { action } = await context.params;
+  const allowMissingMfa = action === "mfa-enroll" || action === "mfa-confirm" || action === "mfa-verify";
+  const authed = requireAdmin(request, { allowMissingMfa });
+  if (isResponse(authed)) return authed;
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
   try {
+    if (action === "mfa-enroll") {
+      if (authed.user.totpEnabled && !allowMissingMfa) {
+        return NextResponse.json({ error: "MFA already enabled.", code: "MFA_ALREADY_ENABLED", version: APP_VERSION }, { status: 409 });
+      }
+      const enrolled = enrollAdminTotp(authed.user.id);
+      return NextResponse.json({ ok: true, otpauth: enrolled.otpauth, version: APP_VERSION });
+    }
+
+    if (action === "mfa-confirm") {
+      const confirmed = confirmAdminTotp(authed.user.id, String(body.code || ""));
+      return NextResponse.json({
+        ok: true,
+        enabled: true,
+        recoveryCodes: confirmed.recoveryCodes,
+        version: APP_VERSION,
+      });
+    }
+
+    if (action === "mfa-verify") {
+      if (!authed.sessionId) {
+        return NextResponse.json({ error: "Sign in required.", code: "UNAUTHENTICATED", version: APP_VERSION }, { status: 401 });
+      }
+      const cookie = verifyAdminTotp(authed.user.id, authed.sessionId, String(body.code || ""));
+      return attachAdminMfaCookie(NextResponse.json({ ok: true, version: APP_VERSION }), cookie);
+    }
+
     if (action === "invites") {
       const input = parseAdminInviteInput(body);
       const invite = createInvite({

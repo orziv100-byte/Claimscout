@@ -5,6 +5,7 @@ import type { PublicUser, UserRecord } from "./beta-types.ts";
 import { sameOrigin } from "./csrf.ts";
 import { inspectEnv } from "./env.ts";
 import { scansAreOpen } from "./ops.ts";
+import { ADMIN_MFA_COOKIE, adminMfaSatisfied } from "./admin-mfa.ts";
 import { SESSION_COOKIE, sessionCookieOptions } from "./session-cookie.ts";
 import { rateLimitHeaders, type RateLimitResult } from "./rate-limit.ts";
 import { readAgentToken, scopesFromToken, type McpScope } from "./engine/agent-token.ts";
@@ -15,6 +16,7 @@ export type Authed = {
   authKind?: "session" | "agent_token";
   scopes?: readonly McpScope[];
   tokenId?: string;
+  sessionId?: string;
 };
 
 export function requireSameOrigin(request: Request): NextResponse | null {
@@ -39,7 +41,7 @@ export function requireUser(
   const env = inspectEnv();
   if (!env.ok) {
     return NextResponse.json(
-      { error: "Server is missing required secrets.", code: "ENV", missing: env.missing, version: APP_VERSION },
+      { error: "Server is missing required secrets.", code: "ENV", version: APP_VERSION },
       { status: 500 },
     );
   }
@@ -67,7 +69,7 @@ export function requireUser(
       { status: 403 },
     );
   }
-  return { user, publicUser: publicUser(user), authKind, scopes, tokenId };
+  return { user, publicUser: publicUser(user), authKind, scopes, tokenId, sessionId: session?.session.id };
 }
 
 /** MCP tools/call: Bearer agent token only. Cookie CSRF does not apply. */
@@ -75,7 +77,7 @@ export function requireAgentToken(request: Request, opts: { allowUnverified?: bo
   return requireUser(request, { ...opts, agentTokenOnly: true });
 }
 
-export function requireAdmin(request: Request): Authed | NextResponse {
+export function requireAdmin(request: Request, opts: { allowMissingMfa?: boolean } = {}): Authed | NextResponse {
   const authed = requireUser(request, { allowUnverified: true });
   if (authed instanceof NextResponse) return authed;
   if (authed.authKind === "agent_token") {
@@ -86,6 +88,12 @@ export function requireAdmin(request: Request): Authed | NextResponse {
   }
   if (authed.user.role !== "admin") {
     return NextResponse.json({ error: "Admin access required.", code: "FORBIDDEN", version: APP_VERSION }, { status: 403 });
+  }
+  if (authed.user.totpEnabled && !opts.allowMissingMfa && !adminMfaSatisfied(request, authed.user.id, authed.sessionId)) {
+    return NextResponse.json(
+      { error: "Admin authenticator code required.", code: "MFA_REQUIRED", version: APP_VERSION },
+      { status: 401 },
+    );
   }
   return authed;
 }
@@ -117,6 +125,11 @@ export function rateLimitedResponse(result: Extract<RateLimitResult, { ok: false
 
 export function attachSessionCookie(res: NextResponse, cookie: string): NextResponse {
   res.cookies.set(SESSION_COOKIE, cookie, sessionCookieOptions());
+  return res;
+}
+
+export function attachAdminMfaCookie(res: NextResponse, cookie: string): NextResponse {
+  res.cookies.set(ADMIN_MFA_COOKIE, cookie, sessionCookieOptions());
   return res;
 }
 

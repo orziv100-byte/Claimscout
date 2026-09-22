@@ -13,13 +13,19 @@ import { isImportantSource, listSourceRecords } from "./source-manager.ts";
 import { nextWalletMonitorAt } from "./schedule.ts";
 import { interpretEnsClaimBody } from "./ens-claim.ts";
 import { publicEngineScan } from "./scan.ts";
+import { scanHeadline, userCheckLabel } from "./result-summary.ts";
 import {
   buildWalletProfile,
   interestingVerificationCounts,
+  isAddressHoldingFinding,
+  isAddressOfferFinding,
   isInterestingFinding,
+  isWalletSpecificAirdrop,
   liveReadUnavailable,
   normalizeStoredFinding,
+  relatedProgramHints,
 } from "./profile.ts";
+import { catalogIsRelevantToWallet, findingIsRelevantToWallet, walletActivity } from "./relevance.ts";
 import { getAddress } from "viem";
 import type { EngineFinding, EngineScan } from "./types.ts";
 
@@ -228,15 +234,21 @@ test("every engine source has frequency and sequential rate limit", () => {
   }
 });
 
-test("source selection always keeps natives, Ethereum tokens, airdrops, and protocol claims", () => {
+test("source selection keeps merkle airdrops on unused wallets and skips documented catalog airdrops", () => {
   const none = selectEngineSources([]);
   assert.ok(none.some((source) => source.id === "token-eth-uni"));
   assert.ok(none.some((source) => source.id === "airdrop-uni-merkle"));
+  assert.ok(none.some((source) => source.id === "airdrop-cow-vcow"));
   assert.ok(none.some((source) => source.id === "protocol-compound-comp"));
-  assert.ok(none.some((source) => source.id === "protocol-uniswap-v3-lp"));
+  assert.equal(none.some((source) => source.id === "airdrop-1inch-merkle"), false);
+  assert.equal(none.some((source) => source.id === "airdrop-optimism-1"), false);
   assert.equal(none.some((source) => source.id === "token-pol-usdc"), false);
+  const withEth = selectEngineSources([1]);
+  assert.ok(withEth.some((source) => source.id === "airdrop-1inch-merkle"));
   const withPolygon = selectEngineSources([137]);
   assert.ok(withPolygon.some((source) => source.id === "token-pol-usdc"));
+  const withOp = selectEngineSources([10]);
+  assert.ok(withOp.some((source) => source.id === "airdrop-optimism-1"));
 });
 
 test("zero protocol claims are not interesting; leftover LP and accrued COMP are", () => {
@@ -256,6 +268,68 @@ test("zero protocol claims are not interesting; leftover LP and accrued COMP are
   assert.equal(isInterestingFinding(zero), false);
   assert.equal(isInterestingFinding({ ...zero, amount: "1.2" }), true);
   assert.equal(isInterestingFinding({ ...zero, sourceStatus: "failed", amount: "0" }), true);
+});
+
+test("bytecode-only catalog airdrops are not offers for this wallet; merkle lookups are", () => {
+  const documented: EngineFinding = {
+    id: "airdrop-1inch-merkle:x",
+    sourceId: "airdrop-1inch-merkle",
+    category: "airdrop",
+    chainId: 1,
+    chainLabel: "Ethereum",
+    verification: "verified",
+    eligibility: "window_closed",
+    title: "1inch",
+    detail: "bytecode only",
+    sourceStatus: "ok",
+  };
+  const unusedUni: EngineFinding = {
+    ...documented,
+    id: "airdrop-uni-merkle:x",
+    sourceId: "airdrop-uni-merkle",
+    eligibility: "ineligible",
+    title: "Uniswap UNI airdrop",
+    detail: "not in merkle",
+  };
+  const arb: EngineFinding = {
+    ...documented,
+    id: "airdrop-arbitrum-arb:x",
+    sourceId: "airdrop-arbitrum-arb",
+    title: "Arbitrum ARB airdrop",
+  };
+  assert.equal(isWalletSpecificAirdrop(documented), false);
+  assert.equal(isInterestingFinding(documented), false);
+  assert.equal(isAddressOfferFinding(documented), false);
+  assert.equal(isInterestingFinding(unusedUni), true);
+  assert.equal(isAddressOfferFinding(unusedUni), true);
+  assert.equal(isAddressOfferFinding(arb), false);
+  assert.equal(isAddressHoldingFinding({ category: "forgotten_token", amount: "0", sourceStatus: "ok" }), false);
+  assert.equal(isAddressHoldingFinding({ category: "forgotten_token", amount: "2", sourceStatus: "ok" }), true);
+  assert.equal(isAddressHoldingFinding({ category: "protocol_claim", amount: "0.5", sourceStatus: "ok" }), true);
+  const hints = relatedProgramHints({
+    tokens: [{ chainId: 1, symbol: "UNI", amount: "2", contract: "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984" }],
+  });
+  assert.equal(hints[0]?.protocol, "uniswap");
+  assert.equal(hints[0]?.hasAddressLookup, true);
+});
+
+test("relevance uses holdings and claims, not chain ETH alone", () => {
+  const unused = walletActivity({ chains: [{ chainId: 1, chainLabel: "Ethereum", native: "0", symbol: "ETH", txCount: 0 }], tokens: [], protocols: [] });
+  const uniIneligible = { sourceId: "airdrop-uni-merkle", eligibility: "ineligible" as const, amount: undefined };
+  const uniEligible = { sourceId: "airdrop-uni-merkle", eligibility: "eligible" as const, amount: "400" };
+  const inchClosed = { sourceId: "airdrop-1inch-merkle", eligibility: "window_closed" as const, amount: undefined };
+  assert.equal(findingIsRelevantToWallet(uniIneligible, unused), false);
+  assert.equal(findingIsRelevantToWallet(uniEligible, unused), true);
+  assert.equal(findingIsRelevantToWallet(inchClosed, unused), false);
+  const holdsUni = walletActivity({
+    chains: [{ chainId: 1, chainLabel: "Ethereum", native: "6.7", symbol: "ETH", txCount: 40 }],
+    tokens: [{ chainId: 1, symbol: "UNI", amount: "12", contract: "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984" }],
+    protocols: ["uniswap"],
+  });
+  assert.equal(findingIsRelevantToWallet(uniIneligible, holdsUni), true);
+  assert.equal(catalogIsRelevantToWallet({ id: "uniswap-uni-airdrop", asset: "UNI" }, holdsUni), true);
+  assert.equal(catalogIsRelevantToWallet({ id: "hop-protocol-airdrop", asset: "HOP" }, unused), false);
+  assert.equal(catalogIsRelevantToWallet({ id: "hop-protocol-airdrop", asset: "HOP" }, holdsUni), false);
 });
 
 test("Lido WithdrawalQueue address is a valid EIP-55 checksum", () => {
@@ -284,14 +358,15 @@ test("scan summary verified count ignores zero-balance holdings", () => {
     sourceStatus: "ok",
   };
   const airdrop: EngineFinding = {
-    id: "airdrop-1inch:x",
-    sourceId: "airdrop-1inch",
+    id: "airdrop-uni-merkle:x",
+    sourceId: "airdrop-uni-merkle",
     category: "airdrop",
     chainId: 1,
     chainLabel: "Ethereum",
     verification: "verified",
-    title: "1inch",
-    detail: "checked",
+    eligibility: "ineligible",
+    title: "Uniswap UNI airdrop",
+    detail: "not in merkle",
     sourceStatus: "ok",
   };
   const unread = {
@@ -304,7 +379,7 @@ test("scan summary verified count ignores zero-balance holdings", () => {
   };
   const counts = interestingVerificationCounts([zeroToken, airdrop, unread]);
   assert.equal(counts.verified, 1);
-  assert.equal(counts.uncertain, 1);
+  assert.equal(counts.uncertain, 0);
   assert.equal(liveReadUnavailable().verification, "uncertain");
   assert.equal(liveReadUnavailable().eligibility, "unable_to_verify");
 });
@@ -389,12 +464,11 @@ test("publicEngineScan recomputes summary from interesting findings and unreadab
     changes: [],
   });
   assert.equal(view.summary.verified, 1);
-  assert.equal(view.summary.uncertain, 1);
+  assert.equal(view.summary.uncertain, 0);
   assert.equal(view.counters.verifiedFindings, 1);
-  assert.equal(view.counters.potentialFindings, 2);
-  const shown = view.findings.find((row) => row.sourceId === "airdrop-1inch");
-  assert.equal(shown?.verification, "uncertain");
-  assert.equal(shown?.eligibility, "unable_to_verify");
+  assert.equal(view.counters.potentialFindings, 1);
+  assert.equal(view.findings.some((row) => row.sourceId === "airdrop-1inch"), false);
+  assert.equal(view.findings.some((row) => row.sourceId === "protocol-compound-comp"), true);
 });
 
 test("wallet profile uses token contracts and protocols from holdings, not source ids", () => {
@@ -662,4 +736,47 @@ test("ENS official claim body is JSON merkle or HTML, never invented Eligible", 
     assert.equal(claim.claim.index, "12");
     assert.equal(claim.claim.amount, "1000000000000000000");
   }
+});
+
+test("unable_to_verify is never labeled verified, and the headline does not say money is owed", () => {
+  const blur: EngineFinding = {
+    id: "airdrop-blur:x",
+    sourceId: "airdrop-blur",
+    category: "airdrop",
+    chainId: 1,
+    chainLabel: "Ethereum",
+    verification: "verified",
+    eligibility: "unable_to_verify",
+    title: "Blur",
+    detail: "no merkle",
+    sourceStatus: "ok",
+  };
+  const fixed = normalizeStoredFinding(blur);
+  assert.equal(fixed.verification, "uncertain");
+  assert.equal(fixed.eligibility, "unable_to_verify");
+  assert.equal(userCheckLabel(fixed), "Unable to verify");
+  const ineligible: EngineFinding = {
+    ...blur,
+    id: "airdrop-uni:x",
+    eligibility: "ineligible",
+    verification: "verified",
+  };
+  assert.equal(userCheckLabel(ineligible), "Not eligible");
+  const headline = scanHeadline([
+    ineligible,
+    {
+      ...blur,
+      id: "native-eth:x",
+      sourceId: "native-eth",
+      category: "native_balance",
+      eligibility: undefined,
+      amount: "1.2",
+      verification: "verified",
+    },
+  ]);
+  assert.equal(headline.claimNow, 0);
+  assert.equal(headline.notEligible, 1);
+  assert.equal(headline.holdings, 1);
+  assert.match(headline.sentence, /Nothing to claim/i);
+  assert.doesNotMatch(headline.sentence, /\b63 Verified\b/);
 });

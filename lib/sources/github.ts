@@ -1,5 +1,6 @@
 import { cached, fetchWithTimeout, readJsonLimited } from "../http";
-import { inferKind, publicOfferHint, shouldBlockDiscovery } from "../safety";
+import { inferKind, looksLikeDeveloperTooling, publicOfferHint, shouldBlockDiscovery } from "../safety";
+import { distinctiveSearchTokens } from "../query";
 import type { DiscoveredClaim, LiveSourceResult } from "../types";
 
 type GithubRepo = {
@@ -30,9 +31,8 @@ function githubHeaders(): HeadersInit {
 
 export async function searchGitHub(query: string): Promise<LiveSourceResult> {
   const trimmed = query.trim();
-  const q = /faucet/i.test(trimmed)
-    ? `${trimmed} crypto faucet`
-    : `${trimmed} token airdrop`;
+  const tokens = distinctiveSearchTokens(trimmed);
+  const q = tokens.length ? tokens.join(" ") : trimmed;
 
   const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&per_page=12`;
 
@@ -53,8 +53,11 @@ export async function searchGitHub(query: string): Promise<LiveSourceResult> {
       const summary = repo.description || "GitHub repository matching a public claim query.";
       if (/\b(apple airdrop|file transfer|opendrop|localsend)\b/i.test(`${title} ${summary}`)) continue;
       if (!/\b(token|crypto|merkle|erc-?20|faucet|web3|ethereum|bitcoin|airdrop)\b/i.test(`${title} ${summary}`)) continue;
-      const decision = shouldBlockDiscovery({ title, summary, url: repo.html_url });
-      if (decision.blocked) {
+      if (shouldBlockDiscovery({ title, summary, url: repo.html_url }).blocked) {
+        blocked += 1;
+        continue;
+      }
+      if (looksLikeDeveloperTooling(title, summary)) {
         blocked += 1;
         continue;
       }
@@ -71,10 +74,7 @@ export async function searchGitHub(query: string): Promise<LiveSourceResult> {
         sourceLabel: "GitHub",
         publishedAt: repo.created_at,
         legitimacy: repo.stargazers_count >= 50 ? "documented_public" : "unverified",
-        flags:
-          repo.stargazers_count < 5
-            ? ["Low stars — treat as unverified until you read the repo."]
-            : [],
+        flags: [...(repo.stargazers_count < 5 ? ["Low stars — treat as unverified until you read the repo."] : [])],
       });
     }
     return { items, blocked };

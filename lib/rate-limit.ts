@@ -1,4 +1,5 @@
 import { APP_VERSION } from "./app-info.ts";
+import { isUnlimitedWalletAccount } from "./plan.ts";
 
 type Bucket = { count: number; resetAt: number };
 
@@ -18,6 +19,7 @@ const EXPENSIVE_LIMITS: Record<ExpensiveEndpoint, { user: number; ip: number; wi
 };
 
 const POLL_LIMITS = { user: 700, ip: 1400, windowMs: 10 * 60 * 1000 };
+const OPERATOR_ONCHAIN_LIMITS = { user: 120, ip: 240, windowMs: 10 * 60 * 1000 };
 
 export function rateLimit(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitResult {
   const current = buckets.get(key);
@@ -40,19 +42,30 @@ export function resetRateLimitForTests() {
   buckets.clear();
 }
 
-export function clientIp(request: Request): string {
+/** Only trust forwarding headers when the process sits behind a proxy we control. */
+export function trustProxyHeaders(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.POOLINDEX_TRUST_PROXY === "1";
+}
+
+export function clientIp(request: Request, env: NodeJS.ProcessEnv = process.env): string {
+  if (!trustProxyHeaders(env)) return "unknown";
+  const real = request.headers.get("x-real-ip")?.trim();
+  if (real) return real;
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
-  return request.headers.get("x-real-ip") || "unknown";
+  return "unknown";
 }
 
 export function limitExpensiveEndpoint(
   request: Request,
   userId: string,
   endpoint: ExpensiveEndpoint,
-  now = Date.now(),
+  nowOrOpts: number | { now?: number; email?: string | null } = Date.now(),
 ): RateLimitResult {
-  const limits = EXPENSIVE_LIMITS[endpoint];
+  const now = typeof nowOrOpts === "number" ? nowOrOpts : (nowOrOpts.now ?? Date.now());
+  const email = typeof nowOrOpts === "number" ? undefined : nowOrOpts.email;
+  const limits =
+    endpoint === "onchain" && isUnlimitedWalletAccount(email) ? OPERATOR_ONCHAIN_LIMITS : EXPENSIVE_LIMITS[endpoint];
   const ip = clientIp(request);
   const userHit = rateLimit(`expensive:${endpoint}:user:${userId}`, limits.user, limits.windowMs, now);
   if (!userHit.ok) return userHit;
@@ -68,6 +81,10 @@ export function limitOnchainPoll(
   const userHit = rateLimit(`expensive:onchain-poll:user:${userId}`, POLL_LIMITS.user, POLL_LIMITS.windowMs, now);
   if (!userHit.ok) return userHit;
   return rateLimit(`expensive:onchain-poll:ip:${ip}`, POLL_LIMITS.ip, POLL_LIMITS.windowMs, now);
+}
+
+export function limitPublicTicker(request: Request, now = Date.now()): RateLimitResult {
+  return rateLimit(`public:ticker:ip:${clientIp(request)}`, 30, 60_000, now);
 }
 
 export function rateLimitHeaders(result: Extract<RateLimitResult, { ok: false }>): {

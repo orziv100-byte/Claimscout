@@ -404,8 +404,9 @@ export function AdminDashboard() {
         <h2 className="font-heading text-xl">Operator learning</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Internal research only. Competitor notes and source proposals never auto-change production adapters (
-          {summary.operatorLearning?.engineAdapterCount ?? 0} live). Accept queues a future human deploy; it does not
-          write the catalog or engine.
+          {summary.operatorLearning?.engineAdapterCount ?? 0} live). Catalog gaps without a hosted merkle lookup are
+          Request Coverage, not paid bugfixes. Accept queues a future human deploy; it does not write the catalog or
+          engine.
         </p>
         <h3 className="mt-4 text-sm font-medium">Competitors</h3>
         <ul className="mt-2 space-y-2 text-sm">

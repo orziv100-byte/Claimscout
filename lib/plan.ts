@@ -50,6 +50,37 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
 
 export const RESERVED_SOURCES: readonly ScanSource[] = ["reddit", "bitcointalk"];
 
+/** Operator QA wallet-check cap. Product Free/Pro stay 1 and 5. */
+export const OPERATOR_WALLET_CHECK_CAP = 10_000;
+
+/** Daily monitor never walks every bound QA address — that would overload the host. */
+export const MONITOR_WALLET_CAP = PLANS.paid.maxWallets;
+
+export function unlimitedWalletEmails(env: NodeJS.ProcessEnv = process.env): Set<string> {
+  const emails = new Set(["orziv100@gmail.com"]);
+  for (const email of (env.POOLINDEX_UNLIMITED_WALLET_EMAILS || "")
+    .split(/[,\s]+/)
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean)) {
+    emails.add(email);
+  }
+  return emails;
+}
+
+export function isUnlimitedWalletAccount(email?: string | null, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (!email) return false;
+  return unlimitedWalletEmails(env).has(email.trim().toLowerCase());
+}
+
+export function maxWalletsFor(plan: PlanId, email?: string | null, env: NodeJS.ProcessEnv = process.env): number {
+  if (isUnlimitedWalletAccount(email, env)) return OPERATOR_WALLET_CHECK_CAP;
+  return PLANS[plan].maxWallets;
+}
+
+export function formatWalletCap(maxWallets: number): string {
+  return maxWallets >= OPERATOR_WALLET_CHECK_CAP ? "unlimited" : String(maxWallets);
+}
+
 export type SourceAccess = "allowed" | "upgrade" | "reserved";
 
 export function sourceAccess(plan: PlanId, source: string): SourceAccess {
@@ -88,15 +119,21 @@ export function bindWallet(
   wallets: string[],
   maxWallets: number,
   address: string,
-): { ok: true; wallets: string[]; added: boolean } | { ok: false; code: "WALLET_LIMIT"; wallets: string[] } {
+  opts: { replaceAtCap?: boolean } = {},
+):
+  | { ok: true; wallets: string[]; added: boolean; replaced: boolean }
+  | { ok: false; code: "WALLET_LIMIT"; wallets: string[] } {
   const next = address.toLowerCase();
   if (wallets.some((wallet) => wallet.toLowerCase() === next)) {
-    return { ok: true, wallets, added: false };
+    return { ok: true, wallets, added: false, replaced: false };
   }
   if (wallets.length >= maxWallets) {
+    if (opts.replaceAtCap && maxWallets === 1) {
+      return { ok: true, wallets: [address], added: true, replaced: true };
+    }
     return { ok: false, code: "WALLET_LIMIT", wallets };
   }
-  return { ok: true, wallets: [...wallets, address], added: true };
+  return { ok: true, wallets: [...wallets, address], added: true, replaced: false };
 }
 
 export function paidSourceCoverage(): { used: number; total: number; percent: number } {
@@ -105,9 +142,12 @@ export function paidSourceCoverage(): { used: number; total: number; percent: nu
   return { used, total, percent: Math.round((used / total) * 100) };
 }
 
-export function walletLimitMessage(plan: PlanId): string {
+export function walletLimitMessage(plan: PlanId, email?: string | null): string {
+  if (isUnlimitedWalletAccount(email)) {
+    return `${BRAND_NAME} operator wallet-check slots are full on this account.`;
+  }
   if (plan === "free") {
-    return `Free checks one wallet. ${BRAND_NAME} Pro is planned ($${PLANS.paid.priceUsd}/month or $${PLANS.paid.yearlyUsd}/year; payment processing unavailable) and unlocks up to five wallets plus email alerts and archive scanning. Offer names are never hidden behind payment.`;
+    return `Free keeps one wallet at a time. Paste another public 0x address to replace it. ${BRAND_NAME} Pro is planned ($${PLANS.paid.priceUsd}/month or $${PLANS.paid.yearlyUsd}/year; payment processing unavailable) for up to five wallets plus email alerts and archive scanning. Offer names are never hidden behind payment.`;
   }
   return `${BRAND_NAME} Pro includes up to five wallets.`;
 }

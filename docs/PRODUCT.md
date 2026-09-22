@@ -56,6 +56,15 @@ Configurable in `lib/plan.ts` and enforced in API routes:
 
 Closed Beta binds plan and wallets to the signed-in user record.
 
+## Request Coverage vs broken sources
+
+Two different problems. Do not sell them as one SKU.
+
+- **Broken source:** an adapter that already exists and then fails (RPC, upgraded contract, timeout). Product maintenance / Pro SLA. Never a paid “fix so it works” add-on — that would look like pay-to-play and would wreck honest statuses.
+- **Never built:** catalog programs such as 1inch, Blur, LayerZero, Gitcoin, Safe, dYdX. There is no hosted merkle/API lookup, so the wallet result is Unable to verify until someone writes an adapter. Public name: **Request Coverage**. Future payment buys adapter work, not Eligible. Shared bounties and JSON-config adapters (airdrop-finder style) are later; they are not Closed Beta live-scan expansion.
+
+Public roadmap: `/coverage`. Operator learning queues catalog gaps. Repair queue stays for failed adapters only.
+
 ## Beta architecture
 
 Invite-only accounts (`lib/auth.ts`) with scrypt password hashes, HMAC session cookies, email verification via operator outbox, Terms/Privacy acceptance versions, admin control center, kill switch (`lib/ops.ts`), technical telemetry, and human result feedback. User data is isolated by user ID under `var/beta/`.

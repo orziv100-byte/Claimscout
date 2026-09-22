@@ -43,7 +43,8 @@ test("operator learning lists competitors and catalog gaps without adding adapte
   const uni = snap.proposals.find((row) => row.catalogId === "uniswap-uni-airdrop");
   assert.equal(uni, undefined);
   const blur = snap.proposals.find((row) => row.catalogId === "blur-airdrop");
-  assert.equal(blur, undefined);
+  assert.equal(blur?.origin, "catalog_gap");
+  assert.match(blur?.detail ?? "", /Request Coverage/);
   const jito = snap.proposals.find((row) => row.catalogId === "jito-solana-airdrop");
   assert.equal(jito?.origin, "catalog_gap");
   assert.equal(jito?.status, "queued");

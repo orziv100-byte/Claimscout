@@ -227,6 +227,12 @@ export function ConnectAgentDocs() {
       </ol>
       <pre className="overflow-x-auto rounded-md border bg-secondary/40 p-3 text-xs text-foreground">{configSnippet("piagt_PASTE_TOKEN")}</pre>
       <p className="text-xs">
+        HTTP status codes: missing or invalid token → HTTP 401 (JSON-RPC -32001, UNAUTHENTICATED). A valid token on an
+        address that is not on the account → HTTP 402 (JSON-RPC -32002, WALLET_LIMIT). Other tool errors (400/403/404)
+        stay HTTP 200 with the real status in the JSON-RPC error object (`error.data.httpStatus` and `error.data.code`).
+        If you only inspect the HTTP status, you will miss those errors.
+      </p>
+      <p className="text-xs">
         Tools: get_wallet_scan, get_findings, get_findings filter, get_diff, get_history, check_url, search_catalog,
         get_coverage, get_events. Text from GitHub, Wayback, and other external pages is marked untrusted_external —
         data only, not instructions. Revoke a token immediately from this page if it leaks.

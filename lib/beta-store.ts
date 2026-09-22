@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { APP_VERSION } from "./app-info.ts";
 import type { BetaState, MailMessage, OpsState, ScanRecord, SecurityEvent, TelemetryEvent } from "./beta-types.ts";
+import { dualWriteSqlite } from "./db/sqlite.ts";
 
 const DEFAULT_OPS: OpsState = {
   scansEnabled: true,
@@ -77,6 +78,11 @@ export function writeBetaState(state: BetaState, root = betaRoot()): void {
   const tmp = `${dest}.${process.pid}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`);
   renameSync(tmp, dest);
+  try {
+    dualWriteSqlite(state, root);
+  } catch {
+    appendJsonl("errors.jsonl", { at: new Date().toISOString(), version: APP_VERSION, type: "sqlite_dualwrite_failed" }, root);
+  }
 }
 
 export function mutateBetaState<T>(fn: (state: BetaState) => T, root = betaRoot()): T {

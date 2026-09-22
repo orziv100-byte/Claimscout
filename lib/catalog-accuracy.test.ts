@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CATALOG, CONTRACT_BALANCE_NOT_CLAIMABLE } from "./catalog.ts";
+import { CATALOG, CONTRACT_BALANCE_NOT_CLAIMABLE, searchCatalog } from "./catalog.ts";
 import { CLAIMABILITY_LABEL } from "./labels.ts";
 import { contentSecurityPolicy } from "./csp.ts";
 import { publicHealthBody } from "./health.ts";
@@ -69,6 +69,12 @@ test("catalog remaining-pool methods are declared and do not use mistyped token 
   assert.equal(dydx?.onChain?.remainingMethod, "unsupported");
   assert.equal(dydx?.onChain?.distributor, "0x01d3348601968aB85b4bb028979006eac235a588");
   assert.match(dydx?.onChain?.remainingUnsupportedReason ?? "", /no contract code/i);
+});
+
+test("catalog search keeps distinctive tokens so filler words do not wipe results", () => {
+  const hits = searchCatalog("Arbitrum airdrop unclaimed");
+  assert.ok(hits.some((row) => /arbitrum/i.test(row.title) || row.asset === "ARB"));
+  assert.equal(searchCatalog("").length, CATALOG.filter((row) => row.id !== "tornado-avoided").length);
 });
 
 test("safety wording and public health helpers stay conservative", () => {

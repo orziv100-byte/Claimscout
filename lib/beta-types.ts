@@ -47,11 +47,17 @@ export type UserRecord = {
   lastScanAt: string | null;
   firstScanAt: string | null;
   scanCounts: ScanCounts;
+  /** Free daily full-scan is off unless this is true. Paid accounts are always eligible. */
+  monitorEnabled?: boolean;
+  totpSecret?: string;
+  totpEnabled?: boolean;
+  totpRecoveryHashes?: string[];
+  totpLastStep?: number;
   deletionRequestedAt: string | null;
   deletionStatus: DeletionStatus;
 };
 
-export type PublicUser = Omit<UserRecord, "passwordHash">;
+export type PublicUser = Omit<UserRecord, "passwordHash" | "totpSecret" | "totpRecoveryHashes" | "totpLastStep">;
 
 export type InviteRecord = {
   id: string;

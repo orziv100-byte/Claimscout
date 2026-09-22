@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { usePlan } from "@/components/plan-provider";
 import { useWallet } from "@/components/wallet-provider";
 import { BRAND_NAME } from "@/lib/app-info";
+import { formatWalletCap } from "@/lib/plan";
 import { walletSubmitIntent } from "@/lib/address";
 import { shortAddress } from "@/lib/labels";
 import { ShieldCheck, Wallet } from "lucide-react";
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/catalog", label: "Catalog" },
   { href: "/connect", label: "Connect agent" },
   { href: "/upgrade", label: "Pro (planned)" },
+  { href: "/coverage", label: "Coverage" },
   { href: "/safety", label: "Rules" },
 ];
 
@@ -118,11 +120,11 @@ export function SiteHeader() {
                 <ShieldCheck className="size-3.5 text-primary" />
                 {mode === "injected" ? "Connected" : "Read-only"} {shortAddress(address)}
                 <span className="text-muted-foreground">
-                  · {planName} {wallets.length}/{maxWallets}
+                  · {planName} {wallets.length}/{formatWalletCap(maxWallets)}
                 </span>
               </span>
               <Button size="sm" variant="ghost" onClick={disconnect}>
-                Clear
+                Clear address
               </Button>
             </div>
           ) : (

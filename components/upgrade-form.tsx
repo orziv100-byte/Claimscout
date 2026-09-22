@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { usePlan } from "@/components/plan-provider";
-import { PLANS } from "@/lib/plan";
+import { formatWalletCap, PLANS } from "@/lib/plan";
 import { useState } from "react";
 
 export function UpgradeForm() {
@@ -26,7 +26,12 @@ export function UpgradeForm() {
         <p className="mt-3 text-muted-foreground">
           Offer names and honest statuses stay free. PoolIndex Pro is a planned ${PLANS.paid.priceUsd}/month or $
           {PLANS.paid.yearlyUsd}/year plan for more wallets, claim-window email alerts, and Wayback/archive scanning.
-          Payment processing is unavailable in this Closed Beta. Reddit and Bitcointalk stay reserved.
+          Payment processing is unavailable in this Closed Beta. Reddit and Bitcointalk stay reserved. Adapter
+          failures are repaired as product maintenance — not a paid add-on. A later{" "}
+          <a className="underline" href="/coverage">
+            Request Coverage
+          </a>{" "}
+          SKU would pay for building a missing merkle/API adapter, never for an Eligible verdict.
         </p>
       </div>
 
@@ -45,7 +50,7 @@ export function UpgradeForm() {
               <li>Connect your own agent (read-only MCP; you pay for the LLM)</li>
             </ul>
             {plan === "free" ? (
-              <p className="text-xs">You are on Free. Slot {wallets.length}/{maxWallets}.</p>
+              <p className="text-xs">You are on Free. Slot {wallets.length}/{formatWalletCap(maxWallets)}.</p>
             ) : null}
           </CardContent>
         </Card>
@@ -66,11 +71,34 @@ export function UpgradeForm() {
               <li>Same named results — nothing extra is hidden behind payment</li>
             </ul>
             {plan === "paid" ? (
-              <p className="text-xs text-foreground">PoolIndex Pro is active. {wallets.length}/{maxWallets} wallets bound.</p>
+              <p className="text-xs text-foreground">
+                PoolIndex Pro is active. {wallets.length}/{formatWalletCap(maxWallets)} wallets bound.
+              </p>
             ) : null}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Request Coverage (planned)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            Not for sale in Closed Beta. A later payment would fund a real wallet-level adapter for a catalog program
+            that today stays Unable to verify because PoolIndex does not host its merkle or allocation file.
+          </p>
+          <p>
+            That payment does not buy Eligible. The new adapter can return Not eligible. Repairing an adapter that
+            already existed and then broke is included maintenance, not this SKU.
+          </p>
+          <p>
+            <a className="underline" href="/coverage">
+              Public coverage roadmap
+            </a>
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

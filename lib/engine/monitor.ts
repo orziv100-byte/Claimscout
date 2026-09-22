@@ -1,7 +1,7 @@
 import { parsePublicAddress } from "../address.ts";
 import { listUsers } from "../auth.ts";
 import { sendMail, type MailPurpose } from "../mail.ts";
-import { isPaidPlan } from "../plan.ts";
+import { isPaidPlan, MONITOR_WALLET_CAP, type PlanId } from "../plan.ts";
 import { scansAreOpen } from "../ops.ts";
 import { readResourceSnapshot } from "../resource-guard.ts";
 import { trackWalletAlert, trackWalletScan } from "../telemetry.ts";
@@ -25,6 +25,12 @@ export type MonitorRunResult = {
 };
 
 export const MIN_ALERT_NET_USD = 1;
+
+/** Daily engine monitor is paid (or explicit Free opt-in). Free is never full-scanned by default. */
+export function dailyMonitorAllowed(user: { plan: PlanId; monitorEnabled?: boolean }): boolean {
+  if (isPaidPlan(user.plan)) return true;
+  return user.monitorEnabled === true;
+}
 
 export function belowAlertNet(finding: EngineFinding): boolean {
   if (finding.roiConfidence === "none" || finding.roiConfidence == null) return false;
@@ -134,7 +140,21 @@ export async function runWalletMonitor(): Promise<MonitorRunResult> {
   const wallets: MonitorWalletResult[] = [];
 
   for (const user of targets) {
-    for (const raw of user.wallets) {
+    if (!dailyMonitorAllowed(user)) {
+      for (const raw of user.wallets.slice(0, MONITOR_WALLET_CAP)) {
+        wallets.push({
+          userId: user.id,
+          address: raw,
+          scannedAt: ranAt,
+          alerted: false,
+          skipped: "free_plan_no_daily_monitor",
+          changeCount: 0,
+        });
+      }
+      continue;
+    }
+    const watched = user.wallets.slice(0, MONITOR_WALLET_CAP);
+    for (const raw of watched) {
       const snap = readResourceSnapshot();
       if (snap.level === "critical") {
         wallets.push({

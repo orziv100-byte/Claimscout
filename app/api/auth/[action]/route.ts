@@ -11,7 +11,6 @@ import {
   verifyEmailToken,
 } from "@/lib/auth";
 import { APP_VERSION } from "@/lib/app-info";
-import { inspectEnv } from "@/lib/env";
 import { readOps } from "@/lib/ops";
 import { clientIp, clearRateLimit, rateLimit } from "@/lib/rate-limit";
 import {
@@ -43,7 +42,6 @@ export async function GET(request: Request, context: { params: Promise<{ action:
     const ops = readOps();
     return NextResponse.json({
       version: APP_VERSION,
-      env: inspectEnv(),
       ops: {
         maintenanceMode: ops.maintenanceMode,
         scansEnabled: ops.scansEnabled,
@@ -98,7 +96,15 @@ export async function POST(request: Request, context: { params: Promise<{ action
       if (blocked) return blocked;
       const logged = await loginAccount({ email, password: String(body.password || ""), ip });
       clearRateLimit(`login:${ip}:${email.toLowerCase()}`);
-      return attachSessionCookie(NextResponse.json({ ok: true, user: logged.user, version: APP_VERSION }), logged.cookie);
+      return attachSessionCookie(
+        NextResponse.json({
+          ok: true,
+          user: logged.user,
+          mfaRequired: logged.user.role === "admin" && Boolean(logged.user.totpEnabled),
+          version: APP_VERSION,
+        }),
+        logged.cookie,
+      );
     }
 
     if (action === "logout") {

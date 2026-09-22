@@ -52,8 +52,14 @@ test("public health and status omit RAM CPU disk job and env details", () => {
 
 test("expensive endpoints are limited per user and per IP", () => {
   resetRateLimitForTests();
-  const request = new Request("http://127.0.0.1/api/search", { headers: { "x-forwarded-for": "203.0.113.9" } });
+  const request = new Request("http://127.0.0.1/api/search", { headers: { "x-real-ip": "203.0.113.9" } });
+  assert.equal(clientIp(request), "unknown");
+  const spoofed = new Request("http://127.0.0.1/api/search", { headers: { "x-forwarded-for": "198.51.100.1" } });
+  assert.equal(clientIp(spoofed), "unknown");
+  process.env.POOLINDEX_TRUST_PROXY = "1";
   assert.equal(clientIp(request), "203.0.113.9");
+  assert.equal(clientIp(spoofed), "198.51.100.1");
+  delete process.env.POOLINDEX_TRUST_PROXY;
   for (let i = 0; i < 20; i += 1) {
     const hit = limitExpensiveEndpoint(request, "user-a", "search");
     assert.equal(hit.ok, true);

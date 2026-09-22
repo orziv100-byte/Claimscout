@@ -117,6 +117,7 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
     potentialFindings: interesting.length,
     findings: interesting.map((row) => ({
       id: row.id,
+      sourceId: row.sourceId,
       title: row.title,
       verification: row.verification,
       eligibility: row.eligibility,
@@ -125,6 +126,8 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
       category: row.category,
       officialUrl: row.officialUrl,
       catalogId: row.catalogId,
+      sourceStatus: row.sourceStatus,
+      detail: row.detail,
     })),
   };
 }

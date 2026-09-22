@@ -46,7 +46,13 @@ function rejectSecrets(value: string, field: string) {
 }
 
 export function publicUser(user: UserRecord): PublicUser {
-  const { passwordHash: _passwordHash, ...rest } = user;
+  const {
+    passwordHash: _passwordHash,
+    totpSecret: _totpSecret,
+    totpRecoveryHashes: _totpRecoveryHashes,
+    totpLastStep: _totpLastStep,
+    ...rest
+  } = user;
   return rest;
 }
 

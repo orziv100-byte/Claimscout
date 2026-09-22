@@ -1,0 +1,18 @@
+{
+  "creditAuthority": "server",
+  "note": "Clients never set credit or plan balances. Prices stay config until payments exist.",
+  "plans": {
+    "free": {
+      "maxWallets": 1,
+      "dailyMonitor": "opt-in",
+      "priceUsd": 0,
+      "yearlyUsd": 0
+    },
+    "paid": {
+      "maxWallets": 5,
+      "dailyMonitor": "included",
+      "priceUsd": 20,
+      "yearlyUsd": 99
+    }
+  }
+}

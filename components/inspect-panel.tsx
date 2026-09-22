@@ -59,7 +59,7 @@ export function InspectPanel({ initialUrl = "" }: { initialUrl?: string }) {
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://claim.example.org/airdrop"
+            placeholder="https://app.uniswap.org/"
             className="font-mono text-sm"
           />
           <Button type="submit" disabled={loading}>

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
 import { SiteFooter } from "@/components/site-footer";
+import { MarketsTicker } from "@/components/markets-ticker";
 import { SiteHeader } from "@/components/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PlanProvider } from "@/components/plan-provider";
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <MaintenanceBanner />
                 <LegalReacceptBanner />
                 <SiteHeader />
+                <MarketsTicker />
                 <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" tabIndex={-1}>
                   {children}
                 </main>
