@@ -1,4 +1,5 @@
 import { BRAND_NAME } from "./app-info.ts";
+import { PLAN_POLICY, PLAN_PRICES } from "./plan-config.ts";
 
 export const SCAN_SOURCES = [
   "catalog",
@@ -27,10 +28,10 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   free: {
     id: "free",
     name: "Free",
-    priceUsd: 0,
-    yearlyUsd: 0,
+    priceUsd: PLAN_PRICES.free.priceUsd,
+    yearlyUsd: PLAN_PRICES.free.yearlyUsd,
     billingInterval: "none",
-    maxWallets: 1,
+    maxWallets: PLAN_POLICY.free.maxWallets,
     sources: ["catalog", "github"],
     summary:
       "One public wallet, catalog, honest eligibility names, and URL inspect. Finding names are never hidden behind payment.",
@@ -38,13 +39,13 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   paid: {
     id: "paid",
     name: `${BRAND_NAME} Pro`,
-    priceUsd: 20,
-    yearlyUsd: 99,
+    priceUsd: PLAN_PRICES.paid.priceUsd,
+    yearlyUsd: PLAN_PRICES.paid.yearlyUsd,
     billingInterval: "month",
-    maxWallets: 5,
+    maxWallets: PLAN_POLICY.paid.maxWallets,
     sources: ["catalog", "github", "wayback", "archive_org"],
     summary:
-      "Planned $20/month or $99/year: up to five wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Finding names stay free. Payment processing is unavailable.",
+      `Planned $${PLAN_PRICES.paid.priceUsd}/month or $${PLAN_PRICES.paid.yearlyUsd}/year: up to ${PLAN_POLICY.paid.maxWallets} wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Finding names stay free. Payment processing is unavailable.`,
   },
 };
 

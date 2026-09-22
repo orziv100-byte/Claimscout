@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { bindWallet, capSources, formatWalletCap, maxWalletsFor, MONITOR_WALLET_CAP, OPERATOR_WALLET_CHECK_CAP, paidSourceCoverage, PLANS, sourceAccess } from "./plan.ts";
-import { CREDIT_AUTHORITY, dailyMonitorPolicy, PLAN_POLICY } from "./plan-config.ts";
+import { CREDIT_AUTHORITY, dailyMonitorPolicy, PAYMENT_PROVIDER, PLAN_POLICY, PLAN_PRICES } from "./plan-config.ts";
 
 test("free plan is one wallet, catalog + GitHub, and never paywalls names", () => {
   assert.deepEqual([...PLANS.free.sources], ["catalog", "github"]);
@@ -11,6 +11,9 @@ test("free plan is one wallet, catalog + GitHub, and never paywalls names", () =
   assert.equal(dailyMonitorPolicy("free"), "opt-in");
   assert.equal(PLAN_POLICY.free.maxWallets, 1);
   assert.equal(CREDIT_AUTHORITY, "server");
+  assert.equal(PAYMENT_PROVIDER, "none");
+  assert.equal(PLAN_PRICES.paid.priceUsd, 20);
+  assert.equal(PLAN_PRICES.paid.yearlyUsd, 99);
 });
 
 test("paid plan is $20/month or $99/year, five wallets, alerts and archive — not pay-to-reveal", () => {

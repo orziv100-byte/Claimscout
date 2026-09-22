@@ -47,6 +47,12 @@ export function trustProxyHeaders(env: NodeJS.ProcessEnv = process.env): boolean
   return env.POOLINDEX_TRUST_PROXY === "1";
 }
 
+/**
+ * Rate-limit identity. Untrusted headers (Forwarded, X-Client-IP, True-Client-IP,
+ * CF-Connecting-IP) are never read — even with TRUST_PROXY — so a second parser
+ * cannot bypass X-Real-IP / X-Forwarded-For gating. With TRUST_PROXY, cloudflared
+ * is expected to set X-Real-IP; X-Forwarded-For is the fallback first hop only.
+ */
 export function clientIp(request: Request, env: NodeJS.ProcessEnv = process.env): string {
   if (!trustProxyHeaders(env)) return "unknown";
   const real = request.headers.get("x-real-ip")?.trim();

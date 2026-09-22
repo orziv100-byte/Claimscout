@@ -111,6 +111,28 @@ export async function assertSafeUrl(raw: string, opts: AssertSafeUrlOptions = {}
   return parsed;
 }
 
+/** Second DNS check immediately before connect. First hop already passed assertSafeUrl. */
+export async function assertNoDnsRebinding(
+  hostname: string,
+  lookup: LookupFn,
+): Promise<void> {
+  if (literalAddresses(hostname).length) return;
+  let resolved: string[];
+  try {
+    resolved = await lookup(hostname);
+  } catch {
+    throw new SsrfError("DNS lookup failed; the host was not fetched.");
+  }
+  if (!resolved.length) throw new SsrfError("DNS lookup returned no addresses.");
+  for (const address of resolved) {
+    if (isBlockedIp(address)) {
+      throw new SsrfError(
+        "DNS rebinding blocked: second resolve returned a private, loopback, link-local, or reserved address.",
+      );
+    }
+  }
+}
+
 export async function fetchSafe(
   url: string,
   init: RequestInit = {},
@@ -127,6 +149,10 @@ export async function fetchSafe(
 
   for (let hop = 0; hop <= maxRedirects; hop += 1) {
     const safe = await assertSafeUrl(current, { lookup: opts.lookup });
+    const hostname = normalizeHostname(safe.hostname);
+    if (!literalAddresses(hostname).length) {
+      await assertNoDnsRebinding(hostname, opts.lookup ?? defaultLookup);
+    }
     const requestInit: RequestInit = {
       ...init,
       redirect: "manual",
@@ -136,8 +162,6 @@ export async function fetchSafe(
       delete requestInit.body;
     }
     const response = await fetchImpl(safe.toString(), requestInit);
-    // DNS was checked before this hop. A later A/AAAA change (TOCTOU) is not pinned here;
-    // undici connect-to-IP belongs in the SQLite/MFA slice, not this secrets/IP slice.
     const location = response.headers.get("location");
     const redirected = response.status >= 300 && response.status < 400 && location;
     if (!redirected) return response;

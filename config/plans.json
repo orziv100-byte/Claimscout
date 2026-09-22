@@ -1,6 +1,10 @@
 {
   "creditAuthority": "server",
-  "note": "Clients never set credit or plan balances. Prices stay config until payments exist.",
+  "payments": {
+    "provider": "none",
+    "providers": ["none", "mor", "stripe"],
+    "note": "none = Closed Beta, no checkout. mor = merchant of record (Lemon Squeezy / Paddle). stripe = Stripe Checkout after incorporation. Change provider here only after Lior picks one. No webhooks or charges while provider is none."
+  },
   "plans": {
     "free": {
       "maxWallets": 1,

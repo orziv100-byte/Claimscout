@@ -24,24 +24,36 @@ Branch: `cursor/prelaunch-foundation`
 
 Do not start payments, credits, webhooks, EXE, new chains, or live-scan source expansion.
 
-## Topology (S-01) — bind deferred
+## Topology (S-01) — loopback bind applied 2026-09-22
 
-Observed 2026-09-22 on claimscoutserver:
+- `cloudflared` origin is `http://localhost:43147` (dials `127.0.0.1:43147`).
+- Public `https://poolindex.app/api/health` returned 200 before bind.
+- systemd now: `next start --hostname 127.0.0.1 --port 43147` plus `POOLINDEX_TRUST_PROXY=1`.
+- SSH remains on `:22`. Rollback: restore ExecStart hostname to `0.0.0.0` and drop TRUST_PROXY, `daemon-reload`, restart.
 
-- App: systemd `claimscout.service` → `next start --hostname 0.0.0.0 --port 43147`
-- Listen: `0.0.0.0:43147` and SSH `0.0.0.0:22`
-- No nginx, no Caddy
-- `cloudflared` **is** active (system service, token file — do not log it)
-- Local health: `http://127.0.0.1:43147/api/health` → 200
+## Dual-write gate (before any real money)
 
-`127.0.0.1` bind is **compatible in principle** (cloudflared on the same host can still reach loopback) but is **not applied** until:
+JSON `state.json` stays the authoritative read path. `poolindex.sqlite` is dual-write only.
 
-1. Confirm the tunnel ingress origin is `http://127.0.0.1:43147` or `http://localhost:43147` (not a public NIC).
-2. Hit `https://poolindex.app/api/health` from a **real external network** (not this host) and get 200.
-3. Then change systemd hostname to `127.0.0.1`, reload, and repeat the external check.
-4. Only then set `POOLINDEX_TRUST_PROXY=1` so rate limits see `X-Real-IP` from the tunnel.
+SQLite becomes a candidate source of truth only after **all** of:
 
-Until that proof, forwarding headers are ignored (`clientIp` → `unknown`) so a client hitting `:43147` cannot spoof buckets.
+1. 14 consecutive calendar days of production dual-write with zero count mismatches.
+2. At least 50 successful `writeBetaState` cycles, each followed by a dry-run `migrateStateToSqlite` on a copy whose user/wallet/session/invite/token counts match JSON.
+3. One restore-drill after that window that opens JSON and SQLite with matching counts.
+
+Until that gate, Phase 2 may configure prices and refuse checkout. It must not charge, settle credits, or treat SQLite as the ledger.
+
+## TRUST_PROXY check from a real external network (Windows)
+
+Do not run this from claimscoutserver. From the internet:
+
+1. `https://poolindex.app/api/health` → 200.
+2. Direct `http://<server-public-or-LAN-IP>:43147/api/health` → connection refused.
+3. POST `/api/auth/login` (invalid password is fine) with spoofed `X-Forwarded-For`, `X-Real-IP`, `Forwarded`, `X-Client-IP` pointing at a fake IP. The app must not become reachable on `:43147`. Spoof headers must not be readable via a public echo (there is none). Pass = still 200 on HTTPS, still refused on `:43147`, and `clientIp()` unit tests cover those headers.
+
+## SSRF TOCTOU scenario (unit)
+
+`lib/ssrf.test.ts`: hostname `rebind.example`, resolve #1 `93.184.216.34`, resolve #2 `169.254.169.254`. Pass = `SsrfError`, `fetchImpl` never called.
 
 ## STOP / rollback
 

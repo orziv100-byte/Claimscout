@@ -1,5 +1,5 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "edge") return;
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { assertSafeToStart, ProductionEnvError } = await import("./lib/env.ts");
   try {
     assertSafeToStart();

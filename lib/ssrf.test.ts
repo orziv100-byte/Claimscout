@@ -134,6 +134,27 @@ test("follows a safe redirect hop and returns the final public response", async 
   assert.equal(await res.text(), "ok");
 });
 
+test("TOCTOU: public first resolve then metadata/private second resolve does not fetch", async () => {
+  // Scenario: rebind.example A-record 93.184.216.34 on check #1, then 169.254.169.254 on check #2.
+  let resolves = 0;
+  const lookup = async () => {
+    resolves += 1;
+    if (resolves === 1) return ["93.184.216.34"];
+    return ["169.254.169.254"];
+  };
+  const calls: string[] = [];
+  const fetchImpl = async (input: string) => {
+    calls.push(input);
+    return new Response("leaked", { status: 200 });
+  };
+  await assert.rejects(
+    () => fetchSafe("https://rebind.example/meta", {}, { fetchImpl, lookup }),
+    /rebinding|private|link-local|reserved/i,
+  );
+  assert.equal(resolves >= 2, true);
+  assert.deepEqual(calls, []);
+});
+
 test("parses decimal and short-form IPv4 used in SSRF bypasses", () => {
   assert.equal(tryParseIPv4("2130706433"), "127.0.0.1");
   assert.equal(tryParseIPv4("0177.0.0.1"), "127.0.0.1");

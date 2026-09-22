@@ -60,6 +60,27 @@ test("expensive endpoints are limited per user and per IP", () => {
   assert.equal(clientIp(request), "203.0.113.9");
   assert.equal(clientIp(spoofed), "198.51.100.1");
   delete process.env.POOLINDEX_TRUST_PROXY;
+  const alt = new Request("http://127.0.0.1/api/search", {
+    headers: {
+      "x-client-ip": "198.51.100.9",
+      forwarded: "for=198.51.100.8",
+      "true-client-ip": "198.51.100.7",
+      "cf-connecting-ip": "198.51.100.6",
+    },
+  });
+  assert.equal(clientIp(alt), "unknown");
+  process.env.POOLINDEX_TRUST_PROXY = "1";
+  assert.equal(clientIp(alt), "unknown");
+  const mixed = new Request("http://127.0.0.1/api/search", {
+    headers: {
+      "x-real-ip": "203.0.113.9",
+      "x-forwarded-for": "198.51.100.1",
+      "x-client-ip": "198.51.100.9",
+      forwarded: "for=198.51.100.8",
+    },
+  });
+  assert.equal(clientIp(mixed), "203.0.113.9");
+  delete process.env.POOLINDEX_TRUST_PROXY;
   for (let i = 0; i < 20; i += 1) {
     const hit = limitExpensiveEndpoint(request, "user-a", "search");
     assert.equal(hit.ok, true);
