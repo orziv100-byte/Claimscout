@@ -10,7 +10,7 @@ import type {
 import { ACCOUNT_STATUSES, USER_ROLES } from "./beta-types.ts";
 import { adminEmails } from "./env.ts";
 import { PRIVACY_VERSION, TERMS_VERSION } from "./legal.ts";
-import { sendMail } from "./mail.ts";
+import { absoluteMailUrl, sendMail } from "./mail.ts";
 import { hashPassword, newId, sha256Base64Url, verifyPassword } from "./password.ts";
 import { SecretMaterialError, assertNoSecretMaterial } from "./secrets-guard.ts";
 import {
@@ -194,15 +194,34 @@ export async function registerAccount(input: {
       recordSecurity({ type: "register", userId: user.id, email: user.email });
       return { user: publicUser(user), verifyUrl, email: user.email };
     });
+    const verifyLink = absoluteMailUrl(created.verifyUrl);
     await sendMail({
       to: created.email,
       subject: "Verify your PoolIndex Beta account",
-      text: `Welcome to PoolIndex Closed Beta. Verify your email: ${created.verifyUrl}`,
-      url: created.verifyUrl,
+      text: `Welcome to PoolIndex Closed Beta.\n\nVerify your email (link expires in 24 hours):\n${verifyLink}\n\nIf you did not create this account, you can ignore this message.`,
+      url: verifyLink,
       purpose: "verify_email",
     });
     return { user: created.user, verifyUrl: created.verifyUrl };
   });
+}
+
+function issueSession(state: ReturnType<typeof readBetaState>, user: UserRecord): { session: SessionRecord; cookie: string } {
+  const session: SessionRecord = {
+    id: newId(),
+    userId: user.id,
+    createdAt: nowIso(),
+    expiresAt: new Date(Date.now() + SESSION_TTL_SEC * 1000).toISOString(),
+    revokedAt: null,
+  };
+  state.sessions.push(session);
+  const cookie = serializeSession({
+    uid: user.id,
+    sid: session.id,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.parse(session.expiresAt) / 1000),
+  });
+  return { session, cookie };
 }
 
 export async function loginAccount(input: {
@@ -228,22 +247,9 @@ export async function loginAccount(input: {
       const live = next.users.find((row) => row.id === user.id);
       if (!live) throw new AuthError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
       live.lastLoginAt = nowIso();
-      const session: SessionRecord = {
-        id: newId(),
-        userId: live.id,
-        createdAt: nowIso(),
-        expiresAt: new Date(Date.now() + SESSION_TTL_SEC * 1000).toISOString(),
-        revokedAt: null,
-      };
-      next.sessions.push(session);
-      const cookie = serializeSession({
-        uid: live.id,
-        sid: session.id,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.parse(session.expiresAt) / 1000),
-      });
+      const issued = issueSession(next, live);
       recordSecurity({ type: "login_success", userId: live.id, email: live.email, ip: input.ip });
-      return { user: publicUser(live), cookie, session };
+      return { user: publicUser(live), cookie: issued.cookie, session: issued.session };
     });
   });
 }
@@ -284,6 +290,12 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ sent: tr
     if (!user || user.status === "disabled") return { sent: true as const };
     const raw = newId(24);
     mutateBetaState((next) => {
+      const stamp = nowIso();
+      for (const token of next.tokens) {
+        if (token.type === "reset_password" && token.userId === user.id && !token.usedAt) {
+          token.usedAt = stamp;
+        }
+      }
       next.tokens.push({
         id: newId(),
         type: "reset_password",
@@ -294,11 +306,12 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ sent: tr
       });
     });
     const resetUrl = `/reset?token=${encodeURIComponent(raw)}`;
+    const resetLink = absoluteMailUrl(resetUrl);
     await sendMail({
       to: user.email,
       subject: "Reset your PoolIndex password",
-      text: `Reset your password (valid for 1 hour): ${resetUrl}`,
-      url: resetUrl,
+      text: `Reset your PoolIndex password (link expires in 1 hour):\n${resetLink}\n\nIf you did not request this, you can ignore this message.`,
+      url: resetLink,
       purpose: "reset_password",
     });
     recordSecurity({ type: "password_reset_requested", userId: user.id, email: user.email });
@@ -307,7 +320,7 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ sent: tr
   });
 }
 
-export async function resetPassword(rawToken: string, password: string): Promise<PublicUser> {
+export async function resetPassword(rawToken: string, password: string): Promise<{ user: PublicUser; cookie: string }> {
   if (password.length < 10 || password.length > 200) {
     throw new AuthError(400, "INVALID_PASSWORD", "Password must be 10–200 characters.");
   }
@@ -326,13 +339,16 @@ export async function resetPassword(rawToken: string, password: string): Promise
     for (const session of state.sessions) {
       if (session.userId === user.id && !session.revokedAt) session.revokedAt = nowIso();
     }
+    const issued = issueSession(state, user);
+    user.lastLoginAt = nowIso();
     recordSecurity({ type: "password_reset", userId: user.id, email: user.email });
-    return publicUser(user);
+    return { user: publicUser(user), cookie: issued.cookie };
   });
 }
 
 export function readSessionUser(request: Request): { user: UserRecord; session: SessionRecord } | null {
-  const claims = parseSessionCookie(cookieValue(request, SESSION_COOKIE));
+  const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(\S+)/i)?.[1];
+  const claims = parseSessionCookie(cookieValue(request, SESSION_COOKIE)) ?? parseSessionCookie(bearer);
   if (!claims) return null;
   const state = readBetaState();
   const session = state.sessions.find((row) => row.id === claims.sid && row.userId === claims.uid) ?? null;

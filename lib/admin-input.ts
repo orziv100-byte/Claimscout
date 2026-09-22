@@ -128,3 +128,48 @@ export function parseAdminFeedbackPatch(body: Record<string, unknown>): { id: st
   }
   return { id: body.id.trim(), status: body.status };
 }
+
+export function parseAdminRepairPatch(body: Record<string, unknown>): {
+  id: string;
+  decision: "approve" | "reject" | "restore";
+} {
+  rejectUnknownKeys(body, ["id", "decision"], "repair");
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  if (!id) throw new AuthError(400, "INVALID_REPAIR", "Repair id is required.");
+  if (body.decision !== "approve" && body.decision !== "reject" && body.decision !== "restore") {
+    throw new AuthError(400, "INVALID_REPAIR", "decision must be approve, reject, or restore.");
+  }
+  return { id, decision: body.decision };
+}
+
+export function parseAdminLearningPatch(body: Record<string, unknown>): {
+  kind: "proposal" | "competitor";
+  id: string;
+  decision?: "accepted" | "rejected" | "shipped";
+  notes?: string;
+} {
+  rejectUnknownKeys(body, ["kind", "id", "decision", "notes"], "learning");
+  const kind = body.kind === "competitor" ? "competitor" : body.kind === "proposal" ? "proposal" : "";
+  if (!kind) throw new AuthError(400, "INVALID_LEARNING", "kind must be proposal or competitor.");
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  if (!id) throw new AuthError(400, "INVALID_LEARNING", "id is required.");
+  const patch: {
+    kind: "proposal" | "competitor";
+    id: string;
+    decision?: "accepted" | "rejected" | "shipped";
+    notes?: string;
+  } = { kind, id };
+  if (kind === "proposal") {
+    if (body.decision !== "accepted" && body.decision !== "rejected" && body.decision !== "shipped") {
+      throw new AuthError(400, "INVALID_LEARNING", "decision must be accepted, rejected, or shipped.");
+    }
+    patch.decision = body.decision;
+  }
+  if (kind === "competitor") {
+    if (typeof body.notes !== "string") {
+      throw new AuthError(400, "INVALID_LEARNING", "notes must be a string.");
+    }
+    patch.notes = body.notes;
+  }
+  return patch;
+}

@@ -6,7 +6,7 @@ const buckets = new Map<string, Bucket>();
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterSec: number };
 
-export type ExpensiveEndpoint = "search" | "verify" | "archive" | "onchain" | "hunt";
+export type ExpensiveEndpoint = "search" | "verify" | "archive" | "onchain" | "hunt" | "agent";
 
 const EXPENSIVE_LIMITS: Record<ExpensiveEndpoint, { user: number; ip: number; windowMs: number }> = {
   search: { user: 20, ip: 40, windowMs: 10 * 60 * 1000 },
@@ -14,7 +14,10 @@ const EXPENSIVE_LIMITS: Record<ExpensiveEndpoint, { user: number; ip: number; wi
   archive: { user: 30, ip: 60, windowMs: 10 * 60 * 1000 },
   onchain: { user: 20, ip: 40, windowMs: 10 * 60 * 1000 },
   hunt: { user: 40, ip: 80, windowMs: 10 * 60 * 1000 },
+  agent: { user: 8, ip: 16, windowMs: 10 * 60 * 1000 },
 };
+
+const POLL_LIMITS = { user: 700, ip: 1400, windowMs: 10 * 60 * 1000 };
 
 export function rateLimit(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitResult {
   const current = buckets.get(key);
@@ -27,6 +30,10 @@ export function rateLimit(key: string, limit: number, windowMs: number, now = Da
   }
   current.count += 1;
   return { ok: true };
+}
+
+export function clearRateLimit(key: string): void {
+  buckets.delete(key);
 }
 
 export function resetRateLimitForTests() {
@@ -50,6 +57,17 @@ export function limitExpensiveEndpoint(
   const userHit = rateLimit(`expensive:${endpoint}:user:${userId}`, limits.user, limits.windowMs, now);
   if (!userHit.ok) return userHit;
   return rateLimit(`expensive:${endpoint}:ip:${ip}`, limits.ip, limits.windowMs, now);
+}
+
+export function limitOnchainPoll(
+  request: Request,
+  userId: string,
+  now = Date.now(),
+): RateLimitResult {
+  const ip = clientIp(request);
+  const userHit = rateLimit(`expensive:onchain-poll:user:${userId}`, POLL_LIMITS.user, POLL_LIMITS.windowMs, now);
+  if (!userHit.ok) return userHit;
+  return rateLimit(`expensive:onchain-poll:ip:${ip}`, POLL_LIMITS.ip, POLL_LIMITS.windowMs, now);
 }
 
 export function rateLimitHeaders(result: Extract<RateLimitResult, { ok: false }>): {

@@ -23,7 +23,7 @@ This file is an **engineering evidence pack** for the product/brand name **PoolI
 
 PoolIndex is a Closed Beta **research / discovery / safety-check** web tool. It helps invited testers search, organize, and review **publicly described** cryptocurrency claims, airdrops, faucets, giveaways, archived offers, and similar public sources, and run read-only checks against **public wallet addresses**. It is not a wallet, exchange, broker, custodian, claims processor, or payment processor.
 
-Intended commercial services (planned, **not billed** in this Beta): a Free research scan and a planned **PoolIndex Pro** paid plan (target $40; payment processing unavailable). **LEGAL REVIEW REQUIRED** for Nice/class selection and service descriptions used in any filing.
+Intended commercial services (planned, **not billed** in this Beta): a Free research scan and a planned **PoolIndex Pro** paid plan (target $20/month or $99/year; payment processing unavailable). **LEGAL REVIEW REQUIRED** for Nice/class selection and service descriptions used in any filing.
 
 ## Software / service categories (for counsel — not a filing)
 

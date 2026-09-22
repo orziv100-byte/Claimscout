@@ -1,9 +1,9 @@
+import { OfficialSourceLinks } from "@/components/official-source-links";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultFeedback } from "@/components/result-feedback";
 import { CHAIN_LABEL, CLAIMABILITY_LABEL, KIND_LABEL, LEGITIMACY_LABEL, STATUS_LABEL } from "@/lib/labels";
 import type { CatalogClaim, DiscoveredClaim } from "@/lib/types";
-import { Archive, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 export function KindBadge({ kind }: { kind: string }) {
@@ -24,7 +24,7 @@ export function ClaimabilityBadge({ claimability }: { claimability: CatalogClaim
   const tone =
     claimability === "confirmed_live_claim"
       ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-      : claimability === "expired"
+      : claimability === "expired" || claimability === "unsupported"
         ? "bg-muted text-muted-foreground"
         : "bg-amber-500/15 text-amber-800 dark:text-amber-400";
   return <Badge variant="outline" className={tone}>{CLAIMABILITY_LABEL[claimability]}</Badge>;
@@ -77,38 +77,12 @@ export function DiscoveredClaimCard({ item }: { item: DiscoveredClaim }) {
             ))}
           </ul>
         ) : null}
-        <div className="flex flex-wrap gap-3 text-sm">
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            Open source <ArrowUpRight className="size-3.5" />
-          </a>
-          {item.archiveUrl ? (
-            <a
-              href={item.archiveUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-            >
-              <Archive className="size-3.5" /> Archive
-            </a>
-          ) : null}
-          {item.catalogId ? (
-            <Link href={`/claims/${item.catalogId}`} className="text-muted-foreground hover:text-foreground">
-              Catalog entry
-            </Link>
-          ) : (
-            <Link
-              href={`/discover?inspect=${encodeURIComponent(item.url)}`}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Inspect URL
-            </Link>
-          )}
-        </div>
+        <OfficialSourceLinks officialUrl={item.url} archiveUrl={item.archiveUrl} />
+        {item.catalogId ? (
+          <Link href={`/claims/${item.catalogId}`} className="text-sm text-muted-foreground hover:text-foreground">
+            Catalog entry
+          </Link>
+        ) : null}
         <ResultFeedback source={item.source} claimId={item.catalogId} url={item.url} />
       </CardContent>
     </Card>

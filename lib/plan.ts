@@ -16,6 +16,8 @@ export type PlanDefinition = {
   id: PlanId;
   name: string;
   priceUsd: number;
+  yearlyUsd: number;
+  billingInterval: "month" | "none";
   maxWallets: number;
   sources: readonly ScanSource[];
   summary: string;
@@ -26,17 +28,23 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "free",
     name: "Free",
     priceUsd: 0,
+    yearlyUsd: 0,
+    billingInterval: "none",
     maxWallets: 1,
     sources: ["catalog", "github"],
-    summary: "Catalog plus GitHub, and eligibility for one wallet.",
+    summary:
+      "One public wallet, catalog, honest eligibility names, and URL inspect. Finding names are never hidden behind payment.",
   },
   paid: {
     id: "paid",
     name: `${BRAND_NAME} Pro`,
-    priceUsd: 40,
+    priceUsd: 20,
+    yearlyUsd: 99,
+    billingInterval: "month",
     maxWallets: 5,
     sources: ["catalog", "github", "wayback", "archive_org"],
-    summary: "Planned $40 plan: about 70% of scan sources (4 of 6) and up to five wallets. Payment processing is unavailable.",
+    summary:
+      "Planned $20/month or $99/year: up to five wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Finding names stay free. Payment processing is unavailable.",
   },
 };
 
@@ -95,4 +103,15 @@ export function paidSourceCoverage(): { used: number; total: number; percent: nu
   const used = PLANS.paid.sources.length;
   const total = SCAN_SOURCES.length;
   return { used, total, percent: Math.round((used / total) * 100) };
+}
+
+export function walletLimitMessage(plan: PlanId): string {
+  if (plan === "free") {
+    return `Free checks one wallet. ${BRAND_NAME} Pro is planned ($${PLANS.paid.priceUsd}/month or $${PLANS.paid.yearlyUsd}/year; payment processing unavailable) and unlocks up to five wallets plus email alerts and archive scanning. Offer names are never hidden behind payment.`;
+  }
+  return `${BRAND_NAME} Pro includes up to five wallets.`;
+}
+
+export function isPaidPlan(plan: PlanId): boolean {
+  return plan === "paid";
 }

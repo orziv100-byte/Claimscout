@@ -10,10 +10,12 @@
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "NODE_OPTIONS='--max-old-space-size=2048' next start --hostname 0.0.0.0 --port 43147",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --experimental-default-type=module --test-concurrency=1 --test lib/resource-guard.test.ts lib/safety.test.ts lib/watch.test.ts lib/plan.test.ts lib/auth.test.ts lib/ssrf.test.ts lib/hardening.test.ts lib/catalog-accuracy.test.ts lib/intelligence.test.ts lib/copyright.test.ts lib/legal-hardening.test.ts lib/trademark.test.ts && bash scripts/dual-machine/backup.test.sh",
+    "test": "node --import tsx --test-concurrency=1 --test lib/resource-guard.test.ts lib/safety.test.ts lib/watch.test.ts lib/plan.test.ts lib/auth.test.ts lib/ssrf.test.ts lib/hardening.test.ts lib/catalog-accuracy.test.ts lib/intelligence.test.ts lib/copyright.test.ts lib/legal-hardening.test.ts lib/trademark.test.ts lib/mail.test.ts lib/address.test.ts lib/eligibility-status.test.ts lib/onchain.test.ts lib/official-source.test.ts lib/engine/engine.test.ts lib/engine/monitor.test.ts lib/engine/mcp.test.ts lib/engine/mcp-cors.test.ts lib/engine/mcp-route.test.ts lib/engine/mcp-findings.test.ts lib/engine/mcp-runtime.test.ts && bash scripts/dual-machine/backup.test.sh",
+    "mail:resend": "node --import tsx scripts/resend-setup.ts",
     "backup:snapshot": "bash scripts/dual-machine/snapshot.sh",
     "backup:verify": "bash scripts/dual-machine/verify.sh",
-    "watch:digest": "bash scripts/watch-digest.sh"
+    "watch:digest": "bash scripts/watch-digest.sh",
+    "engine:digest": "bash scripts/engine-digest.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -35,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

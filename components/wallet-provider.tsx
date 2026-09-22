@@ -1,8 +1,7 @@
 "use client";
 
-import { isHexAddress } from "@/lib/address";
+import { parsePublicAddress } from "@/lib/address";
 import { usePlan } from "@/components/plan-provider";
-import { getAddress } from "viem";
 import {
   createContext,
   useCallback,
@@ -20,8 +19,9 @@ type WalletState = {
   mode: WalletMode;
   chainId: number | null;
   error: string | null;
+  errorUpgradeUrl: string | null;
   connectInjected: () => Promise<void>;
-  setReadonlyAddress: (value: string) => void;
+  setReadonlyAddress: (value: string) => Promise<boolean>;
   disconnect: () => void;
   requestClaimTransaction: (tx: {
     to: string;
@@ -41,14 +41,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<WalletMode>("disconnected");
   const [chainId, setChainId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorUpgradeUrl, setErrorUpgradeUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
-    if (!saved || !isHexAddress(saved)) return;
-    const checksum = getAddress(saved);
+    const parsed = saved ? parsePublicAddress(saved) : { ok: false as const, error: "" };
+    if (!parsed.ok) return;
+    const checksum = parsed.address;
     void bindAddress(checksum).then((bound) => {
-      if (!bound.ok) {
+      if (!bound.ok && bound.status !== 401) {
         setError(bound.error || "Wallet limit reached.");
+        setErrorUpgradeUrl(bound.status === 402 ? bound.upgradeUrl || "/upgrade" : null);
         persist(null);
         return;
       }
@@ -64,21 +67,24 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const connectInjected = useCallback(async () => {
     setError(null);
+    setErrorUpgradeUrl(null);
     const eth = window.ethereum;
     if (!eth) {
-      setError("No injected wallet found. Paste an address for read-only checks.");
+      setError("No browser wallet found. Paste a public 0x address to scan in read-only mode.");
       return;
     }
     const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
     const account = accounts[0];
-    if (!account || !isHexAddress(account)) {
-      setError("Wallet did not return a valid address.");
+    const parsed = account ? parsePublicAddress(account) : { ok: false as const, error: "Wallet did not return a valid address." };
+    if (!parsed.ok) {
+      setError(parsed.error || "Wallet did not return a valid address.");
       return;
     }
-    const checksum = getAddress(account);
+    const checksum = parsed.address;
     const bound = await bindAddress(checksum);
     if (!bound.ok) {
       setError(bound.error || "Wallet limit reached.");
+      setErrorUpgradeUrl(bound.status === 402 ? bound.upgradeUrl || "/upgrade" : null);
       return;
     }
     setAddress(checksum);
@@ -93,29 +99,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [bindAddress]);
 
   const setReadonlyAddress = useCallback(
-    (value: string) => {
+    async (value: string) => {
       setError(null);
+      setErrorUpgradeUrl(null);
       const trimmed = value.trim();
       if (!trimmed) {
         setAddress(null);
         setMode("disconnected");
         persist(null);
-        return;
+        return false;
       }
-      if (!isHexAddress(trimmed)) {
-        setError("Enter a 0x-prefixed Ethereum address. Seed phrases and private keys are rejected.");
-        return;
+      const parsed = parsePublicAddress(trimmed);
+      if (!parsed.ok) {
+        setError(parsed.error);
+        return false;
       }
-      const checksum = getAddress(trimmed);
-      void bindAddress(checksum).then((bound) => {
-        if (!bound.ok) {
-          setError(bound.error || "Wallet limit reached.");
-          return;
+      const checksum = parsed.address;
+      const bound = await bindAddress(checksum);
+      if (!bound.ok) {
+        if (bound.status === 401) {
+          setAddress(checksum);
+          setMode("readonly");
+          persist(checksum);
+          return true;
         }
-        setAddress(checksum);
-        setMode("readonly");
-        persist(checksum);
-      });
+        setError(bound.error || "Could not store this public address on the account.");
+        setErrorUpgradeUrl(bound.status === 402 ? bound.upgradeUrl || "/upgrade" : null);
+        return false;
+      }
+      setAddress(checksum);
+      setMode("readonly");
+      persist(checksum);
+      return true;
     },
     [bindAddress],
   );
@@ -125,6 +140,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setMode("disconnected");
     setChainId(null);
     setError(null);
+    setErrorUpgradeUrl(null);
     persist(null);
   }, []);
 
@@ -157,12 +173,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       mode,
       chainId,
       error,
+      errorUpgradeUrl,
       connectInjected,
       setReadonlyAddress,
       disconnect,
       requestClaimTransaction,
     }),
-    [address, mode, chainId, error, connectInjected, setReadonlyAddress, disconnect, requestClaimTransaction],
+    [address, mode, chainId, error, errorUpgradeUrl, connectInjected, setReadonlyAddress, disconnect, requestClaimTransaction],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

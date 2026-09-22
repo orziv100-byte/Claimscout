@@ -3,7 +3,7 @@ import { APP_VERSION } from "@/lib/app-info";
 import { createInvite, listInvites, listUsers, updateUser } from "@/lib/auth";
 import { listDeletionRequests, listPrivacyRequests, processDeletionRequest } from "@/lib/deletion";
 import { legalReadiness } from "@/lib/legal-gate";
-import { parseAdminFeedbackPatch, parseAdminInviteInput, parseAdminOpsPatch, parseAdminUserPatch } from "@/lib/admin-input";
+import { parseAdminFeedbackPatch, parseAdminInviteInput, parseAdminLearningPatch, parseAdminOpsPatch, parseAdminRepairPatch, parseAdminUserPatch } from "@/lib/admin-input";
 import { readErrors, readSecurity, readTelemetry } from "@/lib/beta-store";
 import { listFeedback, publicFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { betaMetrics, readOps, updateOps } from "@/lib/ops";
@@ -13,6 +13,9 @@ import { recordSecurity } from "@/lib/beta-store";
 import { aggregateFeedbackBySource } from "@/lib/intelligence/feedback-agg";
 import { adminStopHunt, huntAdminStats } from "@/lib/intelligence/hunt";
 import { DEFAULT_SOURCE_TIERS, sourceTierOverrides } from "@/lib/intelligence/reputation";
+import { publicSourceRecords } from "@/lib/engine/source-manager";
+import { approveRepair, rejectRepair, restoreRepair, syncRepairCasesFromHealth } from "@/lib/engine/repair";
+import { decideSourceProposal, operatorLearningSnapshot, updateCompetitorNotes } from "@/lib/engine/learning";
 
 export const runtime = "nodejs";
 
@@ -33,6 +36,9 @@ export async function GET(request: Request, context: { params: Promise<{ action:
       sourceReputation: DEFAULT_SOURCE_TIERS,
       sourceOverrides: sourceTierOverrides(),
       sourceFeedback: aggregateFeedbackBySource(),
+      engineSources: publicSourceRecords(),
+      sourceRepairs: syncRepairCasesFromHealth(),
+      operatorLearning: operatorLearningSnapshot(),
       users: listUsers(),
       invites: listInvites(),
       deletionRequests: listDeletionRequests(),
@@ -161,6 +167,27 @@ export async function POST(request: Request, context: { params: Promise<{ action
       const hunt = await adminStopHunt(huntId);
       recordSecurity({ type: "admin_hunt_stop", userId: authed.user.id, detail: huntId });
       return NextResponse.json({ ok: true, hunt: { id: hunt.id, status: hunt.status, userId: hunt.userId }, version: APP_VERSION });
+    }
+
+    if (action === "repairs") {
+      const patch = parseAdminRepairPatch(body);
+      const row =
+        patch.decision === "approve"
+          ? approveRepair(patch.id, authed.user.id)
+          : patch.decision === "reject"
+            ? rejectRepair(patch.id, authed.user.id)
+            : restoreRepair(patch.id, authed.user.id);
+      return NextResponse.json({ ok: true, repair: row, version: APP_VERSION });
+    }
+
+    if (action === "learning") {
+      const patch = parseAdminLearningPatch(body);
+      if (patch.kind === "competitor") {
+        const competitor = updateCompetitorNotes(patch.id, patch.notes ?? "", authed.user.id);
+        return NextResponse.json({ ok: true, competitor, version: APP_VERSION });
+      }
+      const proposal = decideSourceProposal(patch.id, patch.decision ?? "accepted", authed.user.id);
+      return NextResponse.json({ ok: true, proposal, version: APP_VERSION });
     }
 
     if (action === "deletions") {

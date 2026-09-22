@@ -12,6 +12,7 @@ type WatchResponse = {
   snapshot?: { capturedAt: string } | null;
   changes?: WatchChange[];
   openPools?: WatchOffer[];
+  unsupportedPools?: WatchOffer[];
   digest?: string;
   refreshed?: boolean;
 };
@@ -94,6 +95,24 @@ export function WatchPanel() {
                     {" "}
                     {Number(offer.remaining).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
                     {offer.symbol ?? offer.asset}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {data?.unsupportedPools && data.unsupportedPools.length > 0 ? (
+          <div>
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Unverifiable / Unsupported</p>
+            <ul className="space-y-1">
+              {data.unsupportedPools.map((offer) => (
+                <li key={offer.claimId}>
+                  <Link href={`/claims/${offer.claimId}`} className="hover:underline">
+                    {offer.title}
+                  </Link>
+                  <span className="text-xs text-muted-foreground">
+                    {" "}
+                    {(offer.poolError ?? "Unsupported").split("\n")[0]}
                   </span>
                 </li>
               ))}

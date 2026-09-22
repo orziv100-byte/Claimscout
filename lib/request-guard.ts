@@ -7,8 +7,15 @@ import { inspectEnv } from "./env.ts";
 import { scansAreOpen } from "./ops.ts";
 import { SESSION_COOKIE, sessionCookieOptions } from "./session-cookie.ts";
 import { rateLimitHeaders, type RateLimitResult } from "./rate-limit.ts";
+import { readAgentToken, scopesFromToken, type McpScope } from "./engine/agent-token.ts";
 
-export type Authed = { user: UserRecord; publicUser: PublicUser };
+export type Authed = {
+  user: UserRecord;
+  publicUser: PublicUser;
+  authKind?: "session" | "agent_token";
+  scopes?: readonly McpScope[];
+  tokenId?: string;
+};
 
 export function requireSameOrigin(request: Request): NextResponse | null {
   if (sameOrigin(request)) return null;
@@ -20,9 +27,14 @@ export function requireSameOrigin(request: Request): NextResponse | null {
 
 export function requireUser(
   request: Request,
-  opts: { allowUnverified?: boolean } = {},
+  opts: { allowUnverified?: boolean; agentTokenOnly?: boolean } = {},
 ): Authed | NextResponse {
-  const csrf = request.method === "GET" || request.method === "HEAD" ? null : requireSameOrigin(request);
+  const csrfNeeded =
+    !opts.agentTokenOnly &&
+    request.method !== "GET" &&
+    request.method !== "HEAD" &&
+    !/^Bearer\s+\S+/i.test(request.headers.get("authorization") ?? "");
+  const csrf = csrfNeeded ? requireSameOrigin(request) : null;
   if (csrf) return csrf;
   const env = inspectEnv();
   if (!env.ok) {
@@ -31,28 +43,47 @@ export function requireUser(
       { status: 500 },
     );
   }
-  const session = readSessionUser(request);
-  if (!session) {
-    return NextResponse.json({ error: "Sign in required.", code: "UNAUTHENTICATED", version: APP_VERSION }, { status: 401 });
+  const session = opts.agentTokenOnly ? null : readSessionUser(request);
+  const agent = session ? null : readAgentToken(request);
+  if (!session && !agent) {
+    const error = opts.agentTokenOnly
+      ? "Connect your agent with a read-only MCP token (Authorization: Bearer piagt_…). Create it on Account."
+      : "Sign in required.";
+    return NextResponse.json({ error, code: "UNAUTHENTICATED", version: APP_VERSION }, { status: 401 });
   }
-  if (session.user.status === "disabled" || session.user.status === "suspended" || session.user.deletionStatus === "completed") {
+  const user = session?.user ?? agent!.user;
+  const authKind = session ? "session" : "agent_token";
+  const scopes = agent ? scopesFromToken(agent.token) : undefined;
+  const tokenId = agent?.token.id;
+  if (user.status === "disabled" || user.status === "suspended" || user.deletionStatus === "completed") {
     return NextResponse.json(
       { error: "This account is not allowed to continue.", code: "ACCOUNT_DISABLED", version: APP_VERSION },
       { status: 403 },
     );
   }
-  if (!opts.allowUnverified && session.user.status === "pending_verification") {
+  if (!opts.allowUnverified && user.status === "pending_verification") {
     return NextResponse.json(
       { error: "Verify your email before using PoolIndex.", code: "EMAIL_UNVERIFIED", version: APP_VERSION },
       { status: 403 },
     );
   }
-  return { user: session.user, publicUser: publicUser(session.user) };
+  return { user, publicUser: publicUser(user), authKind, scopes, tokenId };
+}
+
+/** MCP tools/call: Bearer agent token only. Cookie CSRF does not apply. */
+export function requireAgentToken(request: Request, opts: { allowUnverified?: boolean } = {}): Authed | NextResponse {
+  return requireUser(request, { ...opts, agentTokenOnly: true });
 }
 
 export function requireAdmin(request: Request): Authed | NextResponse {
   const authed = requireUser(request, { allowUnverified: true });
   if (authed instanceof NextResponse) return authed;
+  if (authed.authKind === "agent_token") {
+    return NextResponse.json(
+      { error: "Agent tokens cannot use admin write routes.", code: "AGENT_TOKEN_NO_ADMIN", version: APP_VERSION },
+      { status: 403 },
+    );
+  }
   if (authed.user.role !== "admin") {
     return NextResponse.json({ error: "Admin access required.", code: "FORBIDDEN", version: APP_VERSION }, { status: 403 });
   }
@@ -99,8 +130,12 @@ export function guardFailed(err: unknown): NextResponse {
     return NextResponse.json({ error: err.message, code: err.code, version: APP_VERSION }, { status: err.status });
   }
   if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "SECRET_MATERIAL_REJECTED") {
+    const message =
+      "message" in err && typeof (err as { message: unknown }).message === "string"
+        ? (err as { message: string }).message
+        : "Rejected";
     return NextResponse.json(
-      { error: (err as Error).message, code: "SECRET_MATERIAL_REJECTED", version: APP_VERSION },
+      { error: message, code: "SECRET_MATERIAL_REJECTED", version: APP_VERSION },
       { status: 400 },
     );
   }

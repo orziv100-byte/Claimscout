@@ -38,7 +38,7 @@ test("terms include ownership and a new acceptance version", () => {
   assert.ok(ip);
   assert.match(ip.body, /Lior Elbaz, Israel/);
   assert.match(ip.body, /may not copy, sell, distribute, sublicense, or make commercial use/);
-  assert.equal(TERMS_VERSION, "beta-2026-09-20.3");
+  assert.equal(TERMS_VERSION, "beta-2026-09-21.2");
 });
 
 test("LICENSE and COPYRIGHT.md do not publish a national identity number", () => {

@@ -47,4 +47,4 @@ Audited via `package-lock.json` production walk (321 packages): MIT 284, ISC 19,
 
 Fonts: Geist / Geist Mono / Newsreader are loaded from `next/font/google`. Their upstream licenses apply; do not treat them as PoolIndex original type.
 
-External **data** (GitHub search hits, Wayback snapshots, archive.org items, chain explorer pages, catalog descriptions of third-party projects) remains third-party content. PoolIndex does not claim copyright over that material.
+External **data** (GitHub search hits, Wayback snapshots, archive.org items, chain explorer pages, catalog descriptions of third-party projects, official Uniswap merkle chunk JSON from `Uniswap/mrkl-drop-data-chunks` MIT) remains third-party content. PoolIndex does not claim copyright over that material. PoolIndex does not vendor `@uniswap/merkle-distributor` (GPL-3.0).

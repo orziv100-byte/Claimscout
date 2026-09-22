@@ -14,7 +14,7 @@ test("every catalog entry has an explicit claimability class", () => {
 
 test("unclaimed_remaining means unclaimed contract balance only, never proven claimability", () => {
   const rows = CATALOG.filter((claim) => claim.status === "unclaimed_remaining");
-  assert.ok(rows.length >= 5);
+  assert.ok(rows.length >= 4);
   for (const claim of rows) {
     assert.equal(claim.claimability, "unclaimed_contract_balance_only", claim.id);
     assert.ok(claim.warnings.includes(CONTRACT_BALANCE_NOT_CLAIMABLE), claim.id);
@@ -45,6 +45,30 @@ test("expired and archived catalog entries are marked expired for claimability",
   for (const claim of CATALOG.filter((row) => row.status === "expired" || row.status === "archived")) {
     assert.equal(claim.claimability, "expired", claim.id);
   }
+});
+
+test("catalog remaining-pool methods are declared and do not use mistyped token addresses", () => {
+  const withToken = CATALOG.filter((claim) => claim.onChain?.token);
+  assert.ok(withToken.length >= 8);
+  for (const claim of withToken) {
+    assert.ok(claim.onChain?.remainingMethod, claim.id);
+  }
+
+  const socks = CATALOG.find((c) => c.id === "uniswap-socks");
+  assert.equal(socks?.onChain?.token, "0x23B608675a2B2fB1890d3ABBd85c5775c51691d5");
+  assert.equal(socks?.onChain?.remainingMethod, "token_total_supply");
+
+  const hop = CATALOG.find((c) => c.id === "hop-protocol-airdrop");
+  assert.equal(hop?.onChain?.token, "0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC");
+  assert.equal(hop?.onChain?.remainingMethod, "token_balance_of_holder");
+  assert.equal(hop?.status, "expired");
+  assert.equal(hop?.onChain?.claimDeadline, "2022-12-09");
+
+  const dydx = CATALOG.find((c) => c.id === "dydx-airdrop");
+  assert.equal(dydx?.claimability, "unsupported");
+  assert.equal(dydx?.onChain?.remainingMethod, "unsupported");
+  assert.equal(dydx?.onChain?.distributor, "0x01d3348601968aB85b4bb028979006eac235a588");
+  assert.match(dydx?.onChain?.remainingUnsupportedReason ?? "", /no contract code/i);
 });
 
 test("safety wording and public health helpers stay conservative", () => {

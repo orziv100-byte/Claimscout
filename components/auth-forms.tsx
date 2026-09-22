@@ -210,6 +210,7 @@ export function ForgotForm() {
 
 export function ResetForm({ token }: { token: string }) {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -225,7 +226,9 @@ export function ResetForm({ token }: { token: string }) {
       setError(json.error || "Could not reset password");
       return;
     }
-    router.push("/login");
+    await refresh();
+    router.push("/discover");
+    router.refresh();
   }
 
   return (

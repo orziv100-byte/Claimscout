@@ -16,6 +16,10 @@ export function trackScan(user: UserRecord, row: Omit<ScanRecord, "userId" | "ve
     blocked: row.blocked,
     error: row.error,
     version: APP_VERSION,
+    kind: row.kind,
+    potentialFindings: row.potentialFindings,
+    verifiedFindings: row.verifiedFindings,
+    alerted: row.alerted,
   };
   recordUserScan(event);
   recordTelemetry({
@@ -47,6 +51,49 @@ export function trackScan(user: UserRecord, row: Omit<ScanRecord, "userId" | "ve
     },
     live.id,
   );
+}
+
+export function trackWalletScan(
+  user: { id: string },
+  row: {
+    status: "started" | "completed" | "failed";
+    durationMs?: number;
+    potentialFindings?: number;
+    verifiedFindings?: number;
+    sourcesChecked?: number;
+    error?: string;
+    alerted?: boolean;
+  },
+) {
+  const live = getUserById(user.id);
+  if (!live) return;
+  trackScan(live, {
+    query: "wallet-engine",
+    sources: ["engine"],
+    status: row.status,
+    durationMs: row.durationMs,
+    itemCount: row.verifiedFindings,
+    error: row.error,
+    kind: "wallet",
+    potentialFindings: row.potentialFindings,
+    verifiedFindings: row.verifiedFindings,
+    alerted: row.alerted,
+  });
+  recordTelemetry({
+    type: `wallet_scan_${row.status}`,
+    userId: live.id,
+    durationMs: row.durationMs,
+    detail: `potential=${row.potentialFindings ?? 0};verified=${row.verifiedFindings ?? 0};sources=${row.sourcesChecked ?? 0}`,
+    code: row.error,
+  });
+}
+
+export function trackWalletAlert(userId: string, changeCount: number) {
+  recordTelemetry({
+    type: "wallet_alert",
+    userId,
+    detail: `changes=${changeCount}`,
+  });
 }
 
 export function trackSourceFailure(source: string, code: string, userId?: string) {

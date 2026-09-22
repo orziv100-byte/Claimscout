@@ -13,7 +13,7 @@ import {
 import { APP_VERSION } from "@/lib/app-info";
 import { inspectEnv } from "@/lib/env";
 import { readOps } from "@/lib/ops";
-import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { clientIp, clearRateLimit, rateLimit } from "@/lib/rate-limit";
 import {
   attachSessionCookie,
   clearSessionCookie,
@@ -97,6 +97,7 @@ export async function POST(request: Request, context: { params: Promise<{ action
       const blocked = limited(`login:${ip}:${email.toLowerCase()}`, 8, 15 * 60 * 1000);
       if (blocked) return blocked;
       const logged = await loginAccount({ email, password: String(body.password || ""), ip });
+      clearRateLimit(`login:${ip}:${email.toLowerCase()}`);
       return attachSessionCookie(NextResponse.json({ ok: true, user: logged.user, version: APP_VERSION }), logged.cookie);
     }
 
@@ -120,8 +121,8 @@ export async function POST(request: Request, context: { params: Promise<{ action
     }
 
     if (action === "reset") {
-      const user = await resetPassword(String(body.token || ""), String(body.password || ""));
-      return clearSessionCookie(NextResponse.json({ ok: true, user, version: APP_VERSION }));
+      const reset = await resetPassword(String(body.token || ""), String(body.password || ""));
+      return attachSessionCookie(NextResponse.json({ ok: true, user: reset.user, version: APP_VERSION }), reset.cookie);
     }
   } catch (err) {
     if (err instanceof AuthError) return guardFailed(err);

@@ -138,7 +138,15 @@ export type ScanRecord = {
   blocked?: number;
   error?: string;
   version: string;
+  kind?: "search" | "wallet";
+  potentialFindings?: number;
+  verifiedFindings?: number;
+  alerted?: boolean;
 };
+
+export function isWalletScanRecord(row: ScanRecord): boolean {
+  return row.kind === "wallet" || row.query === "wallet-engine";
+}
 
 export type MailMessage = {
   at: string;

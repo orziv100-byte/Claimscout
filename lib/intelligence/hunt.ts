@@ -752,3 +752,4 @@ export function huntAdminStats() {
 }
 
 export { loadHuntForUser, listAllHunts, listUserHunts };
+export type { HuntSeed };

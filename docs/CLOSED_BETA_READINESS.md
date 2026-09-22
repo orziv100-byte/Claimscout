@@ -51,7 +51,7 @@ Footer, README, package description, LICENSE, COPYRIGHT.md, and docs use `© 202
 
 ## 10. Free/Pro enforcement status
 
-Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and wallets. Free: catalog+GitHub, 1 wallet. PoolIndex Pro: 4/6 sources, 5 wallets, $40 planned, no payment processor.
+Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and wallets. Free: one wallet, catalog, honest named statuses. PoolIndex Pro: 5 wallets, email alerts, Wayback/archive, $20/month or $99/year planned, no payment processor.
 
 ## 11. Resource/crash protection status
 
@@ -65,7 +65,7 @@ Still `lib/plan.ts` + API. Logged-in user record is source of truth for plan and
 
 ## 13. Known issues
 
-- Email uses a mail-provider interface with the on-disk outbox (`var/beta/outbox.jsonl`) as the default fallback. No vendor or credentials are hard-coded.
+- Email uses a mail-provider interface. Default fallback is the on-disk outbox (`var/beta/outbox.jsonl`). Production can select Resend via env (`POOLINDEX_MAIL_PROVIDER=resend`, `RESEND_API_KEY` in gitignored `.env`). No vendor credentials are hard-coded.
 - Rate limits and sessions are single-process (this host). Restart clears in-memory rate buckets; sessions persist in `var/beta/state.json`.
 - No payment processing (intentional).
 - `Content-Security-Policy` uses `frame-ancestors *` only in development (Cursor preview). Production sets `frame-ancestors 'none'`.

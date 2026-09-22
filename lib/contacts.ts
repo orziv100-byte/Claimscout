@@ -9,13 +9,22 @@ const ENV_KEYS: Record<ContactRole, string> = {
   legal: "POOLINDEX_CONTACT_LEGAL",
 };
 
-/** Placeholders. Replace with real addresses before Closed Beta launch. */
+/** Internal env-detection strings. Never show these to end users. */
 export const CONTACT_PLACEHOLDERS: Record<ContactRole, string> = {
   support: "support@POOLINDEX_DOMAIN",
   privacy: "privacy@POOLINDEX_DOMAIN",
   security: "security@POOLINDEX_DOMAIN",
   accessibility: "accessibility@POOLINDEX_DOMAIN",
   legal: "legal@POOLINDEX_DOMAIN",
+};
+
+/** Public mailboxes on the product domain. Used until POOLINDEX_CONTACT_* is set. */
+export const PUBLIC_CONTACT_DEFAULTS: Record<ContactRole, string> = {
+  support: "support@poolindex.app",
+  privacy: "privacy@poolindex.app",
+  security: "security@poolindex.app",
+  accessibility: "accessibility@poolindex.app",
+  legal: "legal@poolindex.app",
 };
 
 export type ContactEntry = {
@@ -32,7 +41,7 @@ export function contactEntry(role: ContactRole, env: NodeJS.ProcessEnv = process
   return {
     role,
     envKey,
-    address: configured ? raw : CONTACT_PLACEHOLDERS[role],
+    address: configured ? raw : PUBLIC_CONTACT_DEFAULTS[role],
     configured,
   };
 }
@@ -46,7 +55,5 @@ export function unconfiguredContacts(env: NodeJS.ProcessEnv = process.env): Cont
 }
 
 export function contactLine(role: ContactRole, env: NodeJS.ProcessEnv = process.env): string {
-  const entry = contactEntry(role, env);
-  if (entry.configured) return entry.address;
-  return `${entry.address} (configuration required before Closed Beta launch)`;
+  return contactEntry(role, env).address;
 }

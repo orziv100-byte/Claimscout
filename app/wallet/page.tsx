@@ -11,14 +11,13 @@ export default function WalletPage() {
       <div>
         <h1 className="font-heading text-3xl tracking-tight">Wallet check</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Read-only eligibility against the public catalog, plus a daily remaining-pool watch. PoolIndex will not sign
-          for you, will not store keys, and will not scan other people&apos;s wallets beyond the public address you
-          provide. That public address is stored on your account for plan limits, and also in browser session storage
-          while you work.
+          Paste a public 0x address. The table of named offers is the product. Holdings stay separate so leftover
+          balances are not mistaken for Eligible. Connecting a wallet is optional. PoolIndex does not claim tokens for
+          you and does not hide offer names behind payment.
         </p>
       </div>
-      <WatchPanel />
       <WalletDashboard />
+      <WatchPanel />
     </div>
   );
 }

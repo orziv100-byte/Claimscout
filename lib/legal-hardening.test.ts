@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, before, beforeEach, test } from "node:test";
 import { DEV_INVITE, listUsers, registerAccount } from "./auth.ts";
 import { mutateBetaState } from "./beta-store.ts";
-import { CONTACT_PLACEHOLDERS, contactEntry, unconfiguredContacts } from "./contacts.ts";
+import { CONTACT_PLACEHOLDERS, contactEntry, contactLine, PUBLIC_CONTACT_DEFAULTS, unconfiguredContacts } from "./contacts.ts";
 import {
   acceptCurrentLegal,
   createPrivacyRequest,
@@ -164,10 +164,15 @@ test("legal pages, contacts, and versions are present", () => {
   ]) {
     assert.equal(existsSync(join(root, file)), true, file);
   }
-  assert.equal(TERMS_VERSION, "beta-2026-09-20.3");
-  assert.equal(PRIVACY_VERSION, "beta-2026-09-20.3");
-  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-20.3");
-  assert.equal(contactEntry("privacy").address, CONTACT_PLACEHOLDERS.privacy);
+  assert.equal(TERMS_VERSION, "beta-2026-09-21.2");
+  assert.equal(PRIVACY_VERSION, "beta-2026-09-21.2");
+  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-21.1");
+  assert.equal(contactEntry("privacy").address, PUBLIC_CONTACT_DEFAULTS.privacy);
+  assert.equal(contactEntry("privacy").configured, false);
+  assert.equal(contactLine("privacy"), "privacy@poolindex.app");
+  assert.doesNotMatch(contactLine("privacy"), /POOLINDEX_DOMAIN/);
+  assert.doesNotMatch(contactLine("privacy"), /configuration required/);
+  assert.equal(CONTACT_PLACEHOLDERS.privacy, "privacy@POOLINDEX_DOMAIN");
   assert.ok(unconfiguredContacts({}).length >= 5);
   const configured = contactEntry("privacy", { POOLINDEX_CONTACT_PRIVACY: "privacy@example.com" });
   assert.equal(configured.configured, true);

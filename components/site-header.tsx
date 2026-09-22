@@ -6,28 +6,64 @@ import { useAuth } from "@/components/auth-provider";
 import { usePlan } from "@/components/plan-provider";
 import { useWallet } from "@/components/wallet-provider";
 import { BRAND_NAME } from "@/lib/app-info";
+import { walletSubmitIntent } from "@/lib/address";
 import { shortAddress } from "@/lib/labels";
 import { ShieldCheck, Wallet } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const NAV = [
   { href: "/", label: "Index" },
+  { href: "/wallet", label: "Wallet check" },
   { href: "/discover", label: "Live scan" },
   { href: "/hunts", label: "Hunts" },
   { href: "/catalog", label: "Catalog" },
-  { href: "/wallet", label: "Wallet check" },
+  { href: "/connect", label: "Connect agent" },
   { href: "/upgrade", label: "Pro (planned)" },
   { href: "/safety", label: "Rules" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { address, mode, connectInjected, setReadonlyAddress, disconnect, error } = useWallet();
+  const router = useRouter();
+  const { address, mode, connectInjected, setReadonlyAddress, disconnect, error, errorUpgradeUrl } = useWallet();
   const { name: planName, wallets, maxWallets } = usePlan();
   const { user, logout } = useAuth();
   const [draft, setDraft] = useState("");
+
+  async function applyPublicAddress(value: string) {
+    const ok = await setReadonlyAddress(value);
+    if (!ok) return;
+    setDraft("");
+    if (pathname !== "/wallet") router.push("/wallet");
+  }
+
+  async function onCheck(e: React.FormEvent) {
+    e.preventDefault();
+    const intent = walletSubmitIntent(draft, "check");
+    if (intent === "empty") {
+      return;
+    }
+    if (intent === "invalid") {
+      await setReadonlyAddress(draft);
+      return;
+    }
+    await applyPublicAddress(draft);
+  }
+
+  async function onConnect() {
+    const intent = walletSubmitIntent(draft, "connect");
+    if (intent === "readonly") {
+      await applyPublicAddress(draft);
+      return;
+    }
+    if (intent === "invalid") {
+      await setReadonlyAddress(draft);
+      return;
+    }
+    await connectInjected();
+  }
 
   return (
     <header className="border-b border-border/80 bg-background/80 backdrop-blur-md sticky top-0 z-40">
@@ -39,7 +75,8 @@ export function SiteHeader() {
           </Link>
           <nav className="flex flex-wrap items-center gap-1" aria-label="Main">
             {NAV.map((item) => {
-              const active = pathname === item.href;
+              const pathOnly = item.href.split("#")[0];
+              const active = pathname === pathOnly && !item.href.includes("#");
               return (
                 <Link
                   key={item.href}
@@ -89,13 +126,7 @@ export function SiteHeader() {
               </Button>
             </div>
           ) : (
-            <form
-              className="flex items-center gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setReadonlyAddress(draft);
-              }}
-            >
+            <form className="flex items-center gap-2" onSubmit={(e) => void onCheck(e)}>
               <label htmlFor="header-wallet" className="sr-only">
                 Public 0x wallet address
               </label>
@@ -108,10 +139,16 @@ export function SiteHeader() {
                 autoComplete="off"
                 spellCheck={false}
               />
-              <Button size="sm" variant="outline" type="submit">
+              <Button size="sm" type="submit">
                 Check
               </Button>
-              <Button size="sm" type="button" aria-label="Connect injected wallet, public address only" onClick={() => void connectInjected()}>
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                aria-label="Optional: connect injected wallet, public address only"
+                onClick={() => void onConnect()}
+              >
                 <Wallet data-icon="inline-start" />
                 Connect
               </Button>
@@ -121,7 +158,12 @@ export function SiteHeader() {
       </div>
       {error ? (
         <p className="mx-auto max-w-6xl px-4 pb-2 text-xs text-destructive" role="alert">
-          {error}
+          {error}{" "}
+          {errorUpgradeUrl ? (
+            <Link href={errorUpgradeUrl} className="underline">
+              Upgrade to PoolIndex Pro
+            </Link>
+          ) : null}
         </p>
       ) : null}
     </header>

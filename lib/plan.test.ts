@@ -2,20 +2,23 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { bindWallet, capSources, paidSourceCoverage, PLANS, sourceAccess } from "./plan.ts";
 
-test("free plan is catalog + GitHub and one wallet", () => {
+test("free plan is one wallet, catalog + GitHub, and never paywalls names", () => {
   assert.deepEqual([...PLANS.free.sources], ["catalog", "github"]);
   assert.equal(PLANS.free.maxWallets, 1);
   assert.equal(PLANS.free.priceUsd, 0);
+  assert.match(PLANS.free.summary, /never hidden behind payment/i);
 });
 
-test("paid plan is $40, five wallets, and about 70% of scan sources", () => {
+test("paid plan is $20/month or $99/year, five wallets, alerts and archive — not pay-to-reveal", () => {
   const coverage = paidSourceCoverage();
   assert.equal(PLANS.paid.name, "PoolIndex Pro");
-  assert.equal(PLANS.paid.priceUsd, 40);
+  assert.equal(PLANS.paid.priceUsd, 20);
+  assert.equal(PLANS.paid.yearlyUsd, 99);
   assert.equal(PLANS.paid.maxWallets, 5);
+  assert.match(PLANS.paid.summary, /Finding names stay free/);
+  assert.match(PLANS.paid.summary, /Payment processing is unavailable/);
   assert.equal(coverage.used, 4);
   assert.equal(coverage.total, 6);
-  assert.ok(coverage.percent >= 66 && coverage.percent <= 70);
   assert.equal(sourceAccess("paid", "wayback"), "allowed");
   assert.equal(sourceAccess("free", "wayback"), "upgrade");
   assert.equal(sourceAccess("paid", "reddit"), "reserved");

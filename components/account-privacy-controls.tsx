@@ -62,7 +62,10 @@ export function AccountPrivacyControls({
       <h2 className="font-heading text-xl">Privacy and account closure</h2>
       <p className="text-sm text-muted-foreground">
         You can ask for a copy of your account record, a correction, a question, or closure. Email{" "}
-        {contactLine("privacy")} if you prefer not to use this form. User A cannot request deletion of User B.
+        <a className="text-primary hover:underline" href={`mailto:${contactLine("privacy")}`}>
+          {contactLine("privacy")}
+        </a>{" "}
+        if you prefer not to use this form. User A cannot request deletion of User B.
       </p>
       {deletionStatus && deletionStatus !== "none" ? (
         <p className="text-sm" role="status">

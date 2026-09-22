@@ -24,6 +24,7 @@ export const CLAIMABILITY_LABEL: Record<Claimability, string> = {
   unclaimed_contract_balance_only: "Unclaimed contract balance only",
   eligibility_unknown: "Eligibility unknown",
   expired: "Expired",
+  unsupported: "Unverifiable / Unsupported",
 };
 
 export const LEGITIMACY_LABEL: Record<Legitimacy, string> = {
@@ -69,6 +70,37 @@ export function formatDate(value?: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+const ISRAEL_TZ = "Asia/Jerusalem";
+
+export function formatIsraelDate(value?: string): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ISRAEL_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+export function formatIsraelDateTime(value?: string): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ISRAEL_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .format(d)
+    .replace(", ", " ");
 }
 
 export const HUNT_STATUS_LABEL: Record<string, string> = {

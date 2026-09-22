@@ -101,11 +101,13 @@ export function LiveSearch({
           {data.plan && (data.plan.lockedSources.length || data.plan.reservedSources.length) ? (
             <Alert>
               <AlertTitle>
-                {data.plan.id === "free" ? "Free scan uses catalog + GitHub" : "PoolIndex Pro scans about 70% of sources"}
+                {data.plan.id === "free"
+                  ? "Free live search uses catalog + GitHub. Offer names stay visible."
+                  : "PoolIndex Pro adds Wayback/archive scanning, not hidden offer names"}
               </AlertTitle>
               <AlertDescription>
                 {data.plan.lockedSources.length
-                  ? `PoolIndex Pro is planned ($40; payment processing unavailable) for ${data.plan.lockedSources.join(", ")}. `
+                  ? `Archive scanning (${data.plan.lockedSources.join(", ")}) is PoolIndex Pro. `
                   : null}
                 {data.plan.reservedSources.length
                   ? `${data.plan.reservedSources.join(", ")} stay reserved for a later plan. `
@@ -125,7 +127,7 @@ export function LiveSearch({
               </AlertDescription>
             </Alert>
           ) : null}
-          <DeepHuntPanel query={data.query} catalog={data.catalog} discovered={data.discovered} wallet={address} />
+          <DeepHuntPanel query={data.query} catalog={data.catalog} discovered={data.discovered} wallet={address ?? undefined} />
           <section className="flex flex-col gap-3">
             <h2 className="font-heading text-2xl">Catalog matches</h2>
             {data.catalog.length ? (

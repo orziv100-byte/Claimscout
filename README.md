@@ -51,6 +51,10 @@ Optional environment variables:
 | `POOLINDEX_BOOTSTRAP_INVITE` | One-time operator invite code in production |
 | `POOLINDEX_PLAN_SECRET` | Signs the PoolIndex Pro entitlement cookie |
 | `POOLINDEX_PAID_KEYS` | PoolIndex Pro license keys (no billing yet) |
+| `POOLINDEX_PUBLIC_URL` | Public origin for verify/reset links (`https://poolindex.app`) |
+| `POOLINDEX_MAIL_PROVIDER` | `resend` in production; defaults to local outbox |
+| `POOLINDEX_MAIL_FROM` | From address, e.g. `PoolIndex <noreply@poolindex.app>` |
+| `RESEND_API_KEY` | Resend API key (gitignored `.env` only; never commit) |
 
 No API keys are required for the catalog, Wayback CDX, archive.org, or read-only RPC checks.
 
@@ -58,16 +62,16 @@ Closed Beta: register at `/register` with an invite, accept Terms and Privacy, v
 
 ## Using it
 
-1. **Index** — search the catalog and jump into a live scan.
+1. **Index** — paste a public `0x` address, then see named offers. Catalog is secondary.
 2. **Live scan** — query GitHub, Wayback Machine, archive.org, Reddit, and Bitcointalk. Secret-looking hits, claim bots, and airdrop hunters are dropped.
 3. **Catalog** — filter curated public offers by type and status.
-4. **Claim page** — sources, archive links, URL inspector, eligibility.
-5. **Wallet check** — paste a `0x` address or connect a browser wallet; scan remaining on-chain pools. Catalog watch snapshots remaining pools daily and shows what changed.
+4. **Claim page** — official source, archive, URL inspector, eligibility.
+5. **Wallet check** — paste a `0x` address (connect is optional); offers vs holdings stay separate. Catalog watch snapshots remaining pools daily.
 
 ## Plans
 
-- **Free** — catalog + GitHub, eligibility for **one** wallet.
-- **PoolIndex Pro ($40)** — 4 of 6 scan sources (~70%): catalog, GitHub, Wayback, Archive.org, and **up to five** wallets.
+- **Free** — one wallet, catalog, honest named statuses, URL inspect. Names are never paywalled.
+- **PoolIndex Pro (planned $20/month or $99/year)** — up to five wallets, claim-window email alerts, Wayback/Archive.org scanning. Payment processing is unavailable.
 - Reddit and Bitcointalk stay reserved.
 
 Activate PoolIndex Pro at `/upgrade` with a license key (`POOLINDEX_PAID_KEYS`). In `next dev` the demo key is `poolindex-pro-demo`.

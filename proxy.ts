@@ -12,6 +12,8 @@ const PUBLIC_PREFIXES = [
   "/privacy",
   "/accessibility",
   "/safety",
+  "/desktop",
+  "/connect",
 ];
 
 function isPublicPath(pathname: string) {
@@ -39,5 +41,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|zip)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|zip|exe)$).*)"],
 };

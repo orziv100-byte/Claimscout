@@ -5,10 +5,9 @@ import {
   publicEntitlement,
   withEntitlementCookie,
 } from "@/lib/entitlement";
-import { PLANS, bindWallet } from "@/lib/plan";
-import { isHexAddress } from "@/lib/address";
+import { PLANS, bindWallet, walletLimitMessage } from "@/lib/plan";
+import { parsePublicAddress } from "@/lib/address";
 import { looksLikeSecretMaterial } from "@/lib/secrets-guard";
-import { getAddress } from "viem";
 import { NextResponse } from "next/server";
 import { isResponse, requireUser } from "@/lib/request-guard";
 
@@ -44,22 +43,26 @@ export async function POST(request: Request) {
   }
 
   if (typeof body.address === "string") {
-    if (looksLikeSecretMaterial(body.address) || !isHexAddress(body.address)) {
+    if (looksLikeSecretMaterial(body.address)) {
       return NextResponse.json(
         { error: "Enter a public 0x address. Seed phrases and private keys are rejected.", code: "SECRET_MATERIAL_REJECTED" },
         { status: 400 },
       );
     }
-    const checksum = getAddress(body.address);
+    const parsed = parsePublicAddress(body.address);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { error: parsed.error, code: "INVALID_ADDRESS" },
+        { status: 400 },
+      );
+    }
+    const checksum = parsed.address;
     const max = PLANS[ent.plan].maxWallets;
     const bound = bindWallet(ent.wallets, max, checksum);
     if (!bound.ok) {
       return NextResponse.json(
         {
-          error:
-            ent.plan === "free"
-              ? "Free checks one wallet. PoolIndex Pro is planned ($40; payment processing unavailable) and unlocks up to five."
-              : "PoolIndex Pro includes up to five wallets.",
+          error: walletLimitMessage(ent.plan),
           code: bound.code,
           upgradeUrl: "/upgrade",
           maxWallets: max,

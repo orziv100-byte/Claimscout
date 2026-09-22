@@ -45,6 +45,10 @@ scripts/dual-machine/config.env
 !/var/results/.gitkeep
 /var/beta/*
 !/var/beta/.gitkeep
+/var/engine/*
+!/var/engine/.gitkeep
+!/var/engine/cache/.gitkeep
+!/var/engine/wallets/.gitkeep
 
 # vercel
 .vercel
@@ -52,3 +56,6 @@ scripts/dual-machine/config.env
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local editor / MCP client config (never commit tokens)
+.cursor/

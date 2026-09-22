@@ -11,7 +11,7 @@ import { betaMetrics, readOps, scansAreOpen, updateOps } from "./ops.ts";
 import { looksLikeSecretMaterial } from "./secrets-guard.ts";
 import { inspectEnv } from "./env.ts";
 import { readUserScans } from "./beta-store.ts";
-import { trackScan } from "./telemetry.ts";
+import { trackScan, trackWalletAlert, trackWalletScan } from "./telemetry.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "poolindex-beta-"));
 process.env.POOLINDEX_BETA_DIR = dir;
@@ -101,6 +101,10 @@ test("email verification, login, logout, and password reset", async () => {
   const session = readSessionUser(request);
   assert.ok(session);
   assert.equal(session.user.email, "ada@example.com");
+  const bearerReq = new Request("http://127.0.0.1/api/auth/me", {
+    headers: { authorization: `Bearer ${logged.cookie}` },
+  });
+  assert.equal(readSessionUser(bearerReq)?.user.email, "ada@example.com");
 
   logoutSession(request);
   assert.equal(readSessionUser(request), null);
@@ -108,8 +112,15 @@ test("email verification, login, logout, and password reset", async () => {
   await loginAccount({ email: "ada@example.com", password: "correct-battery-staple" });
   const forgot = await requestPasswordReset("ada@example.com");
   assert.ok(forgot.resetUrl);
-  const afterReset = await resetPassword(forgot.resetUrl.split("token=")[1], "new-battery-staple");
-  assert.equal(afterReset.id, logged.user.id);
+  const stale = await requestPasswordReset("ada@example.com");
+  assert.ok(stale.resetUrl);
+  await assert.rejects(
+    () => resetPassword(forgot.resetUrl!.split("token=")[1], "new-battery-staple"),
+    /not valid|already used/,
+  );
+  const afterReset = await resetPassword(stale.resetUrl.split("token=")[1], "new-battery-staple");
+  assert.equal(afterReset.user.id, logged.user.id);
+  assert.ok(afterReset.cookie);
   await assert.rejects(() => loginAccount({ email: "ada@example.com", password: "correct-battery-staple" }), /Invalid email or password/);
   const relogin = await loginAccount({ email: "ada@example.com", password: "new-battery-staple" });
   assert.equal(relogin.user.id, logged.user.id);
@@ -148,6 +159,7 @@ test("user A cannot see user B wallets, scans, or feedback", async () => {
   const scansB = readUserScans(b.user.id);
   assert.equal(scansA.some((row) => row.query === "secret-to-b"), false);
   assert.equal(scansB.some((row) => row.query === "uniswap"), false);
+  assert.equal(betaMetrics().funnel.walletScanCompleted, 0);
 
   submitFeedback({ userId: a.user.id, type: "useful", note: "helped me", source: "catalog", claimId: "uni" });
   submitFeedback({ userId: b.user.id, type: "broken_link", note: "dead page", source: "github" });
@@ -158,6 +170,41 @@ test("user A cannot see user B wallets, scans, or feedback", async () => {
   assert.equal(onlyA[0].note, "helped me");
   assert.equal(onlyB[0].userId, b.user.id);
   assert.equal(onlyA.some((row) => row.userId === b.user.id), false);
+});
+
+test("closed beta funnel counts wallet bind through verified return use", async () => {
+  process.env.POOLINDEX_BETA_STAGE_CAP = "5";
+  const created = await register("funnel@example.com", { displayName: "Funnel" });
+  verifyEmailToken(created.verifyUrl.split("token=")[1]);
+  updateUser(created.user.id, { wallets: ["0x1111111111111111111111111111111111111111"], status: "active" }, created.user.id);
+  const live = listUsers().find((row) => row.id === created.user.id);
+  assert.ok(live);
+  trackWalletScan(live, { status: "started" });
+  trackWalletScan(live, {
+    status: "completed",
+    potentialFindings: 2,
+    verifiedFindings: 1,
+    sourcesChecked: 42,
+  });
+  trackWalletScan(live, {
+    status: "completed",
+    potentialFindings: 2,
+    verifiedFindings: 1,
+    sourcesChecked: 42,
+    alerted: true,
+  });
+  trackWalletAlert(live.id, 1);
+  const metrics = betaMetrics();
+  assert.equal(metrics.funnel.walletBound, 1);
+  assert.equal(metrics.funnel.walletScanStarted, 1);
+  assert.equal(metrics.funnel.walletScanCompleted, 1);
+  assert.equal(metrics.funnel.withPotential, 1);
+  assert.equal(metrics.funnel.withVerified, 1);
+  assert.equal(metrics.funnel.alerted, 1);
+  assert.equal(metrics.funnel.returning, 1);
+  assert.equal(metrics.funnel.totals.completed, 2);
+  assert.equal(metrics.telemetry.walletAlert, 1);
+  assert.equal(metrics.funnel.cap, 50);
 });
 
 test("admin role is env-gated and kill switch pauses scans without deleting users", async () => {

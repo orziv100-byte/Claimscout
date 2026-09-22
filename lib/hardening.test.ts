@@ -9,7 +9,7 @@ import { CATALOG } from "./catalog.ts";
 import { contentSecurityPolicy, frameAncestorsDirective } from "./csp.ts";
 import { PUBLIC_HEALTH_FORBIDDEN_KEYS, publicHealthBody, publicStatusBody } from "./health.ts";
 import { getMailProvider, resetMailProvider, sendMail, setMailProvider, type MailProvider } from "./mail.ts";
-import { clientIp, limitExpensiveEndpoint, rateLimit, resetRateLimitForTests } from "./rate-limit.ts";
+import { clientIp, clearRateLimit, limitExpensiveEndpoint, rateLimit, resetRateLimitForTests } from "./rate-limit.ts";
 import { ACCOUNT_STATUSES } from "./beta-types.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "poolindex-hardening-"));
@@ -68,6 +68,8 @@ test("expensive endpoints are limited per user and per IP", () => {
   const second = rateLimit("unit", 1, 60_000);
   assert.equal(first.ok, true);
   assert.equal(second.ok, false);
+  clearRateLimit("unit");
+  assert.equal(rateLimit("unit", 1, 60_000).ok, true);
 });
 
 test("admin mutations reject unknown status, plan, role, and extra fields", () => {

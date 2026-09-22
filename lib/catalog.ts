@@ -17,7 +17,9 @@ const OPEN_CLAIMABILITY: Record<string, Claimability> = {
 
 function attachClaimability(claim: Omit<CatalogClaim, "claimability">): CatalogClaim {
   let claimability: Claimability;
-  if (claim.status === "unclaimed_remaining") {
+  if (claim.onChain?.remainingMethod === "unsupported") {
+    claimability = "unsupported";
+  } else if (claim.status === "unclaimed_remaining") {
     claimability = "unclaimed_contract_balance_only";
   } else if (claim.status === "expired" || claim.status === "archived") {
     claimability = "expired";
@@ -72,7 +74,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       {
         kind: "explorer",
         label: "Distributor on Etherscan",
-        url: "https://etherscan.io/address/0x090D4613473dEE047c3f2706764f53DC6C4F0236",
+        url: "https://etherscan.io/address/0x090D4613473dEE047c3f27026eC4D8bd3C4F1aca",
       },
     ],
     officialUrl: "https://app.uniswap.org/",
@@ -82,11 +84,12 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       chainId: 1,
       chainLabel: "Ethereum",
       token: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
-      distributor: "0x090D4613473dEE047c3f2706764f53DC6C4F0236",
+      distributor: "0x090D4613473dEE047c3f27026eC4D8bd3C4F1aca",
+      remainingMethod: "token_balance_of_holder",
       explorerTokenUrl:
         "https://etherscan.io/token/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
       explorerDistributorUrl:
-        "https://etherscan.io/address/0x090D4613473dEE047c3f2706764f53DC6C4F0236",
+        "https://etherscan.io/address/0x090D4613473dEE047c3f27026eC4D8bd3C4F1aca",
     },
     action: {
       type: "official_ui",
@@ -137,7 +140,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       chainLabel: "Ethereum",
       token: "0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72",
       distributor: "0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72",
-      claimedFn: "claimed",
+      remainingMethod: "token_balance_of_holder",
       explorerTokenUrl:
         "https://etherscan.io/token/0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72",
     },
@@ -183,6 +186,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       chainLabel: "Ethereum",
       token: "0x111111111117dC0aa78b770fA6A738034120C302",
       distributor: "0xE295aD71242373C37C5FdA7B57F26f9eA00b0ab0",
+      remainingMethod: "token_balance_of_holder",
       explorerTokenUrl:
         "https://etherscan.io/token/0x111111111117dC0aa78b770fA6A738034120C302",
     },
@@ -227,6 +231,8 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       chainId: 1,
       chainLabel: "Ethereum",
       token: "0xDe30da39c46104798bB5aA3fe8B9e0e1F348163F",
+      distributor: "0xDe30da39c46104798bB5aA3fe8B9e0e1F348163F",
+      remainingMethod: "token_balance_of_holder",
       explorerTokenUrl:
         "https://etherscan.io/token/0xDe30da39c46104798bB5aA3fe8B9e0e1F348163F",
     },
@@ -241,18 +247,21 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     id: "dydx-airdrop",
     title: "dYdX retroactive airdrop",
     summary:
-      "September 2021 public airdrop to historical dYdX traders. Distributed with a merkle distributor on Ethereum.",
+      "September 2021 public trader rewards / retroactive distribution via MerkleDistributorV1. Remaining inventory is not wallet eligibility.",
     kind: "airdrop",
-    status: "unclaimed_remaining",
+    status: "unknown",
     legitimacy: "official",
     chain: "ethereum",
     asset: "DYDX",
     announcedAt: "2021-08-03",
     eligibility:
-      "Users with historical trading activity on dYdX in the published snapshot.",
+      "Users with historical trading activity on dYdX matching the published Merkle rewards tree for each epoch.",
     howToVerify:
-      "Use official dYdX claim documentation and inspect the distributor’s remaining DYDX balance. Remaining balance is not proof this is claimable.",
-    warnings: ["Claim portals other than official dYdX domains should be treated as hostile."],
+      "Official path is MerkleDistributorV1.claimRewards(cumulativeAmount, merkleProof) at 0x01d3348601968aB85b4bb028979006eac235a588, with proofs from rewards-data.dydx.foundation. PoolIndex does not currently have a verifiable local copy of that tree. The historical DYDX ERC-20 currently has no bytecode, so remaining inventory cannot be read.",
+    warnings: [
+      "Claim portals other than official dYdX domains should be treated as hostile.",
+      "Unverifiable: the DYDX token at 0x92D6C1e31e14520e676a3F12C6Bd4a44a5B4AB21 currently has no contract code, so PoolIndex will not invent a remaining-pool figure or a wallet verdict.",
+    ],
     sources: [
       {
         kind: "project_site",
@@ -262,8 +271,8 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       },
       {
         kind: "explorer",
-        label: "DYDX token",
-        url: "https://etherscan.io/token/0x92D6C1e31e14520e676a3F12C6Bd4a44a5B4AB21",
+        label: "MerkleDistributorV1",
+        url: "https://etherscan.io/address/0x01d3348601968aB85b4bb028979006eac235a588",
       },
     ],
     officialUrl: "https://www.dydx.foundation/",
@@ -271,8 +280,14 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       chainId: 1,
       chainLabel: "Ethereum",
       token: "0x92D6C1e31e14520e676a3F12C6Bd4a44a5B4AB21",
+      distributor: "0x01d3348601968aB85b4bb028979006eac235a588",
+      remainingMethod: "unsupported",
+      remainingUnsupportedReason:
+        "Unsupported: DYDX token 0x92D6C1e31e14520e676a3F12C6Bd4a44a5B4AB21 currently has no contract code, so remaining inventory cannot be read. MerkleDistributorV1.claimRewards(cumulativeAmount, bytes32[]) is the eligibility method and requires the official epoch merkle tree, which PoolIndex does not host.",
       explorerTokenUrl:
         "https://etherscan.io/token/0x92D6C1e31e14520e676a3F12C6Bd4a44a5B4AB21",
+      explorerDistributorUrl:
+        "https://etherscan.io/address/0x01d3348601968aB85b4bb028979006eac235a588",
     },
     action: {
       type: "official_ui",
@@ -355,6 +370,7 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       token: "0x912CE59144191C1204E64559FE8253a0e49E6548",
       distributor: "0x67a24CE4321aB3aF51c2D0a4801c3E111D88C9d9",
       claimedFn: "claimableTokens",
+      remainingMethod: "token_balance_of_holder",
       claimDeadline: "2023-09-24",
       explorerTokenUrl:
         "https://arbiscan.io/token/0x912CE59144191C1204E64559FE8253a0e49E6548",
@@ -371,17 +387,19 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     id: "hop-protocol-airdrop",
     title: "Hop Protocol HOP airdrop",
     summary:
-      "2022 public airdrop to early Hop bridge users. Merkle-distributed HOP on Ethereum.",
+      "2022 public airdrop to early Hop bridge users. Claims were made on the HOP token itself via claimTokens; leftover inventory still sits on the token contract. The on-chain claimPeriodEnds is 2022-12-09.",
     kind: "airdrop",
-    status: "unknown",
+    status: "expired",
     legitimacy: "official",
     chain: "ethereum",
     asset: "HOP",
     announcedAt: "2022-06-09",
-    eligibility: "Early Hop users in the published merkle snapshot.",
+    eligibility: "Early Hop users in the published merkle snapshot. The official claim window closed on 2022-12-09.",
     howToVerify:
-      "Check Hop governance docs and remaining tokens in the published distributor.",
-    warnings: [],
+      "Read HOPToken.claimPeriodEnds and HOP.balanceOf(HOP token). Remaining tokens in the token contract after the deadline are leftover inventory, not a live claim. Wallet eligibility requires the official merkle tree plus isClaimed(index); PoolIndex does not invent that verdict.",
+    warnings: [
+      "The official claimPeriodEnds is 2022-12-09. Remaining HOP in the token contract is not proof a late claim is open.",
+    ],
     sources: [
       {
         kind: "project_site",
@@ -394,21 +412,28 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
         label: "Hop DAO",
         url: "https://github.com/hop-protocol",
       },
+      {
+        kind: "explorer",
+        label: "HOP token",
+        url: "https://etherscan.io/token/0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC",
+      },
     ],
     officialUrl: "https://hop.exchange/",
     onChain: {
       chainId: 1,
       chainLabel: "Ethereum",
-      token: "0xc5102fE9359FD9a417EA3d1d09aE43Be019AA4bd",
+      token: "0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC",
+      distributor: "0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC",
+      remainingMethod: "token_balance_of_holder",
+      claimDeadline: "2022-12-09",
       explorerTokenUrl:
-        "https://etherscan.io/token/0xc5102fE9359FD9a417EA3d1d09aE43Be019AA4bd",
+        "https://etherscan.io/token/0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC",
     },
     action: {
-      type: "official_ui",
-      url: "https://hop.exchange/",
-      label: "Open Hop",
+      type: "none",
+      reason: "HOPToken.claimPeriodEnds is 2022-12-09. Remaining tokens in the token contract are leftover inventory, not a late claim.",
     },
-    tags: ["bridge", "merkle"],
+    tags: ["bridge", "merkle", "closed-window"],
   },
   {
     id: "cow-protocol-airdrop",
@@ -435,18 +460,19 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       {
         kind: "explorer",
         label: "vCOW token",
-        url: "https://etherscan.io/token/0xD057B63f5E69BF1B45433448E37567B668161245",
+        url: "https://etherscan.io/token/0xD057B63f5E69CF1B929b356b579Cba08D7688048",
       },
     ],
     officialUrl: "https://claim.cow.fi/",
     onChain: {
       chainId: 1,
       chainLabel: "Ethereum",
-      token: "0xD057B63f5E69BF1B45433448E37567B668161245",
-      distributor: "0xD057B63f5E69BF1B45433448E37567B668161245",
+      token: "0xD057B63f5E69CF1B929b356b579Cba08D7688048",
+      distributor: "0xD057B63f5E69CF1B929b356b579Cba08D7688048",
       claimedFn: "hasClaimed",
+      remainingMethod: "token_balance_of_holder",
       explorerTokenUrl:
-        "https://etherscan.io/token/0xD057B63f5E69BF1B45433448E37567B668161245",
+        "https://etherscan.io/token/0xD057B63f5E69CF1B929b356b579Cba08D7688048",
     },
     action: {
       type: "official_ui",
@@ -487,6 +513,8 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       chainId: 1,
       chainLabel: "Ethereum",
       token: "0x5aFE3855358E112B5647B952709E6165E1c1eEEe",
+      distributor: "0x5aFE3855358E112B5647B952709E6165E1c1eEEe",
+      remainingMethod: "token_balance_of_holder",
       explorerTokenUrl:
         "https://etherscan.io/token/0x5aFE3855358E112B5647B952709E6165E1c1eEEe",
     },
@@ -1008,7 +1036,8 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
     announcedAt: "2019-05-09",
     eligibility:
       "Holders of the SOCKS ERC-20. Physical redemption depends on Uniswap still honoring the program and remaining inventory.",
-    howToVerify: "Official Unisocks site / Uniswap documentation. Check SOCKS token supply on-chain.",
+    howToVerify:
+      "Official Unisocks site / Uniswap documentation. Remaining unredeemed SOCKS is the ERC-20 totalSupply on 0x23B608675a2B2fB1890d3ABBd85c5775c51691d5, not a balance held by that contract. Physical stock is a separate off-chain fact.",
     warnings: [],
     sources: [
       {
@@ -1020,16 +1049,17 @@ const CATALOG_ENTRIES: Array<Omit<CatalogClaim, "claimability">> = [
       {
         kind: "explorer",
         label: "SOCKS token",
-        url: "https://etherscan.io/token/0x23B608675a2B2fB1890d3ABBd85c5775c2B2E31E",
+        url: "https://etherscan.io/token/0x23B608675a2B2fB1890d3ABBd85c5775c51691d5",
       },
     ],
     officialUrl: "https://unisocks.exchange/",
     onChain: {
       chainId: 1,
       chainLabel: "Ethereum",
-      token: "0x23B608675a2B2fB1890d3ABBd85c5775c2B2E31E",
+      token: "0x23B608675a2B2fB1890d3ABBd85c5775c51691d5",
+      remainingMethod: "token_total_supply",
       explorerTokenUrl:
-        "https://etherscan.io/token/0x23B608675a2B2fB1890d3ABBd85c5775c2B2E31E",
+        "https://etherscan.io/token/0x23B608675a2B2fB1890d3ABBd85c5775c51691d5",
     },
     action: {
       type: "official_ui",

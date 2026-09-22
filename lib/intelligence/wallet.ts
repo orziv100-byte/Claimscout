@@ -1,5 +1,7 @@
 import { isHexAddress } from "../address.ts";
 import { getClaimById } from "../catalog.ts";
+import { eligibilityOverlay } from "../engine/scan.ts";
+import { loadPreviousScan } from "../engine/state.ts";
 import type { EligibilityResult } from "../types.ts";
 import type { Address } from "viem";
 import { addEvidence, promoteLead, refreshLeadDimensions, setLeadStatus } from "./leads.ts";
@@ -41,7 +43,7 @@ export async function applyWalletEvidence(
     lead.claimWindow = "closed";
     lead.eligibility = "unknown";
     setLeadStatus(lead, "window_closed", result.detail, at);
-  } else {
+  } else if (result.status === "unable_to_verify" || result.status === "unknown") {
     lead.walletRelevance = "no_evidence";
     lead.eligibility = "unknown";
   }
@@ -58,11 +60,20 @@ export async function researchWalletClaim(
   const claim = getClaimById(claimId);
   const lead = hunt.leads.find((row) => row.catalogId === claimId);
   if (!claim || !lead) return null;
+  const at = deps.now?.() ?? new Date().toISOString();
+  const previous = loadPreviousScan(hunt.wallet);
+  if (previous) {
+    const overlay = eligibilityOverlay(previous).find((row) => row.claimId === claimId);
+    if (overlay) {
+      await applyWalletEvidence(hunt, lead, overlay, at);
+      hunt.progress.pagesInspected += 1;
+      return overlay;
+    }
+  }
   const check =
     deps.checkEligibility ??
     (await import("../onchain.ts")).checkEligibility;
   const result = await check(claimId, hunt.wallet);
-  const at = deps.now?.() ?? new Date().toISOString();
   await applyWalletEvidence(hunt, lead, result, at);
   hunt.progress.pagesInspected += 1;
   return result;

@@ -1,7 +1,8 @@
 import { CatalogClaimCard } from "@/components/claim-card";
-import { SearchForm } from "@/components/search-form";
+import { HomeAddressHero } from "@/components/home-address-hero";
 import { Badge } from "@/components/ui/badge";
 import { CATALOG } from "@/lib/catalog";
+import { PLANS } from "@/lib/plan";
 import { Archive, Eye, LockKeyhole, Radio } from "lucide-react";
 import Link from "next/link";
 
@@ -16,28 +17,32 @@ export default function HomePage() {
     <div className="flex flex-col gap-12">
       <section className="flex flex-col gap-6 pt-4">
         <Badge variant="outline" className="w-fit">
-          Public offers only · no key recovery
+          Public address only · names never paywalled
         </Badge>
         <div className="max-w-3xl">
           <h1 className="font-heading text-4xl leading-tight tracking-tight md:text-5xl">
-            Find crypto rewards that were actually offered to the public.
+            Paste a public 0x address. See real offer names and honest statuses.
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            PoolIndex searches current sites and archives for airdrops, faucets, giveaways, redemption links, and
-            community testnet rewards — then runs a safety check on the URL before you touch a wallet.
+            PoolIndex checks public Ethereum offers against the address you paste. Eligible, Not eligible, Already
+            claimed, or Unable to verify — never invented from leftover contract balance, and never hidden behind
+            payment. Connect a wallet only if you want to; a seed phrase is rejected.
           </p>
         </div>
-        <SearchForm compact />
+        <HomeAddressHero />
         <p className="text-xs text-muted-foreground">
           <Link href="/register" className="text-primary hover:underline">
             Closed Beta
           </Link>{" "}
-          is invite-only. Free: catalog + GitHub, one wallet.{" "}
+          is invite-only. Free: one wallet, catalog, honest statuses, URL inspect.{" "}
           <Link href="/upgrade" className="text-primary hover:underline">
-            PoolIndex Pro (planned)
+            PoolIndex Pro (planned ${PLANS.paid.priceUsd}/mo or ${PLANS.paid.yearlyUsd}/yr)
           </Link>
-          : about 70% of sources and up to five wallets. Private keys, seed phrases, and other people&apos;s wallets are
-          out of scope.
+          : five wallets, claim-window email alerts, Wayback/archive scan.{" "}
+          <Link href="/connect" className="text-primary hover:underline">
+            Connect your own agent
+          </Link>{" "}
+          (read-only MCP; you pay for the LLM). Catalog below is secondary.
         </p>
       </section>
 
@@ -45,23 +50,23 @@ export default function HomePage() {
         {[
           {
             icon: Radio,
-            title: "Live + archive search",
-            body: "GitHub, Reddit, Bitcointalk, Wayback CDX, and archive.org in one scan.",
+            title: "Address check first",
+            body: "Paste 0x, then a table of named offers. Catalog browse is extra, not the product.",
           },
           {
             icon: Eye,
-            title: "URL safety check",
-            body: "Inspect a live fetch, phishing heuristics, and Wayback snapshots before you click claim. This is not a guarantee the URL is safe.",
+            title: "Official + archive + inspect",
+            body: "Before every external claim link: official source, archive copy, and a phishing inspect. This is not a guarantee the URL is safe.",
           },
           {
             icon: LockKeyhole,
             title: "Read-only wallets",
-            body: "Paste an address or connect. Signing happens only after you approve a legitimate claim.",
+            body: "Paste an address. Connecting a browser wallet is optional. PoolIndex does not claim tokens for you.",
           },
           {
             icon: Archive,
-            title: "Historical faucets",
-            body: "Old promotional pages are kept as archives so you can read the original offer.",
+            title: "History, not farming",
+            body: "Old faucets and Wayback pages stay as research. Quest/Galxe farming is out of scope.",
           },
         ].map((item) => (
           <div key={item.title} className="rounded-xl border border-border/80 bg-card p-4">
@@ -74,7 +79,7 @@ export default function HomePage() {
 
       <section className="flex flex-col gap-4">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="font-heading text-2xl">Watchlist</h2>
+          <h2 className="font-heading text-2xl">Catalog (secondary)</h2>
           <Link href="/catalog" className="text-sm text-primary hover:underline">
             Full catalog
           </Link>

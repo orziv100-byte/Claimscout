@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { PLANS, bindWallet, type PlanId } from "./plan";
+import { PLANS, bindWallet, walletLimitMessage, type PlanId } from "./plan";
 
 export const ENTITLEMENT_COOKIE = "poolindex_entitlement";
 
@@ -12,6 +12,7 @@ export type Entitlement = {
 export type PublicEntitlement = Entitlement & {
   name: string;
   priceUsd: number;
+  yearlyUsd: number;
   maxWallets: number;
   sources: readonly string[];
   reservedSources: readonly string[];
@@ -77,6 +78,7 @@ export function publicEntitlement(ent: Entitlement): PublicEntitlement {
     ...ent,
     name: def.name,
     priceUsd: def.priceUsd,
+    yearlyUsd: def.yearlyUsd,
     maxWallets: def.maxWallets,
     sources: def.sources,
     reservedSources: ["reddit", "bitcointalk"],
@@ -109,10 +111,7 @@ export function gateWallet(
       ok: false,
       status: 402,
       body: {
-        error:
-          ent.plan === "free"
-            ? "Free checks one wallet. PoolIndex Pro is planned ($40; payment processing unavailable) and unlocks up to five."
-            : "PoolIndex Pro includes up to five wallets.",
+        error: walletLimitMessage(ent.plan),
         code: "WALLET_LIMIT",
         upgradeUrl: "/upgrade",
         maxWallets,

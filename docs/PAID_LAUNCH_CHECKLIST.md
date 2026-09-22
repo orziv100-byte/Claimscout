@@ -4,7 +4,7 @@ Payment processing is **not** implemented. Do not treat this as live billing.
 
 When (and only when) the operator decides to sell PoolIndex Pro, review:
 
-- Subscription price disclosure (currently a planned $40 target — confirm before charging)
+- Subscription price disclosure (currently a planned $20/month or $99/year target — confirm before charging)
 - Billing interval (one-time vs recurring)
 - Automatic renewal and how to cancel
 - Refund policy

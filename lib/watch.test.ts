@@ -6,6 +6,7 @@ import {
   diffWatchSnapshots,
   formatWatchDigest,
   openWatchPools,
+  unsupportedWatchPools,
 } from "./watch.ts";
 
 function claim(partial: Partial<CatalogClaim> & Pick<CatalogClaim, "id" | "title" | "status" | "asset">): CatalogClaim {
@@ -97,4 +98,32 @@ test("openWatchPools skips expired archives and formats a digest", () => {
   assert.match(digest, /Initial catalog watch/);
   assert.match(digest, /UNI: 12\.5 UNI/);
   assert.match(digest, /not proof/);
+});
+
+test("unsupported remaining pools are listed separately and viem dumps are truncated", () => {
+  const snapshot = buildWatchSnapshot(
+    [
+      claim({ id: "dydx-airdrop", title: "dYdX retroactive airdrop", status: "unknown", asset: "DYDX", claimability: "unsupported" }),
+      claim({ id: "uni", title: "UNI", status: "unclaimed_remaining", asset: "UNI" }),
+    ],
+    [
+      {
+        claimId: "dydx-airdrop",
+        error: "Unsupported: DYDX token currently has no contract code.\nContract Call:\n  address: 0x92d6",
+      },
+      { claimId: "uni", remaining: "12", symbol: "UNI" },
+    ],
+  );
+  const unsupported = unsupportedWatchPools(snapshot);
+  assert.equal(unsupported.length, 1);
+  assert.equal(unsupported[0].claimId, "dydx-airdrop");
+  const digest = formatWatchDigest({
+    capturedAt: snapshot.capturedAt,
+    changes: diffWatchSnapshots(null, snapshot),
+    openPools: openWatchPools(snapshot),
+    unsupportedPools: unsupported,
+  });
+  assert.match(digest, /Unverifiable \/ Unsupported/);
+  assert.match(digest, /no contract code/);
+  assert.doesNotMatch(digest, /Contract Call/);
 });

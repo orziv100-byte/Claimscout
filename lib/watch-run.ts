@@ -5,6 +5,7 @@ import {
   diffWatchSnapshots,
   formatWatchDigest,
   openWatchPools,
+  unsupportedWatchPools,
   type WatchChange,
   type WatchOffer,
   type WatchSnapshot,
@@ -16,6 +17,7 @@ export type CatalogWatchResult = {
   previous: WatchSnapshot | null;
   changes: WatchChange[];
   openPools: WatchOffer[];
+  unsupportedPools: WatchOffer[];
   digest: string;
   refreshed: boolean;
 };
@@ -26,25 +28,29 @@ export async function captureCatalogWatch(): Promise<CatalogWatchResult> {
   const snapshot = buildWatchSnapshot(CATALOG, pools);
   const changes = diffWatchSnapshots(previous, snapshot);
   const openPools = openWatchPools(snapshot);
+  const unsupportedPools = unsupportedWatchPools(snapshot);
   const digest = formatWatchDigest({
     capturedAt: snapshot.capturedAt,
     changes,
     openPools,
+    unsupportedPools,
   });
   writeWatchSnapshot(snapshot, digest);
-  return { snapshot, previous, changes, openPools, digest, refreshed: true };
+  return { snapshot, previous, changes, openPools, unsupportedPools, digest, refreshed: true };
 }
 
 export function readCatalogWatch(): CatalogWatchResult | null {
   const snapshot = readLatestWatchSnapshot();
   if (!snapshot) return null;
   const openPools = openWatchPools(snapshot);
+  const unsupportedPools = unsupportedWatchPools(snapshot);
   return {
     snapshot,
     previous: snapshot,
     changes: [],
     openPools,
-    digest: formatWatchDigest({ capturedAt: snapshot.capturedAt, changes: [], openPools }),
+    unsupportedPools,
+    digest: formatWatchDigest({ capturedAt: snapshot.capturedAt, changes: [], openPools, unsupportedPools }),
     refreshed: false,
   };
 }

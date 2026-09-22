@@ -1,32 +1,10 @@
-import { createPublicClient, formatUnits, http, type Address, type Hex } from "viem";
+import { createPublicClient, formatUnits, getAddress, http, type Address, type Hex } from "viem";
 import { arbitrum, mainnet } from "viem/chains";
 import { CATALOG } from "./catalog";
+import { catalogCheckKind } from "./eligibility-status";
+import { erc20Balance, erc20TotalSupply } from "./engine/rpc";
 import { readResourceSnapshot } from "./resource-guard";
-import type { EligibilityResult } from "./types";
-
-const erc20Abi = [
-  {
-    type: "function",
-    name: "balanceOf",
-    stateMutability: "view",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "decimals",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint8" }],
-  },
-  {
-    type: "function",
-    name: "symbol",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "string" }],
-  },
-] as const;
+import type { CatalogClaim, EligibilityResult } from "./types";
 
 const claimedAbi = [
   {
@@ -70,6 +48,22 @@ function clientFor(chainId: number) {
   return createPublicClient({ chain, transport: http(url, { timeout: 10_000 }) });
 }
 
+function toAddress(value: string): Address {
+  return getAddress(value.toLowerCase() as Address);
+}
+
+const WALLET_CHECK_CLAIMS = () => CATALOG.filter((claim) => claim.id !== "tornado-avoided");
+
+function result(
+  claimId: string,
+  address: Address,
+  status: EligibilityResult["status"],
+  detail: string,
+  extra: Partial<EligibilityResult> = {},
+): EligibilityResult {
+  return { claimId, address, status, detail, ...extra };
+}
+
 export type PoolSnapshot = {
   claimId: string;
   remaining?: string;
@@ -83,197 +77,207 @@ export async function readRemainingPool(claimId: string): Promise<PoolSnapshot> 
     return { claimId, error: "No token configured" };
   }
   const spec = claim.onChain;
-  const client = clientFor(spec.chainId);
-  if (!client) return { claimId, error: "No public RPC for this chain" };
+  const tokenAddr = spec.token;
+  if (!tokenAddr) return { claimId, error: "No token configured" };
 
-  const holder = (spec.distributor || spec.token) as Address;
-  const token = spec.token as Address;
-
-  try {
-    const [raw, decimals, symbol] = await Promise.all([
-      client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [holder] }),
-      client.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
-      client.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }),
-    ]);
+  if (!spec.remainingMethod) {
     return {
       claimId,
-      remaining: formatUnits(raw, decimals),
-      symbol,
+      error: `Unsupported: ${claimId} has a token address but no declared remaining-pool method.`,
     };
+  }
+  if (spec.remainingMethod === "unsupported") {
+    return {
+      claimId,
+      error:
+        spec.remainingUnsupportedReason ||
+        `Unsupported: no reliable remaining-pool method for ${claimId}.`,
+    };
+  }
+  if (!RPC[spec.chainId]) {
+    return { claimId, error: `No public RPC for this chain` };
+  }
+
+  try {
+    if (spec.remainingMethod === "token_total_supply") {
+      const { raw, decimals, symbol } = await erc20TotalSupply(spec.chainId, toAddress(tokenAddr), {
+        symbol: claim.asset,
+      });
+      return { claimId, remaining: formatUnits(raw, decimals), symbol };
+    }
+
+    if (spec.remainingMethod === "token_balance_of_holder") {
+      if (!spec.distributor) {
+        return {
+          claimId,
+          error: `Unsupported: ${claimId} remaining method is token_balance_of_holder but no holder/distributor is declared.`,
+        };
+      }
+      const { raw, decimals, symbol } = await erc20Balance(
+        spec.chainId,
+        toAddress(tokenAddr),
+        toAddress(spec.distributor),
+        { symbol: claim.asset },
+      );
+      return { claimId, remaining: formatUnits(raw, decimals), symbol };
+    }
+
+    return { claimId, error: `Unsupported: unknown remaining-pool method for ${claimId}.` };
   } catch (err) {
-    return { claimId, error: err instanceof Error ? err.message : "RPC read failed" };
+    return { claimId, error: err instanceof Error ? err.message.split("\n")[0] : "RPC read failed" };
   }
 }
 
 export async function checkEligibility(claimId: string, address: Address): Promise<EligibilityResult> {
   const claim = CATALOG.find((c) => c.id === claimId);
   if (!claim) {
-    return {
-      claimId,
-      address,
-      status: "unknown",
-      detail: "Unknown claim id.",
-    };
+    return result(claimId, address, "unable_to_verify", "Unknown claim id.", { checkKind: "catalog_only" });
   }
 
   const officialCheckerUrl = claim.officialUrl;
+  const checkKind = catalogCheckKind(claim);
+  const base = { officialCheckerUrl, checkKind };
 
-  if (claim.status === "expired") {
-    return {
-      claimId,
-      address,
-      status: "window_closed",
-      detail: claim.action.type === "none" ? claim.action.reason : "The official claim window is closed.",
-      officialCheckerUrl,
-    };
-  }
-
-  if (claim.status === "archived") {
-    return {
-      claimId,
-      address,
-      status: "ineligible",
-      detail: "This is an archive reference, not a live claim.",
-      officialCheckerUrl,
-    };
-  }
-
-  if (claim.kind === "puzzle") {
-    return {
-      claimId,
-      address,
-      status: "unknown",
-      detail:
-        "Public puzzle documented only. PoolIndex will not check keys or attempt a solve. Eligibility is whoever first produces a valid solution — not this wallet check.",
-      officialCheckerUrl,
-    };
+  if (checkKind === "catalog_only") {
+    return result(claimId, address, "unable_to_verify", catalogOnlyReason(claim), base);
   }
 
   const spec = claim.onChain;
-  if (!spec) {
-    return {
-      claimId,
-      address,
-      status: "unknown",
-      detail:
-        "No address-level on-chain checker is wired for this offer. Use the official claim page; this app stays read-only.",
-      officialCheckerUrl,
-    };
+  if (!spec?.distributor || !spec.claimedFn) {
+    return result(claimId, address, "unable_to_verify", catalogOnlyReason(claim), base);
   }
 
   const client = clientFor(spec.chainId);
-  let remainingPool: string | undefined;
-  let remainingSymbol: string | undefined;
-  if (client && spec.token) {
-    const pool = await readRemainingPool(claimId);
-    remainingPool = pool.remaining;
-    remainingSymbol = pool.symbol;
-  }
-
-  if (spec.claimDeadline) {
-    const deadline = Date.parse(spec.claimDeadline);
-    if (!Number.isNaN(deadline) && Date.now() > deadline) {
-      return {
-        claimId,
-        address,
-        status: "window_closed",
-        detail: `On-chain deadline ${spec.claimDeadline} has passed.`,
-        remainingPool,
-        remainingSymbol,
-        officialCheckerUrl,
-      };
-    }
-  }
-
-  if (!client || !spec.distributor || !spec.claimedFn) {
-    return {
+  if (!client) {
+    return result(
       claimId,
       address,
-      status: "unknown",
-      detail:
-        remainingPool && remainingSymbol
-          ? `Distributor still holds ${trimAmount(remainingPool)} ${remainingSymbol}. Remaining contract balance does not prove claimability. Individual eligibility needs the official merkle/snapshot checker.`
-          : "Connect the official checker to see if this address is in the snapshot. PoolIndex does not reconstruct merkle proofs.",
-      remainingPool,
-      remainingSymbol,
-      officialCheckerUrl,
-    };
+      "unable_to_verify",
+      `No public RPC is configured for ${spec.chainLabel}, so this address cannot be verified on-chain.`,
+      base,
+    );
   }
 
+  const distributor = toAddress(spec.distributor);
+
   try {
+    const code = await client.getCode({ address: distributor });
+    if (!code || code === "0x") {
+      return result(
+        claimId,
+        address,
+        "unable_to_verify",
+        "The configured distributor currently has no contract code, so this address cannot be verified on-chain.",
+        base,
+      );
+    }
+
     if (spec.claimedFn === "claimableTokens") {
       const amount = (await client.readContract({
-        address: spec.distributor,
+        address: distributor,
         abi: claimableTokensAbi,
         functionName: "claimableTokens",
         args: [address],
       })) as bigint;
       if (amount > BigInt(0)) {
-        return {
+        return result(
           claimId,
           address,
-          status: "eligible",
-          detail: `Distributor reports ${amount.toString()} claimable raw units for this address.`,
-          remainingPool,
-          remainingSymbol,
-          officialCheckerUrl,
-        };
+          "eligible",
+          `Distributor reports ${amount.toString()} claimable raw units for this address. Remaining contract token balance is not used for this result.`,
+          base,
+        );
       }
-      return {
+      return result(
         claimId,
         address,
-        status: "ineligible",
-        detail: "Distributor reports 0 claimable tokens for this address (never eligible, already claimed, or window closed).",
-        remainingPool,
-        remainingSymbol,
-        officialCheckerUrl,
-      };
+        "unable_to_verify",
+        "Distributor reports 0 claimable tokens. That does not distinguish never-eligible from already claimed, so this app does not invent a verdict.",
+        base,
+      );
     }
 
     const abi = spec.claimedFn === "hasClaimed" ? hasClaimedAbi : claimedAbi;
     const fn = spec.claimedFn === "hasClaimed" ? "hasClaimed" : "claimed";
     const already = (await client.readContract({
-      address: spec.distributor,
+      address: distributor,
       abi,
       functionName: fn,
       args: [address],
     })) as boolean;
 
     if (already) {
-      return {
+      return result(
         claimId,
         address,
-        status: "already_claimed",
-        detail: "On-chain mapping says this address has already claimed.",
-        remainingPool,
-        remainingSymbol,
-        officialCheckerUrl,
-      };
+        "already_claimed",
+        "On-chain mapping says this address has already claimed.",
+        base,
+      );
     }
 
-    return {
+    return result(
       claimId,
       address,
-      status: "unknown",
-      detail:
-        remainingPool && remainingSymbol
-          ? `Not marked claimed. Remaining pool ≈ ${trimAmount(remainingPool)} ${remainingSymbol}. Remaining contract balance does not prove claimability. Confirm snapshot inclusion on the official site before signing anything.`
-          : "Not marked claimed. Confirm snapshot inclusion on the official site — absence of a claimed flag is not proof of eligibility.",
-      remainingPool,
-      remainingSymbol,
-      officialCheckerUrl,
-    };
+      "unable_to_verify",
+      "On-chain mapping is not marked claimed. That is not proof of snapshot inclusion, so eligibility is unverified.",
+      base,
+    );
   } catch (err) {
-    return {
+    return result(
       claimId,
       address,
-      status: "unknown",
-      detail: `Read-only RPC call failed: ${err instanceof Error ? err.message : "error"}. Try the official checker.`,
-      remainingPool,
-      remainingSymbol,
-      officialCheckerUrl,
-    };
+      "unable_to_verify",
+      `Read-only address check failed (${err instanceof Error ? err.message : "RPC error"}). No eligibility verdict was invented.`,
+      base,
+    );
   }
+}
+
+function catalogOnlyReason(claim: CatalogClaim): string {
+  if (claim.kind === "puzzle") {
+    return "Public puzzle documented only. PoolIndex will not check keys or attempt a solve, so wallet eligibility cannot be verified.";
+  }
+  if (claim.chain !== "ethereum" && claim.chain !== "arbitrum") {
+    return `This offer is catalogued on ${claim.chain}, which has no address-level checker in Wallet Check.`;
+  }
+  if (claim.onChain?.token && !claim.onChain.claimedFn) {
+    return "No address-level on-chain checker is available. Remaining distributor token balance is catalog information only and is not wallet eligibility.";
+  }
+  return "No address-level on-chain checker is wired for this offer. Use the official claim page; this app stays read-only.";
+}
+
+export async function scanCatalogEligibility(
+  address: Address,
+  overlay: EligibilityResult[] = [],
+): Promise<EligibilityResult[]> {
+  const claims = WALLET_CHECK_CLAIMS();
+  const byId = new Map(overlay.map((row) => [row.claimId, row]));
+  const eligibility: EligibilityResult[] = [];
+  let stopped: string | null = null;
+  for (const claim of claims) {
+    const overlayRow = byId.get(claim.id);
+    if (overlayRow) {
+      eligibility.push(overlayRow);
+      continue;
+    }
+    const snap = readResourceSnapshot();
+    if (stopped || snap.level === "critical") {
+      stopped = stopped || snap.message;
+      eligibility.push(
+        result(
+          claim.id,
+          address,
+          "unable_to_verify",
+          `Eligibility scan stopped to protect this machine: ${stopped}`,
+          { checkKind: catalogCheckKind(claim) },
+        ),
+      );
+      continue;
+    }
+    eligibility.push(await checkEligibility(claim.id, address));
+  }
+  return eligibility;
 }
 
 export async function scanCatalogPools(): Promise<PoolSnapshot[]> {
@@ -297,12 +301,4 @@ export { isHexAddress } from "./address";
 
 export function asHexData(data: string): Hex {
   return data as Hex;
-}
-
-function trimAmount(value: string): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return value;
-  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
-  return n.toPrecision(4);
 }

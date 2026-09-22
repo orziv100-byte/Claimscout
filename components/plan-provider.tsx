@@ -21,7 +21,12 @@ export type PlanState = {
   error: string | null;
   refresh: () => Promise<void>;
   activateLicense: (license: string) => Promise<boolean>;
-  bindAddress: (address: string) => Promise<{ ok: boolean; error?: string }>;
+  bindAddress: (address: string) => Promise<{
+    ok: boolean;
+    error?: string;
+    status?: number;
+    upgradeUrl?: string;
+  }>;
   sourceAccessFor: (source: string) => ReturnType<typeof sourceAccess>;
 };
 
@@ -34,6 +39,7 @@ type PlanPayload = {
   wallets?: string[];
   sources?: string[];
   error?: string;
+  upgradeUrl?: string;
 };
 
 export function PlanProvider({ children }: { children: ReactNode }) {
@@ -100,11 +106,16 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     const json = (await res.json().catch(() => ({}))) as PlanPayload;
     if (res.status === 402) {
       apply(json);
-      return { ok: false, error: json.error || "Wallet limit reached. Upgrade to PoolIndex Pro." };
+      return {
+        ok: false,
+        error: json.error || "Wallet limit reached. Upgrade to PoolIndex Pro.",
+        status: 402,
+        upgradeUrl: json.upgradeUrl || "/upgrade",
+      };
     }
-    if (!res.ok) return { ok: false, error: json.error || "Could not bind wallet" };
+    if (!res.ok) return { ok: false, error: json.error || "Could not bind wallet", status: res.status };
     apply(json);
-    return { ok: true };
+    return { ok: true, status: res.status };
   }, []);
 
   const value = useMemo<PlanState>(

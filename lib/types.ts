@@ -26,6 +26,7 @@ export const CLAIMABILITY = [
   "unclaimed_contract_balance_only",
   "eligibility_unknown",
   "expired",
+  "unsupported",
 ] as const;
 
 export type Claimability = (typeof CLAIMABILITY)[number];
@@ -73,6 +74,14 @@ export type ClaimSource = {
   publishedAt?: string;
 };
 
+export const REMAINING_METHODS = [
+  "token_balance_of_holder",
+  "token_total_supply",
+  "unsupported",
+] as const;
+
+export type RemainingMethod = (typeof REMAINING_METHODS)[number];
+
 export type OnChainSpec = {
   chainId: number;
   chainLabel: string;
@@ -81,6 +90,8 @@ export type OnChainSpec = {
   claimedFn?: "claimableTokens" | "claimed" | "hasClaimed";
   claimFn?: "claim" | "drip";
   claimDeadline?: string;
+  remainingMethod?: RemainingMethod;
+  remainingUnsupportedReason?: string;
   explorerTokenUrl?: string;
   explorerDistributorUrl?: string;
 };
@@ -165,14 +176,21 @@ export type VerificationFlag = {
   message: string;
 };
 
+export type WalletEligibilityStatus =
+  | "eligible"
+  | "ineligible"
+  | "already_claimed"
+  | "unable_to_verify";
+
 export type EligibilityResult = {
   claimId: string;
   address: string;
-  status: "eligible" | "ineligible" | "already_claimed" | "window_closed" | "unknown";
+  status: WalletEligibilityStatus | "window_closed" | "unknown";
   detail: string;
   remainingPool?: string;
   remainingSymbol?: string;
   officialCheckerUrl?: string;
+  checkKind?: "wallet_level" | "catalog_only";
 };
 
 export type LiveSourceResult = {

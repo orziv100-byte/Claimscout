@@ -24,6 +24,9 @@ export function SiteFooter() {
           <Link href="/safety" className="hover:text-foreground">
             Safety rules
           </Link>
+          <Link href="/desktop" className="hover:text-foreground">
+            Windows
+          </Link>
           <Link href="/catalog" className="hover:text-foreground">
             Catalog
           </Link>

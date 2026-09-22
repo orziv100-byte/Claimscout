@@ -1,11 +1,11 @@
 import { BRAND_NAME, COPYRIGHT, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER, TRADEMARK_STATUS_NOTE } from "./app-info.ts";
 import { contactLine } from "./contacts.ts";
 
-export const TERMS_VERSION = "beta-2026-09-20.3";
-export const PRIVACY_VERSION = "beta-2026-09-20.3";
-export const ACCESSIBILITY_VERSION = "beta-2026-09-20.3";
+export const TERMS_VERSION = "beta-2026-09-21.2";
+export const PRIVACY_VERSION = "beta-2026-09-21.2";
+export const ACCESSIBILITY_VERSION = "beta-2026-09-21.1";
 export const LEGAL_EFFECTIVE_DATE = "2026-09-20";
-export const LEGAL_UPDATED_DATE = "2026-09-20";
+export const LEGAL_UPDATED_DATE = "2026-09-21";
 
 export const TERMS_TITLE = `${BRAND_NAME} Closed Beta Terms of Use`;
 export const PRIVACY_TITLE = `${BRAND_NAME} Privacy Notice`;
@@ -60,7 +60,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Plans",
-    body: "The Free plan is limited to a smaller source set and one public wallet address. PoolIndex Pro is a planned paid plan (target $40) with more sources and up to five wallets. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Plan limits are enforced on the server.",
+    body: "The Free plan includes one public wallet address, the public catalog, honest eligibility statuses, and URL inspection. Offer names are never hidden behind payment. You may connect your own read-only MCP agent on Free or Pro; you pay for that LLM. PoolIndex does not run a built-in language-model agent. PoolIndex Pro is a planned paid plan (target $20 per month, or $99 per year) for up to five wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Plan limits are enforced on the server.",
+  },
+  {
+    heading: "Connect your agent",
+    body: "You may create a read-only MCP token from your account and connect a client you already pay for (for example Claude Desktop or Cursor). The token is shown once, stored as a hash, and can be revoked immediately. Scopes are read:scans, read:catalog, and read:events. MCP tools cannot sign, send transactions, change account settings, or accept seed phrases or private keys. Addresses not bound to your account are rejected with HTTP 402. Text from GitHub, Wayback, and other external pages is returned as untrusted data, not instructions. PoolIndex does not take your LLM keys and does not call a language model on the server.",
   },
   {
     heading: "Availability, errors, and interruption",
@@ -119,7 +123,11 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Sessions and tokens",
-    body: "WHAT: HMAC-signed session cookies, session IDs, email-verify and password-reset token hashes, expiry times. WHY: keep you signed in and complete verification/reset. WHERE: HTTP-only cookie plus var/beta/state.json. RETENTION: sessions expire (about 7 days) or are revoked on logout/disable; unused tokens expire. WHO: the operator host. IP addresses are not stored in the session record.",
+    body: "WHAT: HMAC-signed session cookies, session IDs, email-verify and password-reset token hashes, expiry times, and hashed read-only MCP tokens (name, scopes, created/last-used/revoked). WHY: keep you signed in, complete verification/reset, and let you connect your own agent. WHERE: HTTP-only cookie plus var/beta/state.json and var/beta/agent-tokens.json. RETENTION: sessions expire (about 7 days) or are revoked on logout/disable; unused tokens expire; MCP tokens until you revoke them or the account is closed. WHO: the operator host. The raw MCP token is shown once and is not stored. IP addresses are not stored in the session record.",
+  },
+  {
+    heading: "Agent connection logs",
+    body: "WHAT: MCP tool name, timestamp, optional public wallet address, success/failure. WHY: you can see what your connected agent requested. WHERE: var/beta/mcp-calls/{userId}.jsonl. RETENTION: a short rolling log (about 200 rows). WHO: you (your log) and operators. PoolIndex does not send these calls to a language model.",
   },
   {
     heading: "IP and security events",

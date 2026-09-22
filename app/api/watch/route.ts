@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         previous: null,
         changes: [],
         openPools: [],
+        unsupportedPools: [],
         digest: "",
         refreshed: false,
       };

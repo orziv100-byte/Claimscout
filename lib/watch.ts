@@ -128,10 +128,15 @@ export function openWatchPools(snapshot: WatchSnapshot): WatchOffer[] {
   });
 }
 
+export function unsupportedWatchPools(snapshot: WatchSnapshot): WatchOffer[] {
+  return snapshot.offers.filter((offer) => Boolean(offer.poolError));
+}
+
 export function formatWatchDigest(input: {
   capturedAt: string;
   changes: WatchChange[];
   openPools: WatchOffer[];
+  unsupportedPools?: WatchOffer[];
 }): string {
   const lines = [
     `# PoolIndex catalog watch`,
@@ -155,6 +160,13 @@ export function formatWatchDigest(input: {
       lines.push(`- ${offer.title}: ${trimPool(offer.remaining)} ${offer.symbol ?? offer.asset}`);
     }
   }
+  const unsupported = input.unsupportedPools ?? [];
+  if (unsupported.length > 0) {
+    lines.push("", "## Unverifiable / Unsupported");
+    for (const offer of unsupported) {
+      lines.push(`- ${offer.title}: ${shortPoolError(offer.poolError) || "Unsupported"}`);
+    }
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -176,9 +188,14 @@ function meaningfullyChanged(before: WatchOffer, after: WatchOffer): boolean {
 }
 
 function poolChangeSummary(before: WatchOffer, after: WatchOffer): string {
-  const from = before.remaining != null ? `${trimPool(before.remaining)} ${before.symbol ?? before.asset}` : "n/a";
-  const to = after.remaining != null ? `${trimPool(after.remaining)} ${after.symbol ?? after.asset}` : after.poolError || "n/a";
+  const from = before.remaining != null ? `${trimPool(before.remaining)} ${before.symbol ?? before.asset}` : shortPoolError(before.poolError) || "n/a";
+  const to = after.remaining != null ? `${trimPool(after.remaining)} ${after.symbol ?? after.asset}` : shortPoolError(after.poolError) || "n/a";
   return `${after.title} remaining pool ${from} → ${to}.`;
+}
+
+function shortPoolError(value?: string): string {
+  if (!value) return "";
+  return value.split("\n")[0]?.trim() ?? value;
 }
 
 function trimPool(value: string | undefined): string {

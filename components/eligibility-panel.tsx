@@ -11,8 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ExternalClaimWarning } from "@/components/external-claim-warning";
+import { OfficialSourceLinks } from "@/components/official-source-links";
 import { useWallet } from "@/components/wallet-provider";
+import { walletEligibilityLabel } from "@/lib/eligibility-status";
 import type { CatalogClaim, EligibilityResult } from "@/lib/types";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
@@ -51,8 +52,9 @@ export function EligibilityPanel({ claim }: { claim: CatalogClaim }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
-          Checks are read-only <code className="font-mono text-xs">eth_call</code> queries against public RPCs. Nothing
-          is signed unless you explicitly approve a legitimate on-chain claim below.
+          Checks are read-only <code className="font-mono text-xs">eth_call</code> queries against public RPCs. PoolIndex
+          does not claim tokens for you. Connecting a wallet is optional and only needed if you later sign in your own
+          wallet.
         </p>
         {!address ? (
           <p className="text-sm">Paste or connect an address in the header to check this offer.</p>
@@ -69,13 +71,8 @@ export function EligibilityPanel({ claim }: { claim: CatalogClaim }) {
         ) : null}
         {result ? (
           <Alert>
-            <AlertTitle className="capitalize">{result.status.replaceAll("_", " ")}</AlertTitle>
-            <AlertDescription>
-              {result.detail}
-              {result.remainingPool && result.remainingSymbol
-                ? ` Remaining pool ≈ ${result.remainingPool} ${result.remainingSymbol}. Remaining contract balance does not prove claimability.`
-                : ""}
-            </AlertDescription>
+            <AlertTitle>{walletEligibilityLabel(result.status)}</AlertTitle>
+            <AlertDescription>{result.detail}</AlertDescription>
           </Alert>
         ) : null}
         <ClaimAction claim={claim} eligible={result?.status === "eligible"} />
@@ -92,16 +89,18 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
   const [error, setError] = useState<string | null>(null);
 
   if (claim.action.type === "none") {
-    return <p className="text-sm text-muted-foreground">{claim.action.reason}</p>;
+    return (
+      <div className="flex flex-col gap-2">
+        <OfficialSourceLinks officialUrl={claim.officialUrl} archiveUrl={claim.archiveUrl} />
+        <p className="text-sm text-muted-foreground">{claim.action.reason}</p>
+      </div>
+    );
   }
 
   if (claim.action.type === "official_ui") {
     return (
       <div className="flex flex-col gap-2">
-        <ExternalClaimWarning compact />
-        <Button render={<a href={claim.action.url} target="_blank" rel="noreferrer" />}>
-          {claim.action.label} (third-party page)
-        </Button>
+        <OfficialSourceLinks officialUrl={claim.action.url} archiveUrl={claim.archiveUrl} />
       </div>
     );
   }
@@ -110,6 +109,7 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
 
   return (
     <>
+      <OfficialSourceLinks officialUrl={claim.officialUrl} archiveUrl={claim.archiveUrl} />
       <Button
         disabled={!eligible}
         onClick={() => {
@@ -122,9 +122,14 @@ function ClaimAction({ claim, eligible }: { claim: CatalogClaim; eligible: boole
       </Button>
       {!eligible ? (
         <p className="text-xs text-muted-foreground">
-          On-chain submit stays disabled until a read-only check reports this address eligible.
+          Prefer the official source and archive above. On-chain submit stays disabled until a read-only check reports
+          this address eligible.
         </p>
-      ) : null}
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Advanced: you can still sign in your own wallet. PoolIndex does not send the transaction for you.
+        </p>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

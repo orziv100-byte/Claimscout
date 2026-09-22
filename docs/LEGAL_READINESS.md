@@ -44,7 +44,7 @@ PASS as product policy in `docs/DATA_RETENTION.md`. Statutory periods are marked
 
 ## 10. Processor inventory
 
-PASS for actual integrations in `docs/PROCESSORS.md` (host, optional backup host, GitHub, Wayback, Internet Archive, public RPC, injected wallet, mail/outbox). No unused vendors invented. Transfer legal basis: LEGAL REVIEW REQUIRED.
+PASS for actual integrations in `docs/PROCESSORS.md` (host, optional backup host, GitHub, Wayback, Internet Archive, public RPC, injected wallet, mail/outbox, Resend when configured). No unused vendors invented. Transfer legal basis: LEGAL REVIEW REQUIRED.
 
 ## 11. Deep Hunt privacy
 

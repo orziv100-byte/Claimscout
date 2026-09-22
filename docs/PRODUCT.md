@@ -50,8 +50,8 @@ Server-side. Blocks seed/private-key language, dump hosts, drainers, and automat
 
 Configurable in `lib/plan.ts` and enforced in API routes:
 
-- Free: catalog + GitHub, 1 wallet, $0.
-- PoolIndex Pro (planned $40, no billing yet): catalog + GitHub + Wayback + archive.org (~70% of sources), 5 wallets.
+- Free: catalog + GitHub, 1 wallet, $0. Offer names and honest statuses are never paywalled.
+- PoolIndex Pro (planned $20/month or $99/year, no billing yet): up to five wallets, claim-window email alerts, Wayback + archive.org scanning.
 - Reddit and Bitcointalk stay reserved.
 
 Closed Beta binds plan and wallets to the signed-in user record.

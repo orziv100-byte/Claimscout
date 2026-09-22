@@ -1,3 +1,4 @@
+import { OfficialSourceLinks } from "@/components/official-source-links";
 import { EligibilityPanel } from "@/components/eligibility-panel";
 import { InspectPanel } from "@/components/inspect-panel";
 import { ResultFeedback } from "@/components/result-feedback";
@@ -63,6 +64,9 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
 
           <section className="rounded-xl border border-border/80 bg-card p-5">
             <h2 className="font-heading text-xl">Sources</h2>
+            <div className="mt-3">
+              <OfficialSourceLinks officialUrl={inspectUrl} archiveUrl={claim.archiveUrl} />
+            </div>
             <ul className="mt-3 space-y-2">
               {claim.sources.map((source) => (
                 <li key={source.url} className="flex flex-col gap-0.5 text-sm">
