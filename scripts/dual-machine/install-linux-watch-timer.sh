@@ -23,6 +23,10 @@ Nice=10
 IOSchedulingClass=idle
 Environment=POOLINDEX_ROOT=${POOLINDEX_ROOT}
 ExecStart=${digest}
+# Exit 2/3 are deliberate SKIP outcomes (resources unsafe, heavy lock, upstream
+# source unavailable) — not failures. Only an unhandled crash (any other
+# non-zero code) should show this unit as failed.
+SuccessExitStatus=2 3
 EOF
   cat > "$timer" <<EOF
 [Unit]
