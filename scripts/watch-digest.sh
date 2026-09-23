@@ -18,7 +18,18 @@ fi
 
 health="$(curl -sf -m 2 http://127.0.0.1:43147/api/health || true)"
 if [[ -n "$health" ]]; then
-  heavy="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("resource",{}).get("heavyJobs",0))' "$health")"
+  if ! heavy="$(python3 -c '
+import json, sys
+try:
+    d = json.loads(sys.argv[1])
+except json.JSONDecodeError as e:
+    print(f"watch-digest: SKIP /api/health returned malformed JSON ({e}) — wait for the next daily run", file=sys.stderr)
+    sys.exit(1)
+resource = d.get("resource") if isinstance(d.get("resource"), dict) else {}
+print(resource.get("heavyJobs", 0))
+' "$health")"; then
+    exit 3
+  fi
   if [[ "$heavy" != "0" ]]; then
     echo "watch-digest: SKIP app already has a heavy job — wait for the next daily run"
     exit 3

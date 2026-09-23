@@ -60,4 +60,5 @@ test("macOS installer discovers the newest version across multiple builds", () =
   assert.equal(result.published, true);
   assert.equal(result.version, "0.1.2");
   assert.equal(result.filename, "PoolIndex-0.1.2-mac-arm64.zip");
+  rmSync(root, { recursive: true, force: true });
 });
