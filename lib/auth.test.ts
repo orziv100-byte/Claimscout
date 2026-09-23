@@ -600,3 +600,50 @@ test("desktop Google ticket is one-time and challenge-bound", async () => {
   assert.throws(() => redeemGoogleDesktopTicket(started.desktopTicket!, "challenge-1"), /already used/);
   assert.throws(() => redeemGoogleDesktopTicket(started.desktopTicket!, "wrong"), /not valid/);
 });
+
+test("production forgot API never returns resetUrl for known or unknown emails", async () => {
+  const prevNode = process.env.NODE_ENV;
+  const prevReveal = process.env.POOLINDEX_REVEAL_MAIL;
+  await register("reset-enum-known@example.com");
+  try {
+    process.env.NODE_ENV = "production";
+    process.env.POOLINDEX_REVEAL_MAIL = "1";
+    const { POST } = await import("../app/api/auth/[action]/route.ts");
+    async function forgot(email: string) {
+      const res = await POST(
+        new Request("http://127.0.0.1:43147/api/auth/forgot", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: "http://127.0.0.1:43147",
+            host: "127.0.0.1:43147",
+          },
+          body: JSON.stringify({ email }),
+        }),
+        { params: Promise.resolve({ action: "forgot" }) },
+      );
+      return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+    }
+    const known = await forgot("reset-enum-known@example.com");
+    const unknown = await forgot("reset-enum-nobody@example.com");
+    assert.equal(known.status, 200);
+    assert.equal(unknown.status, 200);
+    assert.equal("resetUrl" in known.body, false);
+    assert.equal("resetUrl" in unknown.body, false);
+    assert.equal(known.body.resetUrl, undefined);
+    assert.equal(unknown.body.resetUrl, undefined);
+    assert.equal(known.body.ok, true);
+    assert.equal(unknown.body.ok, true);
+    assert.equal(known.body.sent, true);
+    assert.equal(unknown.body.sent, true);
+    assert.deepEqual(Object.keys(known.body).sort(), Object.keys(unknown.body).sort());
+    assert.deepEqual(
+      { ok: known.body.ok, sent: known.body.sent },
+      { ok: unknown.body.ok, sent: unknown.body.sent },
+    );
+  } finally {
+    process.env.NODE_ENV = prevNode;
+    if (prevReveal === undefined) delete process.env.POOLINDEX_REVEAL_MAIL;
+    else process.env.POOLINDEX_REVEAL_MAIL = prevReveal;
+  }
+});
