@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS users (
   totp_enabled INTEGER NOT NULL DEFAULT 0,
   totp_recovery_hashes_json TEXT,
   totp_last_step INTEGER,
+  google_sub TEXT,
   deletion_requested_at TEXT,
   deletion_status TEXT NOT NULL
 );
@@ -107,6 +108,14 @@ CREATE TABLE IF NOT EXISTS meta (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS paypal_webhook_receipts (
+  id TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL
+);
 `;
 
 const openDbs = new Map<string, DatabaseSync>();
@@ -149,6 +158,11 @@ export function openSqlite(path: string): DatabaseSync {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec(SCHEMA);
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN google_sub TEXT");
+  } catch {
+    /* already present on new schema */
+  }
   openDbs.set(path, db);
   return db;
 }
@@ -183,6 +197,8 @@ export function replaceSqliteFromState(state: BetaState, path: string): void {
     db.exec("DELETE FROM feedback");
     db.exec("DELETE FROM deletion_requests");
     db.exec("DELETE FROM privacy_requests");
+    db.exec("DELETE FROM subscriptions");
+    db.exec("DELETE FROM paypal_webhook_receipts");
     db.exec("DELETE FROM users");
     db.exec("DELETE FROM ops");
     const insertUser = db.prepare(
@@ -190,9 +206,9 @@ export function replaceSqliteFromState(state: BetaState, path: string): void {
         id, email, display_name, password_hash, status, role, plan, invite_code,
         email_verified_at, terms_version, privacy_version, accepted_at, created_at,
         last_login_at, last_scan_at, first_scan_at, scan_counts_json, monitor_enabled,
-        totp_secret, totp_enabled, totp_recovery_hashes_json, totp_last_step,
+        totp_secret, totp_enabled, totp_recovery_hashes_json, totp_last_step, google_sub,
         deletion_requested_at, deletion_status
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     );
     const insertWallet = db.prepare("INSERT INTO wallets (user_id, address, position) VALUES (?,?,?)");
     for (const user of state.users) {
@@ -219,6 +235,7 @@ export function replaceSqliteFromState(state: BetaState, path: string): void {
         user.totpEnabled ? 1 : 0,
         user.totpRecoveryHashes ? json(user.totpRecoveryHashes) : null,
         user.totpLastStep ?? null,
+        user.googleSub ?? null,
         user.deletionRequestedAt,
         user.deletionStatus,
       );
@@ -271,6 +288,10 @@ export function replaceSqliteFromState(state: BetaState, path: string): void {
     for (const row of state.deletionRequests) insertDel.run(row.id, json(row));
     const insertPriv = db.prepare("INSERT INTO privacy_requests (id, payload_json) VALUES (?,?)");
     for (const row of state.privacyRequests) insertPriv.run(row.id, json(row));
+    const insertSub = db.prepare("INSERT INTO subscriptions (id, payload_json) VALUES (?,?)");
+    for (const row of state.subscriptions ?? []) insertSub.run(row.id, json(row));
+    const insertHook = db.prepare("INSERT INTO paypal_webhook_receipts (id, payload_json) VALUES (?,?)");
+    for (const row of state.paypalWebhookReceipts ?? []) insertHook.run(row.id, json(row));
     db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema','1')").run();
     db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('written_at', ?)").run(new Date().toISOString());
     db.exec("COMMIT");
@@ -290,6 +311,16 @@ function strNull(value: unknown): string | null {
 
 function num(value: unknown): number {
   return typeof value === "number" ? value : Number(value ?? 0);
+}
+
+function tableJson<T>(db: DatabaseSync, table: string): T[] {
+  try {
+    return (db.prepare(`SELECT payload_json FROM ${table}`).all() as { payload_json: string }[]).map((row) =>
+      parseJson(row.payload_json, {} as T),
+    );
+  } catch {
+    return [];
+  }
 }
 
 export function readStateFromSqlite(path: string): BetaState {
@@ -332,6 +363,7 @@ export function readStateFromSqlite(path: string): BetaState {
       ? parseJson<string[]>(str(row.totp_recovery_hashes_json), [])
       : undefined,
     totpLastStep: row.totp_last_step == null ? undefined : num(row.totp_last_step),
+    googleSub: strNull(row.google_sub) ?? undefined,
     deletionRequestedAt: strNull(row.deletion_requested_at),
     deletionStatus: (row.deletion_status as UserRecord["deletionStatus"]) ?? "none",
   }));
@@ -391,6 +423,8 @@ export function readStateFromSqlite(path: string): BetaState {
     privacyRequests: (db.prepare("SELECT payload_json FROM privacy_requests").all() as { payload_json: string }[]).map(
       (row) => parseJson(row.payload_json, {} as BetaState["privacyRequests"][number]),
     ),
+    subscriptions: tableJson<BetaState["subscriptions"][number]>(db, "subscriptions"),
+    paypalWebhookReceipts: tableJson<BetaState["paypalWebhookReceipts"][number]>(db, "paypal_webhook_receipts"),
   };
 }
 

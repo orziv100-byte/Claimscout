@@ -10,11 +10,13 @@
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "NODE_OPTIONS='--max-old-space-size=2048' next start --hostname 127.0.0.1 --port 43147",
     "lint": "eslint",
-    "test": "node --import tsx --test-concurrency=1 --test lib/resource-guard.test.ts lib/safety.test.ts lib/watch.test.ts lib/plan.test.ts lib/auth.test.ts lib/ssrf.test.ts lib/hardening.test.ts lib/catalog-accuracy.test.ts lib/intelligence.test.ts lib/copyright.test.ts lib/legal-hardening.test.ts lib/trademark.test.ts lib/mail.test.ts lib/address.test.ts lib/eligibility-status.test.ts lib/onchain.test.ts lib/official-source.test.ts lib/entitlement.test.ts lib/admin-mfa.test.ts lib/payments.test.ts lib/paypal.test.ts lib/db/sqlite.test.ts lib/engine/coverage.test.ts lib/engine/learning.test.ts lib/engine/live-ticker.test.ts lib/engine/asset-brief.test.ts lib/engine/engine.test.ts lib/engine/monitor.test.ts lib/engine/scan-job.test.ts lib/engine/mcp.test.ts lib/engine/mcp-cors.test.ts lib/engine/mcp-route.test.ts lib/engine/mcp-findings.test.ts lib/engine/mcp-runtime.test.ts && bash scripts/dual-machine/backup.test.sh",
+    "test": "node --import tsx --test-concurrency=1 --test lib/resource-guard.test.ts lib/safety.test.ts lib/watch.test.ts lib/plan.test.ts lib/auth.test.ts lib/google-oauth.test.ts lib/csrf.test.ts lib/ssrf.test.ts lib/hardening.test.ts lib/catalog-accuracy.test.ts lib/intelligence.test.ts lib/copyright.test.ts lib/legal-hardening.test.ts lib/trademark.test.ts lib/mail.test.ts lib/address.test.ts lib/eligibility-status.test.ts lib/onchain.test.ts lib/official-source.test.ts lib/entitlement.test.ts lib/admin-mfa.test.ts lib/payments.test.ts lib/paypal.test.ts lib/billing.test.ts lib/windows-installer.test.ts lib/download-ops.test.ts lib/operator-console.test.ts lib/desktop-origin.test.ts lib/site-surface.test.ts lib/feedback.test.ts lib/db/sqlite.test.ts lib/engine/coverage.test.ts lib/engine/learning.test.ts lib/engine/live-ticker.test.ts lib/engine/asset-brief.test.ts lib/engine/engine.test.ts lib/engine/monitor.test.ts lib/engine/scan-job.test.ts lib/engine/mcp.test.ts lib/engine/mcp-cors.test.ts lib/engine/mcp-route.test.ts lib/engine/mcp-findings.test.ts lib/engine/mcp-runtime.test.ts && bash scripts/dual-machine/backup.test.sh",
     "mail:resend": "node --import tsx scripts/resend-setup.ts",
     "backup:snapshot": "bash scripts/dual-machine/snapshot.sh",
     "backup:verify": "bash scripts/dual-machine/verify.sh",
-    "watch:digest": "bash scripts/watch-digest.sh",
+    "desktop:dist": "npm --prefix desktop run dist",
+    "desktop:secrets": "npm --prefix desktop run check-secrets",
+    "desktop:publish": "node desktop/publish-downloads.cjs",
     "engine:digest": "bash scripts/engine-digest.sh"
   },
   "dependencies": {

@@ -121,13 +121,17 @@ type FeedbackRow = {
   id: string;
   type: string;
   status: string;
+  operatorStatus?: string;
   note: string;
   source: string;
   userId: string;
   email: string | null;
   appVersion: string;
   createdAt: string;
+  updatedAt?: string;
   urlHost: string;
+  rating: number | null;
+  contactMe: boolean;
 };
 
 type Me = { id: string; email: string; role: string; totpEnabled?: boolean } | null;
@@ -145,6 +149,8 @@ export function AdminDashboard() {
   const [reason, setReason] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("");
+  const [openFeedbackId, setOpenFeedbackId] = useState<string | null>(null);
 
   const [me, setMe] = useState<Me>(null);
   const [mfaRequired, setMfaRequired] = useState(false);
@@ -175,7 +181,11 @@ export function AdminDashboard() {
     setMfaRequired(false);
     setSummary(sumJson);
     setReason(sumJson.ops.reason || "");
-    const feedRes = await fetch(`/api/admin/feedback?type=${encodeURIComponent(typeFilter)}&status=${encodeURIComponent(statusFilter)}`);
+    const params = new URLSearchParams();
+    if (typeFilter) params.set("type", typeFilter);
+    if (statusFilter) params.set("status", statusFilter);
+    if (ratingFilter) params.set("rating", ratingFilter);
+    const feedRes = await fetch(`/api/admin/feedback?${params.toString()}`);
     const feedJson = (await feedRes.json().catch(() => ({}))) as { feedback?: FeedbackRow[]; error?: string };
     setFeedback(feedJson.feedback ?? []);
   }
@@ -183,7 +193,7 @@ export function AdminDashboard() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeFilter, statusFilter]);
+  }, [typeFilter, statusFilter, ratingFilter]);
 
   async function verifyMfa(e: React.FormEvent) {
     e.preventDefault();
@@ -894,40 +904,103 @@ export function AdminDashboard() {
 
       <section className="rounded-xl border border-border/80 bg-card p-5">
         <h2 className="font-heading text-xl">Feedback queue</h2>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <label htmlFor="feedback-type" className="sr-only">
-            Feedback type filter
+            Feedback category filter
           </label>
-          <Input id="feedback-type" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="type" />
+          <select
+            id="feedback-type"
+            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="">All categories</option>
+            <option value="bug">Bug</option>
+            <option value="idea">Idea</option>
+            <option value="scan_result">Scan result</option>
+            <option value="payment">Payment</option>
+            <option value="other">Other</option>
+            <option value="useful">Useful</option>
+            <option value="report_problem">Report problem</option>
+            <option value="broken_link">Broken link</option>
+          </select>
           <label htmlFor="feedback-status" className="sr-only">
             Feedback status filter
           </label>
-          <Input id="feedback-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} placeholder="status" />
+          <select
+            id="feedback-status"
+            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All statuses</option>
+            <option value="new">New</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <label htmlFor="feedback-rating" className="sr-only">
+            Feedback rating filter
+          </label>
+          <select
+            id="feedback-rating"
+            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            value={ratingFilter}
+            onChange={(e) => setRatingFilter(e.target.value)}
+          >
+            <option value="">All ratings</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
         </div>
         <ul className="mt-3 space-y-3">
           {feedback.map((row) => (
             <li key={row.id} className="rounded-md border border-border/60 p-3 text-sm">
-              <p>
-                {row.type} · {row.status} · {row.email || row.userId} · {row.source || "n/a"} · {row.appVersion}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {row.createdAt} · {row.urlHost} · {row.note || "no note"}
-              </p>
+              <button
+                type="button"
+                className="w-full text-left"
+                onClick={() => setOpenFeedbackId(openFeedbackId === row.id ? null : row.id)}
+              >
+                <p>
+                  {row.type} · {row.operatorStatus || row.status}
+                  {row.rating ? ` · ${row.rating}/5` : ""} · {row.email || row.userId} · {row.appVersion}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {row.createdAt} · {row.source || "n/a"} · {(row.note || "no note").slice(0, 80)}
+                </p>
+              </button>
+              {openFeedbackId === row.id ? (
+                <div className="mt-2 space-y-1 rounded-md bg-muted/40 p-2 text-xs">
+                  <p>User: {row.email || row.userId}</p>
+                  <p>Status: {row.operatorStatus || row.status}</p>
+                  <p>Rating: {row.rating ?? "n/a"}</p>
+                  <p>Contact me: {row.contactMe ? "yes" : "no"}</p>
+                  <p>Version: {row.appVersion}</p>
+                  <p>Updated: {row.updatedAt || row.createdAt}</p>
+                  <p className="whitespace-pre-wrap">{row.note || "no note"}</p>
+                </div>
+              ) : null}
               <div className="mt-2 flex flex-wrap gap-1">
-                {["new", "investigating", "fixed", "closed"].map((status) => (
+                {[
+                  { status: "new", label: "New" },
+                  { status: "reviewed", label: "Reviewed" },
+                  { status: "resolved", label: "Resolved" },
+                ].map((item) => (
                   <Button
-                    key={status}
+                    key={item.status}
                     size="sm"
                     variant="outline"
                     onClick={() =>
                       void fetch("/api/admin/feedback", {
                         method: "POST",
                         headers: { "content-type": "application/json" },
-                        body: JSON.stringify({ id: row.id, status }),
+                        body: JSON.stringify({ id: row.id, status: item.status }),
                       }).then(load)
                     }
                   >
-                    {status}
+                    {item.label}
                   </Button>
                 ))}
               </div>

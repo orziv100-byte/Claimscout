@@ -45,7 +45,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     maxWallets: PLAN_POLICY.paid.maxWallets,
     sources: ["catalog", "github", "wayback", "archive_org"],
     summary:
-      `Planned $${PLAN_PRICES.paid.priceUsd}/month or $${PLAN_PRICES.paid.yearlyUsd}/year: up to ${PLAN_POLICY.paid.maxWallets} wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Finding names stay free. Payment processing is unavailable.`,
+      `$${PLAN_PRICES.paid.priceUsd}/month or $${PLAN_PRICES.paid.yearlyUsd}/year: up to ${PLAN_POLICY.paid.maxWallets} wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Finding names stay free. Closed Beta uses PayPal Sandbox only — not live charges.`,
   },
 };
 
@@ -148,7 +148,7 @@ export function walletLimitMessage(plan: PlanId, email?: string | null): string 
     return `${BRAND_NAME} operator wallet-check slots are full on this account.`;
   }
   if (plan === "free") {
-    return `Free keeps one wallet at a time. Paste another public 0x address to replace it. ${BRAND_NAME} Pro is planned ($${PLANS.paid.priceUsd}/month or $${PLANS.paid.yearlyUsd}/year; payment processing unavailable) for up to five wallets plus email alerts and archive scanning. Offer names are never hidden behind payment.`;
+    return `Free keeps one wallet at a time. Paste another public 0x address to replace it. ${BRAND_NAME} Pro ($${PLANS.paid.priceUsd}/month or $${PLANS.paid.yearlyUsd}/year via PayPal Sandbox) is for up to five wallets plus email alerts and archive scanning. Offer names are never hidden behind payment.`;
   }
   return `${BRAND_NAME} Pro includes up to five wallets.`;
 }

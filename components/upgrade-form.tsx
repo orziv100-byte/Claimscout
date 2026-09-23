@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SubscriptionPanel } from "@/components/subscription-panel";
 import { usePlan } from "@/components/plan-provider";
 import { formatWalletCap, PLANS } from "@/lib/plan";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 export function UpgradeForm() {
   const { plan, activateLicense, error, maxWallets, wallets } = usePlan();
@@ -22,12 +23,13 @@ export function UpgradeForm() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
       <div>
-        <h1 className="font-heading text-3xl tracking-tight">Free and PoolIndex Pro</h1>
+        <h1 className="font-heading text-3xl tracking-tight">Free access and PoolIndex Pro</h1>
         <p className="mt-3 text-muted-foreground">
-          Offer names and honest statuses stay free. PoolIndex Pro is a planned ${PLANS.paid.priceUsd}/month or $
-          {PLANS.paid.yearlyUsd}/year plan for more wallets, claim-window email alerts, and Wayback/archive scanning.
-          Payment processing is unavailable in this Closed Beta. Reddit and Bitcointalk stay reserved. Adapter
-          failures are repaired as product maintenance — not a paid add-on. A later{" "}
+          Download is free. After email verification you land here: keep Trial (Closed Beta free access — one wallet,
+          catalog, honest statuses, URL inspect) or start a Paid Subscription. PoolIndex Pro is ${PLANS.paid.priceUsd}
+          /month or ${PLANS.paid.yearlyUsd}/year for more wallets, claim-window email alerts, and Wayback/archive
+          scanning. Checkout is PayPal Sandbox only — not live charges — and only after you are signed in. Reddit and
+          Bitcointalk stay reserved. Adapter failures are repaired as product maintenance — not a paid add-on. A later{" "}
           <a className="underline" href="/coverage">
             Request Coverage
           </a>{" "}
@@ -38,10 +40,11 @@ export function UpgradeForm() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Free</CardTitle>
+            <CardTitle>Trial</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p className="text-2xl font-heading text-foreground">$0</p>
+            <p>Trial under existing Closed Beta rules: unpaid Free plan after email verification. No timed trial clock is sold separately.</p>
             <ul className="list-disc space-y-1 pl-4">
               <li>One public wallet</li>
               <li>Named offers and four honest statuses</li>
@@ -50,20 +53,20 @@ export function UpgradeForm() {
               <li>Connect your own agent (read-only MCP; you pay for the LLM)</li>
             </ul>
             {plan === "free" ? (
-              <p className="text-xs">You are on Free. Slot {wallets.length}/{formatWalletCap(maxWallets)}.</p>
+              <p className="text-xs">You are on Trial (Closed Beta free access). Slot {wallets.length}/{formatWalletCap(maxWallets)}.</p>
             ) : null}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>PoolIndex Pro (planned)</CardTitle>
+            <CardTitle>Paid Subscription</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p className="text-2xl font-heading text-foreground">
               ${PLANS.paid.priceUsd}
               <span className="ml-1 text-sm font-normal text-muted-foreground">/month</span>
             </p>
-            <p className="text-xs">or ${PLANS.paid.yearlyUsd}/year. Not billed in this Beta.</p>
+            <p className="text-xs">or ${PLANS.paid.yearlyUsd}/year. PayPal Sandbox in this Beta.</p>
             <ul className="list-disc space-y-1 pl-4">
               <li>Up to {PLANS.paid.maxWallets} wallets</li>
               <li>Email alerts for claim windows and verified findings</li>
@@ -78,6 +81,10 @@ export function UpgradeForm() {
           </CardContent>
         </Card>
       </div>
+
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading PayPal Sandbox checkout…</p>}>
+        <SubscriptionPanel variant="web" />
+      </Suspense>
 
       <Card>
         <CardHeader>
@@ -102,12 +109,11 @@ export function UpgradeForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Activate PoolIndex Pro (planned)</CardTitle>
+          <CardTitle>Operator license key</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">
-            After a planned ${PLANS.paid.priceUsd}/month purchase — payment processing is not available yet — an operator
-            can issue a license key. Paste it here. The server stores a signed cookie, not the key.
+            Operators can still issue a test license. Paste it here. The server stores a signed cookie, not the key.
           </p>
           <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => void submit(e)}>
             <label htmlFor="pro-license" className="sr-only">

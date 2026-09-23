@@ -1,3 +1,4 @@
+import { ACCESS_LABELS, accessKindForUser } from "@/lib/billing";
 import { guardedJson } from "@/lib/api-guard";
 import { updateUser } from "@/lib/auth";
 import {
@@ -17,7 +18,15 @@ export async function GET(request: Request) {
   const authed = requireUser(request, { allowUnverified: true });
   if (isResponse(authed)) return authed;
   const ent = { plan: authed.user.plan, wallets: authed.user.wallets };
-  return withEntitlementCookie(NextResponse.json(publicEntitlement(ent, authed.user.email)), ent);
+  const access = accessKindForUser(authed.user.id);
+  return withEntitlementCookie(
+    NextResponse.json({
+      ...publicEntitlement(ent, authed.user.email),
+      access,
+      accessLabel: ACCESS_LABELS[access],
+    }),
+    ent,
+  );
 }
 
 export async function POST(request: Request) {

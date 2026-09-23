@@ -12,20 +12,26 @@ export function SiteFooter() {
           private key.
         </p>
         <div className="flex flex-wrap gap-4">
+          <Link href="/download" className="hover:text-foreground">
+            Download
+          </Link>
           <Link href="/terms" className="hover:text-foreground">
             Terms
           </Link>
           <Link href="/privacy" className="hover:text-foreground">
             Privacy
           </Link>
+          <Link href="/eula" className="hover:text-foreground">
+            EULA
+          </Link>
+          <Link href="/disclaimer" className="hover:text-foreground">
+            Disclaimer
+          </Link>
           <Link href="/accessibility" className="hover:text-foreground">
             Accessibility
           </Link>
           <Link href="/safety" className="hover:text-foreground">
             Safety rules
-          </Link>
-          <Link href="/desktop" className="hover:text-foreground">
-            Windows
           </Link>
           <Link href="/catalog" className="hover:text-foreground">
             Catalog

@@ -6,7 +6,7 @@ export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export const USER_ROLES = ["user", "admin"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
-export const FEEDBACK_TYPES = [
+export const RESULT_FEEDBACK_TYPES = [
   "useful",
   "already_knew",
   "not_relevant",
@@ -17,15 +17,53 @@ export const FEEDBACK_TYPES = [
   "claimed_successfully",
   "report_problem",
 ] as const;
+export const BETA_FEEDBACK_CATEGORIES = ["bug", "idea", "scan_result", "payment", "other"] as const;
+export const FEEDBACK_TYPES = [...RESULT_FEEDBACK_TYPES, ...BETA_FEEDBACK_CATEGORIES] as const;
+export type ResultFeedbackType = (typeof RESULT_FEEDBACK_TYPES)[number];
+export type BetaFeedbackCategory = (typeof BETA_FEEDBACK_CATEGORIES)[number];
 export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 
-export const FEEDBACK_STATUSES = ["new", "investigating", "fixed", "closed"] as const;
+export const FEEDBACK_STATUSES = ["new", "investigating", "reviewed", "fixed", "resolved", "closed"] as const;
+export const FEEDBACK_OPERATOR_STATUSES = ["new", "reviewed", "resolved"] as const;
 export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number];
+export type FeedbackOperatorStatus = (typeof FEEDBACK_OPERATOR_STATUSES)[number];
 
 export type ScanCounts = {
   started: number;
   completed: number;
   failed: number;
+};
+
+export const BILLING_STATUSES = [
+  "pending",
+  "active",
+  "cancelled",
+  "suspended",
+  "expired",
+  "payment_failed",
+] as const;
+export type BillingStatus = (typeof BILLING_STATUSES)[number];
+export type BillingInterval = "month" | "year";
+
+export type SubscriptionRecord = {
+  id: string;
+  userId: string;
+  paypalSubscriptionId: string;
+  paypalPlanId: string;
+  plan: "paid";
+  interval: BillingInterval;
+  status: BillingStatus;
+  createdAt: string;
+  updatedAt: string;
+  nextBillingAt: string | null;
+  approvalUrl: string | null;
+  lastPaypalEventId: string | null;
+};
+
+export type PaypalWebhookReceipt = {
+  id: string;
+  eventType: string;
+  at: string;
 };
 
 export type UserRecord = {
@@ -53,11 +91,15 @@ export type UserRecord = {
   totpEnabled?: boolean;
   totpRecoveryHashes?: string[];
   totpLastStep?: number;
+  /** Google subject (sub). Omitted from public user JSON. */
+  googleSub?: string;
   deletionRequestedAt: string | null;
   deletionStatus: DeletionStatus;
 };
 
-export type PublicUser = Omit<UserRecord, "passwordHash" | "totpSecret" | "totpRecoveryHashes" | "totpLastStep">;
+export type PublicUser = Omit<UserRecord, "passwordHash" | "totpSecret" | "totpRecoveryHashes" | "totpLastStep" | "googleSub"> & {
+  googleLinked: boolean;
+};
 
 export type InviteRecord = {
   id: string;
@@ -82,7 +124,7 @@ export type SessionRecord = {
 
 export type TokenRecord = {
   id: string;
-  type: "verify_email" | "reset_password";
+  type: "verify_email" | "reset_password" | "google_desktop";
   userId: string;
   hash: string;
   expiresAt: string;
@@ -111,6 +153,9 @@ export type FeedbackRecord = {
   status: FeedbackStatus;
   createdAt: string;
   updatedAt: string;
+  rating: number | null;
+  contactMe: boolean;
+  operatorNote?: string;
 };
 
 export type TelemetryEvent = {
@@ -199,4 +244,6 @@ export type BetaState = {
   feedback: FeedbackRecord[];
   deletionRequests: DeletionRequest[];
   privacyRequests: PrivacyRequest[];
+  subscriptions: SubscriptionRecord[];
+  paypalWebhookReceipts: PaypalWebhookReceipt[];
 };

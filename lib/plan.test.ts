@@ -11,7 +11,7 @@ test("free plan is one wallet, catalog + GitHub, and never paywalls names", () =
   assert.equal(dailyMonitorPolicy("free"), "opt-in");
   assert.equal(PLAN_POLICY.free.maxWallets, 1);
   assert.equal(CREDIT_AUTHORITY, "server");
-  assert.equal(PAYMENT_PROVIDER, "none");
+  assert.equal(PAYMENT_PROVIDER, "paypal");
   assert.equal(PLAN_PRICES.paid.priceUsd, 20);
   assert.equal(PLAN_PRICES.paid.yearlyUsd, 99);
 });
@@ -23,7 +23,7 @@ test("paid plan is $20/month or $99/year, five wallets, alerts and archive — n
   assert.equal(PLANS.paid.yearlyUsd, 99);
   assert.equal(PLANS.paid.maxWallets, 5);
   assert.match(PLANS.paid.summary, /Finding names stay free/);
-  assert.match(PLANS.paid.summary, /Payment processing is unavailable/);
+  assert.match(PLANS.paid.summary, /PayPal Sandbox/);
   assert.equal(coverage.used, 4);
   assert.equal(coverage.total, 6);
   assert.equal(sourceAccess("paid", "wayback"), "allowed");

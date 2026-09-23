@@ -1,10 +1,8 @@
 "use client";
 
 import { AccountPrivacyControls } from "@/components/account-privacy-controls";
-import { ConnectAgentPanel } from "@/components/connect-agent-panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { WALLET_DISCLOSURE } from "@/lib/disclosures";
 import Link from "next/link";
 
 export default function AccountPage() {
@@ -13,7 +11,7 @@ export default function AccountPage() {
   if (!user) {
     return (
       <p className="text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/login?next=/account" className="text-primary hover:underline">
           Sign in
         </Link>{" "}
         to view your account.
@@ -30,54 +28,28 @@ export default function AccountPage() {
         <dd>{user.email}</dd>
         <dt className="text-muted-foreground">Status</dt>
         <dd>{user.status}</dd>
-        <dt className="text-muted-foreground">Plan</dt>
-        <dd>{user.plan === "paid" ? "PoolIndex Pro (operator-issued test license; purchase unavailable)" : "Free"}</dd>
-        <dt className="text-muted-foreground">Public wallets on account</dt>
-        <dd className="font-mono text-xs">
-          {user.wallets.join(", ") || "none stored on this account"}
-          <span className="mt-1 block font-sans text-muted-foreground">
-            This is the bound account list. The header pill is the address in this browser session — paste a new public
-            0x to replace the Free slot.
-          </span>
-        </dd>
-        <dt className="text-muted-foreground">Last scan</dt>
-        <dd>{user.lastScanAt || "none yet"}</dd>
-        <dt className="text-muted-foreground">Terms accepted</dt>
-        <dd>{user.termsVersion} · {user.acceptedAt}</dd>
-        <dt className="text-muted-foreground">Privacy accepted</dt>
-        <dd>{user.privacyVersion}</dd>
-        <dt className="text-muted-foreground">Scans</dt>
-        <dd>
-          {user.scanCounts.completed} completed · {user.scanCounts.failed} failed
-        </dd>
+        <dt className="text-muted-foreground">Access</dt>
+        <dd>{user.plan === "paid" ? "Paid Subscription" : "Trial"}</dd>
+        <dt className="text-muted-foreground">Email verified</dt>
+        <dd>{user.emailVerifiedAt ? "Yes" : "No"}</dd>
       </dl>
       {user.status === "pending_verification" ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300">Verify your email before running scans.</p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">Verify your email, then you can download PoolIndex.</p>
       ) : null}
-      <p className="text-xs text-muted-foreground">{WALLET_DISCLOSURE}</p>
       <p className="text-sm">
-        <Link href="/wallet" className="text-primary hover:underline">
-          Wallet Check
-        </Link>{" "}
-        records last scan, next monitor, Potential, and Verified on each public address.
+        <Link href="/download" className="text-primary hover:underline">
+          Download PoolIndex
+        </Link>
+        {" · "}
+        <Link href="/upgrade" className="text-primary hover:underline">
+          Subscription
+        </Link>
       </p>
-      <p className="text-sm">
-        <Link href="/connect" className="text-primary hover:underline">
-          Connect your agent
-        </Link>{" "}
-        is read-only MCP. You pay for your LLM. PoolIndex does not call a language model.
-      </p>
-      <ConnectAgentPanel />
       <AccountPrivacyControls deletionStatus={user.deletionStatus} />
       <div className="flex gap-2">
         <Button variant="outline" onClick={() => void logout()}>
           Sign out
         </Button>
-        {user.role === "admin" ? (
-          <Link href="/admin" className="inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-sm text-primary-foreground">
-            Admin
-          </Link>
-        ) : null}
       </div>
     </div>
   );

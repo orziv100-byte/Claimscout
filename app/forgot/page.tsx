@@ -1,5 +1,6 @@
 import { ForgotForm } from "@/components/auth-forms";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Reset password" };
 
 export default function ForgotPage() {

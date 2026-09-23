@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
-import { SiteFooter } from "@/components/site-footer";
-import { MarketsTicker } from "@/components/markets-ticker";
-import { SiteHeader } from "@/components/site-header";
+import { AppShellFooter, AppShellHeader } from "@/components/app-shell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PlanProvider } from "@/components/plan-provider";
 import { WalletProvider } from "@/components/wallet-provider";
@@ -51,12 +49,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <WalletProvider>
                 <MaintenanceBanner />
                 <LegalReacceptBanner />
-                <SiteHeader />
-                <MarketsTicker />
+                <AppShellHeader />
                 <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" tabIndex={-1}>
                   {children}
                 </main>
-                <SiteFooter />
+                <AppShellFooter />
               </WalletProvider>
             </PlanProvider>
           </AuthProvider>

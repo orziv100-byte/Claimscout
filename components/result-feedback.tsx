@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { FEEDBACK_TYPES } from "@/lib/beta-types";
+import { RESULT_FEEDBACK_TYPES } from "@/lib/beta-types";
 import { useState } from "react";
 
-const LABELS: Record<(typeof FEEDBACK_TYPES)[number], string> = {
+const LABELS: Record<(typeof RESULT_FEEDBACK_TYPES)[number], string> = {
   useful: "Useful",
   already_knew: "Already Knew",
   not_relevant: "Not Relevant",
@@ -30,7 +30,7 @@ export function ResultFeedback({
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<string | null>(null);
 
-  async function send(type: (typeof FEEDBACK_TYPES)[number]) {
+  async function send(type: (typeof RESULT_FEEDBACK_TYPES)[number]) {
     setStatus(null);
     const res = await fetch("/api/feedback", {
       method: "POST",
@@ -50,7 +50,7 @@ export function ResultFeedback({
     <div className="mt-3 rounded-lg border border-border/70 p-3">
       <p className="text-xs font-medium">Was this result useful?</p>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {FEEDBACK_TYPES.map((type) => (
+        {RESULT_FEEDBACK_TYPES.map((type) => (
           <Button key={type} type="button" size="sm" variant="outline" onClick={() => void send(type)}>
             {LABELS[type]}
           </Button>

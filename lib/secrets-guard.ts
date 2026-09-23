@@ -2,7 +2,7 @@ const BIP39_COUNTS = new Set([12, 15, 18, 21, 24]);
 const HEX64 = /(?:^|[^0-9a-f])([0-9a-f]{64})(?:[^0-9a-f]|$)/i;
 const WIF_LIKE = /\b[5KL][1-9A-HJ-NP-Za-km-z]{50,52}\b/;
 const SECRET_WORDS =
-  /\b(seed phrase|secret phrase|recovery phrase|mnemonic(?:\s+phrase)?|private key|privkey|wallet dump)\b/i;
+  /\b(seed phrase|secret phrase|recovery phrase|mnemonic(?:\s+phrase)?|private key|privkey|wallet dump|paypal[_-]?client[_-]?(id|secret)|PAYPAL_CLIENT_(ID|SECRET))\b/i;
 
 export function looksLikeSecretMaterial(value: string): boolean {
   const text = value.trim();

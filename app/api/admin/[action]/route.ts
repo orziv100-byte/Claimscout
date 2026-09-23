@@ -62,14 +62,17 @@ export async function GET(request: Request, context: { params: Promise<{ action:
   }
 
   if (action === "feedback") {
+    const ratingRaw = url.searchParams.get("rating");
+    const rating = ratingRaw && /^\d$/.test(ratingRaw) ? Number(ratingRaw) : undefined;
     const rows = listFeedback({
       userId: url.searchParams.get("user") || undefined,
-      type: url.searchParams.get("type") || undefined,
+      type: url.searchParams.get("type") || url.searchParams.get("category") || undefined,
       source: url.searchParams.get("source") || undefined,
       status: url.searchParams.get("status") || undefined,
       version: url.searchParams.get("version") || undefined,
       after: url.searchParams.get("after") || undefined,
       before: url.searchParams.get("before") || undefined,
+      rating: rating && rating >= 1 && rating <= 5 ? rating : undefined,
     });
     const users = new Map(listUsers().map((user) => [user.id, user.email]));
     return NextResponse.json({

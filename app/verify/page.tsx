@@ -19,8 +19,8 @@ function VerifyInner() {
       .then(async (res) => {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) throw new Error(json.error || "Verification failed");
-        setMessage("Email verified. You can sign in and start a scan.");
-        setTimeout(() => router.push("/login"), 1200);
+        setMessage("Email verified. Sign in with your registration password to open the download portal.");
+        setTimeout(() => router.push("/login?next=/download"), 1200);
       })
       .catch((err: unknown) => {
         setMessage(err instanceof Error ? err.message : "Verification failed");
@@ -31,7 +31,7 @@ function VerifyInner() {
     <div className="flex flex-col gap-3">
       <h1 className="font-heading text-3xl">Verify email</h1>
       <p className="text-sm text-muted-foreground">{message}</p>
-      <Link href="/login" className="text-sm text-primary hover:underline">
+      <Link href="/login?next=/download" className="text-sm text-primary hover:underline">
         Sign in
       </Link>
     </div>

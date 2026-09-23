@@ -1,7 +1,7 @@
 import { UpgradeForm } from "@/components/upgrade-form";
 
 export const metadata = {
-  title: "PoolIndex Pro",
+  title: "Plan / Access",
 };
 
 export default function UpgradePage() {

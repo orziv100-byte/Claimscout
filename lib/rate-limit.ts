@@ -143,6 +143,14 @@ export function limitPublicTicker(request: Request, now = Date.now()): RateLimit
   return rateLimit(`public:ticker:ip:${clientIp(request)}`, 30, 60_000, now);
 }
 
+export function limitBillingAttempt(userId: string, now = Date.now()): RateLimitResult {
+  return rateLimit(`billing:${userId}`, 8, 15 * 60 * 1000, now);
+}
+
+export function limitFeedbackAttempt(userId: string, now = Date.now()): RateLimitResult {
+  return rateLimit(`feedback:${userId}`, 8, 15 * 60 * 1000, now);
+}
+
 export function rateLimitHeaders(result: Extract<RateLimitResult, { ok: false }>): {
   status: 429;
   body: { error: string; code: "RATE_LIMIT"; version: string };

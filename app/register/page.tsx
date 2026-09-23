@@ -1,16 +1,19 @@
 import { RegisterForm } from "@/components/auth-forms";
+import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Register" };
 
 export default function RegisterPage() {
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-heading text-3xl">Join Closed Beta</h1>
+      <h1 className="font-heading text-3xl">Create your account</h1>
       <p className="max-w-xl text-sm text-muted-foreground">
-        Registration requires a valid invitation. You must accept the Terms of Use and Privacy Notice. PoolIndex never
-        asks for a seed phrase or private key.
+        Register with email, username, and password. After you confirm your email, you can download PoolIndex.
       </p>
-      <RegisterForm />
+      <Suspense>
+        <RegisterForm />
+      </Suspense>
     </div>
   );
 }

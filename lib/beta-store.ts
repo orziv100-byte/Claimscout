@@ -22,6 +22,8 @@ const EMPTY: BetaState = {
   feedback: [],
   deletionRequests: [],
   privacyRequests: [],
+  subscriptions: [],
+  paypalWebhookReceipts: [],
 };
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -62,9 +64,17 @@ export function readBetaState(root = betaRoot()): BetaState {
       invites: Array.isArray(parsed.invites) ? parsed.invites : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
       tokens: Array.isArray(parsed.tokens) ? parsed.tokens : [],
-      feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
+      feedback: Array.isArray(parsed.feedback)
+        ? parsed.feedback.map((row) => ({
+            ...row,
+            rating: typeof row.rating === "number" ? row.rating : null,
+            contactMe: Boolean(row.contactMe),
+          }))
+        : [],
       deletionRequests: Array.isArray(parsed.deletionRequests) ? parsed.deletionRequests : [],
       privacyRequests: Array.isArray(parsed.privacyRequests) ? parsed.privacyRequests : [],
+      subscriptions: Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [],
+      paypalWebhookReceipts: Array.isArray(parsed.paypalWebhookReceipts) ? parsed.paypalWebhookReceipts : [],
       ops: { ...DEFAULT_OPS, ...(parsed.ops ?? {}) },
     };
   } catch {

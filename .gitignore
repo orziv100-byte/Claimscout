@@ -45,6 +45,8 @@ scripts/dual-machine/config.env
 !/var/results/.gitkeep
 /var/beta/*
 !/var/beta/.gitkeep
+/var/downloads/*
+!/var/downloads/.gitkeep
 /var/engine/*
 !/var/engine/.gitkeep
 !/var/engine/cache/.gitkeep
@@ -59,3 +61,13 @@ next-env.d.ts
 
 # local editor / MCP client config (never commit tokens)
 .cursor/
+
+/desktop/node_modules/
+/desktop/dist/
+/public/downloads/*.exe
+/public/downloads/*.blockmap
+/public/downloads/*.zip
+/public/downloads/*.dmg
+/public/downloads/latest.yml
+/public/downloads/latest-mac.yml
+

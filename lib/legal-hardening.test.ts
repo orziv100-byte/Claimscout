@@ -15,7 +15,7 @@ import {
 import { EXTERNAL_CLAIM_WARNING, LEAD_RESEARCH_DISCLAIMER, WALLET_DISCLOSURE } from "./disclosures.ts";
 import { LEAD_STATUS_LABEL } from "./labels.ts";
 import { legalReadiness, scanProductClaims } from "./legal-gate.ts";
-import { ACCESSIBILITY_VERSION, needsLegalReacceptance, PRIVACY_SECTIONS, PRIVACY_VERSION, TERMS_SECTIONS, TERMS_VERSION } from "./legal.ts";
+import { ACCESSIBILITY_VERSION, DISCLAIMER_SECTIONS, EULA_SECTIONS, needsLegalReacceptance, PRIVACY_SECTIONS, PRIVACY_VERSION, TERMS_SECTIONS, TERMS_VERSION } from "./legal.ts";
 import { PLANS } from "./plan.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "poolindex-legal-"));
@@ -152,6 +152,9 @@ test("legal pages, contacts, and versions are present", () => {
     "app/terms/page.tsx",
     "app/privacy/page.tsx",
     "app/accessibility/page.tsx",
+    "app/download/page.tsx",
+    "app/eula/page.tsx",
+    "app/disclaimer/page.tsx",
     "LICENSE",
     "COPYRIGHT.md",
     "THIRD_PARTY_NOTICES.md",
@@ -164,7 +167,7 @@ test("legal pages, contacts, and versions are present", () => {
   ]) {
     assert.equal(existsSync(join(root, file)), true, file);
   }
-  assert.equal(TERMS_VERSION, "beta-2026-09-22.1");
+  assert.equal(TERMS_VERSION, "beta-2026-09-23.1");
   assert.equal(PRIVACY_VERSION, "beta-2026-09-22.1");
   assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-22.1");
   assert.equal(contactEntry("privacy").address, PUBLIC_CONTACT_DEFAULTS.privacy);
@@ -187,7 +190,15 @@ test("accessibility basics: skip link, language, labels, Deep Hunt textual statu
   const skip = readFileSync(new URL("../components/skip-link.tsx", import.meta.url), "utf8");
   assert.match(skip, /Skip to main content/);
   const auth = readFileSync(new URL("../components/auth-forms.tsx", import.meta.url), "utf8");
+  const google = readFileSync(new URL("../components/google-continue.tsx", import.meta.url), "utf8");
   assert.match(auth, /<label className="text-sm">\s*Email/s);
+  assert.match(google, /Continue with Google/);
+  assert.doesNotMatch(auth, /GOOGLE_CLIENT_SECRET/);
+  assert.doesNotMatch(google, /GOOGLE_CLIENT_SECRET/);
+  const start = readFileSync(new URL("../app/api/auth/google/start/route.ts", import.meta.url), "utf8");
+  assert.match(start, /GOOGLE_NOT_CONFIGURED/);
+  assert.match(start, /NextResponse\.redirect\(dest\)/);
+  assert.doesNotMatch(start, /GOOGLE_CLIENT_SECRET/);
   assert.match(auth, /id="accept-terms"/);
   assert.match(auth, /id="accept-privacy"/);
   assert.match(auth, /role="alert"/);
@@ -202,12 +213,11 @@ test("accessibility basics: skip link, language, labels, Deep Hunt textual statu
   assert.match(card, /LEAD_STATUS_LABEL\[lead\.status\]/);
 });
 
-test("PoolIndex Pro stays planned and unpaid", () => {
-  assert.match(PLANS.paid.summary, /planned/i);
-  assert.match(PLANS.paid.summary, /Payment processing is unavailable/);
+test("PoolIndex Pro Sandbox checkout is server-authoritative", () => {
+  assert.match(PLANS.paid.summary, /PayPal Sandbox/);
   const upgrade = readFileSync(new URL("../components/upgrade-form.tsx", import.meta.url), "utf8");
-  assert.match(upgrade, /PoolIndex Pro \(planned\)/);
-  assert.doesNotMatch(upgrade, /buy now|purchase now|subscribe now/i);
+  assert.match(upgrade, /SubscriptionPanel/);
+  assert.doesNotMatch(upgrade, /buy now|purchase now/i);
   const coverage = readFileSync(new URL("../app/coverage/page.tsx", import.meta.url), "utf8");
   assert.match(coverage, /Request Coverage/);
   assert.match(coverage, /does not buy Eligible/i);
@@ -216,7 +226,75 @@ test("PoolIndex Pro stays planned and unpaid", () => {
   assert.match(asset, /does not invent Eligible/i);
   assert.doesNotMatch(asset, /guaranteed safe/i);
   const termsPlans = TERMS_SECTIONS.find((section) => section.heading === "Plans");
-  assert.match(termsPlans?.body ?? "", /cannot purchase Pro/);
+  assert.match(termsPlans?.body ?? "", /PayPal Sandbox/);
+  assert.match(termsPlans?.body ?? "", /Live PayPal/);
+});
+
+test("public download page is unpaid and has required legal links", () => {
+  const download = readFileSync(new URL("../app/download/page.tsx", import.meta.url), "utf8");
+  assert.match(download, /Download PoolIndex EXE/);
+  assert.match(download, /does not require payment/);
+  assert.match(download, /does\s+not guarantee/s);
+  assert.match(download, /macOS/);
+  assert.match(download, /Unsigned Closed Beta/);
+  assert.match(download, /href="\/privacy"/);
+  assert.match(download, /href="\/terms"/);
+  assert.match(download, /href="\/eula"/);
+  assert.match(download, /href="\/disclaimer"/);
+  assert.doesNotMatch(download, /\/api\/billing\/checkout/);
+  assert.doesNotMatch(download, /PAYPAL_CLIENT_SECRET/);
+  assert.doesNotMatch(download, /buy now|purchase now|subscribe now/i);
+  const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(home, /href="\/download"/);
+  assert.doesNotMatch(home, /planned \$/);
+  assert.doesNotMatch(home, /Wallet check|Live scan|Hunts|Catalog|Connect agent|Paste a public 0x/i);
+  const proxy = readFileSync(new URL("../proxy.ts", import.meta.url), "utf8");
+  assert.match(proxy, /isPublicWebsitePath/);
+  assert.match(proxy, /isAppPath/);
+  assert.match(proxy, /PORTAL_HOME/);
+  assert.match(proxy, /download-ops/);
+  assert.doesNotMatch(proxy, /zip\|exe\|dmg/);
+  assert.doesNotMatch(proxy, /43148/);
+  assert.match(proxy, /PATHNAME_HEADER/);
+  assert.match(readFileSync(new URL("../lib/pathname-header.ts", import.meta.url), "utf8"), /x-poolindex-pathname/);
+  assert.match(readFileSync(new URL("../lib/site-surface.ts", import.meta.url), "utf8"), /"\/download"/);
+  assert.match(readFileSync(new URL("../lib/site-surface.ts", import.meta.url), "utf8"), /"\/eula"/);
+  assert.match(readFileSync(new URL("../lib/site-surface.ts", import.meta.url), "utf8"), /"\/disclaimer"/);
+  assert.match(readFileSync(new URL("../components/app-shell.tsx", import.meta.url), "utf8"), /AppChrome/);
+  const publicHeader = readFileSync(new URL("../components/public-marketing-header.tsx", import.meta.url), "utf8");
+  assert.match(publicHeader, /Download/);
+  assert.match(publicHeader, /Terms/);
+  assert.match(publicHeader, /Privacy/);
+  assert.match(publicHeader, /next=\/download/);
+  assert.doesNotMatch(publicHeader, /Wallet check|Live scan|Hunts|Catalog|Connect agent/i);
+  assert.doesNotMatch(publicHeader, /Paste 0x|header-wallet|connectInjected/);
+  const chrome = readFileSync(new URL("../components/app-chrome.tsx", import.meta.url), "utf8");
+  assert.match(chrome, /isAuthFunnelPath/);
+  assert.match(chrome, /PublicMarketingHeader/);
+  assert.match(chrome, /SiteHeader/);
+  assert.match(chrome, /isAppPath/);
+  assert.doesNotMatch(chrome, /Wallet check|Live scan|Hunts|Catalog/);
+  const funnel = readFileSync(new URL("../components/auth-funnel-chrome.tsx", import.meta.url), "utf8");
+  assert.match(funnel, /Terms of Use/);
+  assert.match(funnel, /Accessibility/);
+  assert.match(funnel, />\s*Info\s*</);
+  assert.doesNotMatch(funnel, /Wallet check|Live scan|Hunts|Catalog/);
+  const registerPage = readFileSync(new URL("../app/register/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(registerPage, /Google|Wallet check|Live scan/);
+  const authForms = readFileSync(new URL("../components/auth-forms.tsx", import.meta.url), "utf8");
+  const registerFn = authForms.slice(authForms.indexOf("export function RegisterForm"), authForms.indexOf("export function ForgotForm"));
+  assert.match(registerFn, /Username/);
+  assert.doesNotMatch(registerFn, /GoogleContinueButton/);
+  const verifyPage = readFileSync(new URL("../app/verify/page.tsx", import.meta.url), "utf8");
+  assert.match(verifyPage, /\/download/);
+  const appHeader = readFileSync(new URL("../components/site-header.tsx", import.meta.url), "utf8");
+  assert.match(appHeader, /Wallet check/);
+  assert.match(appHeader, /Live scan/);
+  assert.match(appHeader, /header-wallet/);
+  const eulaFunds = EULA_SECTIONS.find((section) => section.heading === "No guarantee of funds or rewards");
+  assert.match(eulaFunds?.body ?? "", /does not guarantee/);
+  const disclaimerFunds = DISCLAIMER_SECTIONS.find((section) => section.heading === "No guaranteed funds or rewards");
+  assert.match(disclaimerFunds?.body ?? "", /does not guarantee/);
 });
 
 test("legal readiness reporter uses public contact defaults and does not claim certification", () => {

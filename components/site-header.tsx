@@ -15,13 +15,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const NAV = [
-  { href: "/", label: "Index" },
+  { href: "/app", label: "Index" },
   { href: "/wallet", label: "Wallet check" },
   { href: "/discover", label: "Live scan" },
   { href: "/hunts", label: "Hunts" },
   { href: "/catalog", label: "Catalog" },
   { href: "/connect", label: "Connect agent" },
-  { href: "/upgrade", label: "Pro (planned)" },
+  { href: "/download", label: "Download" },
+  { href: "/upgrade", label: "Plan" },
   { href: "/coverage", label: "Coverage" },
   { href: "/safety", label: "Rules" },
 ];
@@ -110,7 +111,7 @@ export function SiteHeader() {
               </Button>
             </div>
           ) : (
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/login?next=/app" className="text-sm text-muted-foreground hover:text-foreground">
               Sign in
             </Link>
           )}

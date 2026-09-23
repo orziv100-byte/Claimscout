@@ -1,9 +1,9 @@
 {
   "creditAuthority": "server",
   "payments": {
-    "provider": "none",
+    "provider": "paypal",
     "providers": ["none", "paypal", "mor", "stripe"],
-    "note": "none = Closed Beta, no checkout. paypal = PayPal Sandbox keys in gitignored .env (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_ENV=sandbox). Charges stay off until explicitly enabled. Live PayPal is not used. mor/stripe remain future options."
+    "note": "paypal = PayPal Sandbox subscriptions. Keys stay in gitignored .env. Live PayPal is not used. mor/stripe remain future options."
   },
   "plans": {
     "free": {

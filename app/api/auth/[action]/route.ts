@@ -102,11 +102,12 @@ export async function POST(request: Request, context: { params: Promise<{ action
     }
 
     if (action === "login") {
-      const email = String(body.email || "");
-      const blocked = limitedCredential("login", ip, email);
+      const identifier = String(body.email || body.username || body.login || "");
+      const blocked = limitedCredential("login", ip, identifier);
       if (blocked) return blocked;
-      const logged = await loginAccount({ email, password: String(body.password || ""), ip });
-      clearCredentialEmailLimit("login", email);
+      const logged = await loginAccount({ email: identifier, password: String(body.password || ""), ip });
+      clearCredentialEmailLimit("login", identifier);
+      if (logged.user.email) clearCredentialEmailLimit("login", logged.user.email);
       return attachSessionCookie(
         NextResponse.json({
           ok: true,

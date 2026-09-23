@@ -1,5 +1,6 @@
 import { ResetForm } from "@/components/auth-forms";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "New password" };
 
 export default async function ResetPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {

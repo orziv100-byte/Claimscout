@@ -1,6 +1,6 @@
 export const BRAND_NAME = "PoolIndex";
 export const APP_NAME = BRAND_NAME;
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "0.1.3";
 
 /** Word mark as shown in the product. Not a claim of trademark registration. */
 export const BRAND_WORD_MARK = "PoolIndex";

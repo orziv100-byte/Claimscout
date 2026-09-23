@@ -3,14 +3,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, beforeEach, test } from "node:test";
-import { DEV_INVITE, createInvite, loginAccount, logoutSession, publicUser, registerAccount, requestPasswordReset, resetPassword, updateUser, verifyEmailToken, readSessionUser, listUsers } from "./auth.ts";
+import { DEV_INVITE, canonicalizeEmail, completeGoogleAuth, createInvite, loginAccount, logoutSession, normalizeInviteCode, publicUser, redeemGoogleDesktopTicket, registerAccount, requestPasswordReset, resetPassword, revokeUserSessions, updateUser, verifyEmailToken, readSessionUser, listUsers } from "./auth.ts";
 import { SESSION_COOKIE, parseSessionCookie } from "./session-cookie.ts";
 import { listFeedback, submitFeedback, updateFeedbackStatus } from "./feedback.ts";
 import { TERMS_VERSION, PRIVACY_VERSION } from "./legal.ts";
 import { betaMetrics, readOps, scansAreOpen, updateOps } from "./ops.ts";
 import { looksLikeSecretMaterial } from "./secrets-guard.ts";
 import { assertSafeToStart, inspectEnv, ProductionEnvError } from "./env.ts";
-import { readUserScans } from "./beta-store.ts";
+import { readUserScans, readSecurity, readBetaState } from "./beta-store.ts";
 import { trackScan, trackWalletAlert, trackWalletScan } from "./telemetry.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "poolindex-beta-"));
@@ -87,6 +87,33 @@ test("invite-only registration hashes passwords and stores terms acceptance", as
   assert.equal("passwordHash" in stored, false);
 });
 
+test("registration accepts copy-pasted invite codes with markdown, case, and unicode hyphens", async () => {
+  process.env.POOLINDEX_BETA_STAGE_CAP = "5";
+  const invite = createInvite({ createdBy: "admin", note: "paste-normalize" });
+  assert.equal(normalizeInviteCode(` \`${invite.code.replace("-", "\u2011")}\` `).toLowerCase(), invite.code.toLowerCase());
+  const created = await registerAccount({
+    email: "paste-invite@example.com",
+    password: "correct-battery-staple",
+    displayName: "Paste Invite",
+    inviteCode: ` \`${invite.code.replace("-", "\u2011")}\` `,
+    acceptTerms: true,
+    acceptPrivacy: true,
+  });
+  assert.equal(created.user.inviteCode, invite.code);
+  await assert.rejects(
+    () =>
+      registerAccount({
+        email: "other-paste@example.com",
+        password: "correct-battery-staple",
+        displayName: "Other Paste",
+        inviteCode: invite.code,
+        acceptTerms: true,
+        acceptPrivacy: true,
+      }),
+    /already been used/,
+  );
+});
+
 test("email verification, login, logout, and password reset", async () => {
   const created = await register("ada@example.com", { displayName: "Ada Lovelace" });
   const verified = verifyEmailToken(created.verifyUrl.split("token=")[1]);
@@ -125,6 +152,82 @@ test("email verification, login, logout, and password reset", async () => {
   await assert.rejects(() => loginAccount({ email: "ada@example.com", password: "correct-battery-staple" }), /Invalid email or password/);
   const relogin = await loginAccount({ email: "ada@example.com", password: "new-battery-staple" });
   assert.equal(relogin.user.id, logged.user.id);
+});
+
+test("register verify login keeps the same user record and password hash", async () => {
+  process.env.POOLINDEX_BETA_STAGE_CAP = "5";
+  const created = await register("hash-stay@example.com", { displayName: "Hash Stay" });
+  const before = readBetaState().users.find((row) => row.id === created.user.id);
+  assert.ok(before?.passwordHash?.startsWith("scrypt$"));
+  const hash = before!.passwordHash;
+  assert.equal(before!.status, "pending_verification");
+  assert.equal(
+    readSecurity(20).some((row) => row.type === "register" && String(row.detail || "").startsWith("pwlen=")),
+    true,
+  );
+  const verified = verifyEmailToken(created.verifyUrl.split("token=")[1]);
+  assert.equal(verified.id, created.user.id);
+  const afterVerify = readBetaState().users.find((row) => row.id === created.user.id);
+  assert.equal(afterVerify?.passwordHash, hash);
+  assert.equal(afterVerify?.status, "active");
+  await assert.rejects(() => loginAccount({ email: "hash-stay@example.com", password: "" }), /Enter your password/);
+  await assert.rejects(() => loginAccount({ email: "hash-stay@example.com", password: "wrong-password-1" }), /Invalid email or password/);
+  const logged = await loginAccount({ email: "Hash-Stay@example.com", password: "correct-battery-staple" });
+  assert.equal(logged.user.id, created.user.id);
+  assert.ok(logged.cookie);
+  const afterLogin = readBetaState().users.find((row) => row.id === created.user.id);
+  assert.equal(afterLogin?.passwordHash, hash);
+  logoutSession(
+    new Request("http://127.0.0.1/api/auth/me", { headers: { cookie: `${SESSION_COOKIE}=${logged.cookie}` } }),
+  );
+  const again = await loginAccount({ email: "hash-stay@example.com", password: "correct-battery-staple" });
+  assert.equal(again.user.id, created.user.id);
+  assert.equal(readBetaState().users.find((row) => row.id === created.user.id)?.passwordHash, hash);
+});
+
+test("login accepts username as well as email, and duplicate usernames cannot register", async () => {
+  const created = await register("ada@example.com", { displayName: "Ada Lovelace" });
+  verifyEmailToken(created.verifyUrl.split("token=")[1]);
+  const byName = await loginAccount({ email: "Ada Lovelace", password: "correct-battery-staple" });
+  assert.equal(byName.user.email, "ada@example.com");
+  const byCase = await loginAccount({ email: "ada lovelace", password: "correct-battery-staple" });
+  assert.equal(byCase.user.id, byName.user.id);
+  await assert.rejects(
+    () => register("other@example.com", { displayName: "Ada Lovelace" }),
+    /username is already taken/,
+  );
+  await assert.rejects(
+    () => loginAccount({ email: "nobody", password: "correct-battery-staple" }),
+    /Invalid email or password/,
+  );
+});
+
+test("login matches Gmail aliases, records unknown vs bad password, and session revoke forces re-auth", async () => {
+  assert.equal(canonicalizeEmail("Ada.Lovelace+tag@GoogleMail.com"), "adalovelace@gmail.com");
+  const created = await register("ada.lovelace@gmail.com", { displayName: "Gmail Ada" });
+  verifyEmailToken(created.verifyUrl.split("token=")[1]);
+  const aliased = await loginAccount({ email: "AdaLovelace@googlemail.com", password: "correct-battery-staple" });
+  assert.equal(aliased.user.id, created.user.id);
+  await assert.rejects(
+    () => loginAccount({ email: "ada.lovelace@gmail.com", password: "wrong-password-1" }),
+    /Invalid email or password/,
+  );
+  await assert.rejects(
+    () => loginAccount({ email: "otherbox@gmail.com", password: "correct-battery-staple" }),
+    /Invalid email or password/,
+  );
+  const events = readSecurity(20);
+  assert.equal(events.some((row) => String(row.detail || "").startsWith("bad_password:")), true);
+  assert.equal(events.some((row) => String(row.detail || "").startsWith("unknown_account:")), true);
+  const cookieReq = new Request("http://127.0.0.1/api/auth/me", {
+    headers: { cookie: `${SESSION_COOKIE}=${aliased.cookie}` },
+  });
+  assert.equal(readSessionUser(cookieReq)?.user.id, created.user.id);
+  const revoked = revokeUserSessions(created.user.id, "operator");
+  assert.ok(revoked >= 1);
+  assert.equal(readSessionUser(cookieReq), null);
+  const again = await loginAccount({ email: "ada.lovelace@gmail.com", password: "correct-battery-staple" });
+  assert.equal(again.user.id, created.user.id);
 });
 
 test("invalid credentials, expired sessions, and disabled accounts", async () => {
@@ -242,6 +345,20 @@ test("login demotes an admin whose email left ADMIN_EMAILS and leaves TOTP field
   assert.equal(Boolean(logged.user.totpEnabled), false);
 });
 
+test("a different ADMIN_EMAILS mailbox does not rewrite the registered email or block password login", async () => {
+  process.env.POOLINDEX_ADMIN_EMAILS = "ops-console@gmail.com";
+  const created = await register("shortbox@gmail.com", { displayName: "Short Box" });
+  verifyEmailToken(created.verifyUrl.split("token=")[1]);
+  process.env.POOLINDEX_ADMIN_EMAILS = "longeradminx@gmail.com";
+  const logged = await loginAccount({ email: "shortbox@gmail.com", password: "correct-battery-staple" });
+  assert.equal(logged.user.email, "shortbox@gmail.com");
+  assert.equal(logged.user.role, "user");
+  const live = listUsers().find((row) => row.id === created.user.id);
+  assert.equal(live?.email, "shortbox@gmail.com");
+  updateUser(created.user.id, { email: "longeradminx@gmail.com" } as never, "operator");
+  assert.equal(listUsers().find((row) => row.id === created.user.id)?.email, "shortbox@gmail.com");
+});
+
 test("beta stage cap blocks extra registrations", async () => {
   process.env.POOLINDEX_BETA_STAGE_CAP = "1";
   await register("one@example.com", { displayName: "One" });
@@ -341,4 +458,145 @@ test("unknown account status is rejected rather than cast", async () => {
   );
   const live = listUsers().find((row) => row.id === created.user.id);
   assert.equal(live?.status, "pending_verification");
+});
+
+test("Google registration, login, invite, and safe email linking", async () => {
+  await assert.rejects(
+    () =>
+      completeGoogleAuth({
+        sub: "sub-1",
+        email: "neo@example.com",
+        emailVerified: false,
+        name: "Neo",
+        intent: "register",
+        inviteCode: DEV_INVITE,
+        acceptTerms: true,
+        acceptPrivacy: true,
+      }),
+    /did not verify/,
+  );
+  await assert.rejects(
+    () =>
+      completeGoogleAuth({
+        sub: "sub-1",
+        email: "neo@example.com",
+        emailVerified: true,
+        name: "Neo",
+        intent: "login",
+        inviteCode: "",
+        acceptTerms: false,
+        acceptPrivacy: false,
+      }),
+    /invitation first/,
+  );
+  await assert.rejects(
+    () =>
+      completeGoogleAuth({
+        sub: "sub-1",
+        email: "neo@example.com",
+        emailVerified: true,
+        name: "Neo",
+        intent: "register",
+        inviteCode: "nope",
+        acceptTerms: true,
+        acceptPrivacy: true,
+      }),
+    /invitation/,
+  );
+  const created = await completeGoogleAuth({
+    sub: "sub-1",
+    email: "neo@example.com",
+    emailVerified: true,
+    name: "Neo",
+    intent: "register",
+    inviteCode: DEV_INVITE,
+    acceptTerms: true,
+    acceptPrivacy: true,
+  });
+  assert.equal(created.user.email, "neo@example.com");
+  assert.equal(created.user.status, "active");
+  assert.equal(created.user.googleLinked, true);
+  assert.equal("googleSub" in created.user, false);
+  await assert.rejects(
+    () => loginAccount({ email: "neo@example.com", password: "correct-battery-staple" }),
+    /Google Sign-In/,
+  );
+  const again = await completeGoogleAuth({
+    sub: "sub-1",
+    email: "neo@example.com",
+    emailVerified: true,
+    name: "Neo",
+    intent: "login",
+    inviteCode: "",
+    acceptTerms: false,
+    acceptPrivacy: false,
+  });
+  assert.equal(again.user.id, created.user.id);
+
+  const passwordUser = await register("ada@example.com", { displayName: "Ada Lovelace" });
+  await assert.rejects(
+    () =>
+      completeGoogleAuth({
+        sub: "sub-ada",
+        email: "ada@example.com",
+        emailVerified: true,
+        name: "Ada",
+        intent: "login",
+        inviteCode: "",
+        acceptTerms: false,
+        acceptPrivacy: false,
+      }),
+    /Verify this PoolIndex email first/,
+  );
+  verifyEmailToken(passwordUser.verifyUrl.split("token=")[1]);
+  await updateUser(passwordUser.user.id, { wallets: ["0x1111111111111111111111111111111111111111"] }, "admin");
+  const linked = await completeGoogleAuth({
+    sub: "sub-ada",
+    email: "ada@example.com",
+    emailVerified: true,
+    name: "Ada",
+    intent: "login",
+    inviteCode: "",
+    acceptTerms: false,
+    acceptPrivacy: false,
+  });
+  assert.equal(linked.user.id, passwordUser.user.id);
+  assert.equal(linked.user.googleLinked, true);
+  assert.deepEqual(linked.user.wallets, ["0x1111111111111111111111111111111111111111"]);
+  const passwordStillWorks = await loginAccount({ email: "ada@example.com", password: "correct-battery-staple" });
+  assert.equal(passwordStillWorks.user.id, passwordUser.user.id);
+  await assert.rejects(
+    () =>
+      completeGoogleAuth({
+        sub: "sub-other",
+        email: "ada@example.com",
+        emailVerified: true,
+        name: "Ada",
+        intent: "login",
+        inviteCode: "",
+        acceptTerms: false,
+        acceptPrivacy: false,
+      }),
+    /different Google account/,
+  );
+});
+
+test("desktop Google ticket is one-time and challenge-bound", async () => {
+  const started = await completeGoogleAuth({
+    sub: "sub-desk",
+    email: "desk@example.com",
+    emailVerified: true,
+    name: "Desk",
+    intent: "register",
+    inviteCode: DEV_INVITE,
+    acceptTerms: true,
+    acceptPrivacy: true,
+    desktop: true,
+    challengeHash: require("node:crypto").createHash("sha256").update("challenge-1").digest("base64url"),
+  });
+  assert.ok(started.desktopTicket);
+  const redeemed = redeemGoogleDesktopTicket(started.desktopTicket!, "challenge-1");
+  assert.equal(redeemed.user.email, "desk@example.com");
+  assert.throws(() => redeemGoogleDesktopTicket(started.desktopTicket!, "challenge-1"), /already used/);
+  assert.throws(() => redeemGoogleDesktopTicket(started.desktopTicket!, "wrong"), /not valid/);
 });

@@ -1,11 +1,11 @@
-import { BRAND_NAME, COPYRIGHT, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER, TRADEMARK_STATUS_NOTE } from "./app-info.ts";
+import { BRAND_NAME, COPYRIGHT, COPYRIGHT_NOTICE, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER, TRADEMARK_STATUS_NOTE } from "./app-info.ts";
 import { contactLine } from "./contacts.ts";
 
-export const TERMS_VERSION = "beta-2026-09-22.1";
+export const TERMS_VERSION = "beta-2026-09-23.1";
 export const PRIVACY_VERSION = "beta-2026-09-22.1";
 export const ACCESSIBILITY_VERSION = "beta-2026-09-22.1";
 export const LEGAL_EFFECTIVE_DATE = "2026-09-20";
-export const LEGAL_UPDATED_DATE = "2026-09-22";
+export const LEGAL_UPDATED_DATE = "2026-09-23";
 
 export const TERMS_TITLE = `${BRAND_NAME} Closed Beta Terms of Use`;
 export const PRIVACY_TITLE = `${BRAND_NAME} Privacy Notice`;
@@ -60,7 +60,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Plans",
-    body: "The Free plan includes one public wallet address, the public catalog, honest eligibility statuses, and URL inspection. Offer names are never hidden behind payment. You may connect your own read-only MCP agent on Free or Pro; you pay for that LLM. PoolIndex does not run a built-in language-model agent. PoolIndex Pro is a planned paid plan (target $20 per month, or $99 per year) for up to five wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Plan limits are enforced on the server.",
+    body: "The Free plan includes one public wallet address, the public catalog, honest eligibility statuses, and URL inspection. Offer names are never hidden behind payment. You may connect your own read-only MCP agent on Free or Pro; you pay for that LLM. PoolIndex does not run a built-in language-model agent. PoolIndex Pro is $20 per month or $99 per year for up to five wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Closed Beta checkout uses PayPal Sandbox test payments only. Live PayPal and live commercial purchase are not enabled. An operator may still issue a test license. Plan limits and paid status are enforced on the server, not in the website or Windows client.",
   },
   {
     heading: "Connect your agent",
@@ -190,3 +190,57 @@ export function needsLegalReacceptance(user: { termsVersion: string; privacyVers
   if (!user) return false;
   return user.termsVersion !== TERMS_VERSION || user.privacyVersion !== PRIVACY_VERSION;
 }
+
+export const EULA_VERSION = TERMS_VERSION;
+export const EULA_TITLE = `${BRAND_NAME} End-User License Agreement`;
+export const EULA_SECTIONS: LegalSection[] = [
+  {
+    heading: "License",
+    body: `This Closed Beta copy of ${BRAND_NAME} is licensed, not sold. ${COPYRIGHT_NOTICE} You may install the Windows client on devices you control solely to use the hosted PoolIndex service. Closed Beta access is not a license to copy, sell, distribute, sublicense, or commercialize PoolIndex.`,
+  },
+  {
+    heading: "What you may do",
+    body: "Use PoolIndex to search and review publicly described claims, airdrops, faucets, and similar offers on wallets and research you are authorized to review. The Windows installer may be downloaded without payment. An account still requires an invitation, email verification, and acceptance of the Terms of Use and Privacy Notice.",
+  },
+  {
+    heading: "What you may not do",
+    body: "Do not copy, reverse engineer for a competing service, resell, or embed PoolIndex in another product. Do not use it to attack systems, steal credentials, collect other people's secrets, bypass access controls, or automate claims. Do not paste seed phrases, recovery phrases, private keys, or wallet passwords.",
+  },
+  {
+    heading: "Read-only research",
+    body: "PoolIndex is read-only. It does not execute blockchain transactions, claim tokens, or hold funds. Any later signing happens only in your own wallet after you choose to approve it.",
+  },
+  {
+    heading: "No guarantee of funds or rewards",
+    body: "PoolIndex does not guarantee eligibility, reward, profit, unclaimed funds, or that a third-party offer still exists. Findings are research leads, not money owed to you.",
+  },
+  {
+    heading: "Payments",
+    body: "Downloading the Windows client does not require payment. Paid PoolIndex Pro, when offered, is created on the server with PayPal Sandbox in this Beta. Live PayPal is not enabled. The Windows client never stores PayPal credentials and cannot grant itself a paid plan.",
+  },
+  {
+    heading: "Contact",
+    body: `Support: ${contactLine("support")}. Legal: ${contactLine("legal")}. The Terms of Use and Privacy Notice also apply.`,
+  },
+];
+
+export const DISCLAIMER_VERSION = TERMS_VERSION;
+export const DISCLAIMER_TITLE = `${BRAND_NAME} Disclaimer`;
+export const DISCLAIMER_SECTIONS: LegalSection[] = [
+  {
+    heading: "Research tool only",
+    body: "PoolIndex is a Closed Beta research, discovery, and safety-check tool. It is not a wallet, exchange, broker, custodian, claims processor, or investment, legal, or tax adviser.",
+  },
+  {
+    heading: "No guaranteed funds or rewards",
+    body: "A catalog row, contract balance, or “not previously claimed” note is not proof of eligibility or money owed to you. PoolIndex does not guarantee that you will find funds, rewards, or claimable assets.",
+  },
+  {
+    heading: "Third-party pages",
+    body: "External claim pages can change or become phishing. A Safety Check is not a guarantee that a third-party site is safe. Verify destinations independently before connecting a wallet or signing.",
+  },
+  {
+    heading: "As-is Closed Beta",
+    body: "PoolIndex is provided as-is for Closed Beta testing. Results may contain errors, omissions, or outdated third-party information. Availability is not guaranteed.",
+  },
+];

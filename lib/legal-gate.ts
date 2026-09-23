@@ -22,6 +22,9 @@ const REQUIRED_PAGES = [
   "app/terms/page.tsx",
   "app/privacy/page.tsx",
   "app/accessibility/page.tsx",
+  "app/download/page.tsx",
+  "app/eula/page.tsx",
+  "app/disclaimer/page.tsx",
 ] as const;
 
 const CLAIM_CHECKS: { id: string; re: RegExp; message: string }[] = [

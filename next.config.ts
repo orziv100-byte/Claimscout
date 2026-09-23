@@ -39,6 +39,24 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/:auth(login|register|forgot|reset|verify)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, no-cache, must-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/downloads/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, no-cache, must-revalidate",
+          },
+        ],
+      },
     ];
   },
 };

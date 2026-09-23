@@ -4,12 +4,17 @@ import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { needsLegalReacceptance, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
+
+const HIDE_ON = ["/login", "/register", "/forgot", "/reset", "/verify"];
 
 export function LegalReacceptBanner() {
   const { user, refresh } = useAuth();
+  const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  if (!pathname || HIDE_ON.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return null;
   if (!needsLegalReacceptance(user)) return null;
 
   async function accept() {

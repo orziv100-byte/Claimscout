@@ -25,6 +25,24 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DISPLAY_RE = /^[\p{L}\p{N} .'_-]{2,40}$/u;
 const DEV_INVITE = "closed-beta-dev";
 
+/** Strip copy/paste artifacts so chat/markdown hyphens still match a stored invite. */
+export function normalizeInviteCode(raw: string): string {
+  return raw
+    .trim()
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+    .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-")
+    .replace(/^`+|`+$/g, "")
+    .replace(/\s+/g, "");
+}
+
+function findUsableInvite(state: ReturnType<typeof readBetaState>, raw: string) {
+  const needle = normalizeInviteCode(raw).toLowerCase();
+  if (!needle) return null;
+  return (
+    state.invites.find((row) => normalizeInviteCode(row.code).toLowerCase() === needle && !row.disabled) ?? null
+  );
+}
+
 export class AuthError extends Error {
   readonly status: number;
   readonly code: string;
@@ -51,13 +69,26 @@ export function publicUser(user: UserRecord): PublicUser {
     totpSecret: _totpSecret,
     totpRecoveryHashes: _totpRecoveryHashes,
     totpLastStep: _totpLastStep,
+    googleSub: _googleSub,
     ...rest
   } = user;
-  return rest;
+  return { ...rest, googleLinked: Boolean(_googleSub) };
 }
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+/** Gmail dots and googlemail.com are the same mailbox. Other domains stay exact. */
+export function canonicalizeEmail(email: string): string {
+  const normalized = normalizeEmail(email);
+  const at = normalized.lastIndexOf("@");
+  if (at <= 0) return normalized;
+  const local = normalized.slice(0, at);
+  const domain = normalized.slice(at + 1);
+  if (domain !== "gmail.com" && domain !== "googlemail.com") return normalized;
+  const plus = local.split("+")[0] ?? "";
+  return `${plus.replaceAll(".", "")}@gmail.com`;
 }
 
 function nowIso() {
@@ -103,18 +134,41 @@ function ensureDevInvite(state: ReturnType<typeof readBetaState>) {
 }
 
 function findUserByEmail(state: ReturnType<typeof readBetaState>, email: string) {
-  const needle = normalizeEmail(email);
-  return state.users.find((user) => user.email === needle) ?? null;
+  const needle = canonicalizeEmail(email);
+  if (!needle || !needle.includes("@")) return null;
+  return state.users.find((user) => canonicalizeEmail(user.email) === needle) ?? null;
+}
+
+function normalizeDisplayName(name: string) {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function findUserByDisplayName(state: ReturnType<typeof readBetaState>, name: string) {
+  const needle = normalizeDisplayName(name);
+  if (!needle) return null;
+  const matches = state.users.filter((user) => normalizeDisplayName(user.displayName) === needle);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function findUserByLogin(state: ReturnType<typeof readBetaState>, identifier: string) {
+  const raw = identifier.trim();
+  if (!raw) return null;
+  if (raw.includes("@")) return findUserByEmail(state, raw);
+  return findUserByDisplayName(state, raw);
 }
 
 function isAdminEmail(email: string) {
   return adminEmails().includes(normalizeEmail(email));
 }
 
-/** Align role with POOLINDEX_ADMIN_EMAILS. TOTP fields are not touched. */
+/** Align role with POOLINDEX_ADMIN_EMAILS. Never rewrite the registered email. TOTP fields are not touched. */
 function syncAdminRole(user: UserRecord): boolean {
+  const registeredEmail = user.email;
   const shouldBeAdmin = isAdminEmail(user.email);
   const nextRole: UserRecord["role"] = shouldBeAdmin ? "admin" : "user";
+  if (user.email !== registeredEmail) {
+    throw new Error("syncAdminRole must not change email");
+  }
   if (user.role === nextRole) return false;
   user.role = nextRole;
   return true;
@@ -135,7 +189,7 @@ export async function registerAccount(input: {
   return withBetaLock(async () => {
     const email = normalizeEmail(input.email);
     const displayName = input.displayName.trim();
-    const inviteCode = input.inviteCode.trim();
+    const inviteCode = normalizeInviteCode(input.inviteCode);
     if (!EMAIL_RE.test(email)) throw new AuthError(400, "INVALID_EMAIL", "Enter a valid email address.");
     if (!DISPLAY_RE.test(displayName)) {
       throw new AuthError(400, "INVALID_NAME", "Display name must be 2–40 letters, numbers, or simple punctuation.");
@@ -157,7 +211,10 @@ export async function registerAccount(input: {
       if (findUserByEmail(state, email)) {
         throw new AuthError(409, "EMAIL_EXISTS", "An account with that email already exists.");
       }
-      const invite = state.invites.find((row) => row.code === inviteCode && !row.disabled);
+      if (findUserByDisplayName(state, displayName)) {
+        throw new AuthError(409, "NAME_EXISTS", "That username is already taken.");
+      }
+      const invite = findUsableInvite(state, inviteCode);
       if (!invite) throw new AuthError(403, "INVALID_INVITE", "That invitation code is not valid.");
       if (invite.email && invite.email !== email) {
         throw new AuthError(403, "INVITE_EMAIL_MISMATCH", "That invitation is assigned to a different email.");
@@ -206,7 +263,7 @@ export async function registerAccount(input: {
       };
       state.tokens.push(token);
       const verifyUrl = `/verify?token=${encodeURIComponent(raw)}`;
-      recordSecurity({ type: "register", userId: user.id, email: user.email });
+      recordSecurity({ type: "register", userId: user.id, email: user.email, detail: `pwlen=${input.password.length}` });
       return { user: publicUser(user), verifyUrl, email: user.email };
     });
     const verifyLink = absoluteMailUrl(created.verifyUrl);
@@ -245,12 +302,33 @@ export async function loginAccount(input: {
   ip?: string;
 }): Promise<{ user: PublicUser; cookie: string; session: SessionRecord }> {
   return withBetaLock(async () => {
-    const email = normalizeEmail(input.email);
+    const identifier = input.email.trim();
     const state = readBetaState();
-    const user = findUserByEmail(state, email);
+    const user = findUserByLogin(state, identifier);
+    const email = user?.email || (identifier.includes("@") ? normalizeEmail(identifier) : "");
+    if (user && !user.passwordHash) {
+      recordSecurity({ type: "login_failure", email, ip: input.ip, detail: "google_only" });
+      throw new AuthError(401, "GOOGLE_ONLY", "This account uses Google Sign-In. Use Continue with Google.");
+    }
+    if (!input.password) {
+      recordSecurity({
+        type: "login_failure",
+        email,
+        ip: input.ip,
+        userId: user?.id,
+        detail: `empty_password:hash=${user?.passwordHash ? 1 : 0}`,
+      });
+      throw new AuthError(400, "PASSWORD_REQUIRED", "Enter your password.");
+    }
     const passwordOk = user ? await verifyPassword(input.password, user.passwordHash) : false;
     if (!user || !passwordOk) {
-      recordSecurity({ type: "login_failure", email, ip: input.ip, detail: "invalid_credentials" });
+      recordSecurity({
+        type: "login_failure",
+        email,
+        ip: input.ip,
+        userId: user?.id,
+        detail: user ? `bad_password:len=${input.password.length}:hash=1` : `unknown_account:len=${input.password.length}`,
+      });
       throw new AuthError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
     }
     if (user.status === "disabled" || user.status === "suspended") {
@@ -267,6 +345,180 @@ export async function loginAccount(input: {
       recordSecurity({ type: "login_success", userId: live.id, email: live.email, ip: input.ip });
       return { user: publicUser(live), cookie: issued.cookie, session: issued.session };
     });
+  });
+}
+
+export type GoogleAuthInput = {
+  sub: string;
+  email: string;
+  emailVerified: boolean;
+  name: string;
+  intent: "login" | "register";
+  inviteCode: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
+  ip?: string;
+  desktop?: boolean;
+  challengeHash?: string;
+};
+
+function displayFromGoogle(name: string, email: string): string {
+  const trimmed = name.trim().slice(0, 40);
+  if (DISPLAY_RE.test(trimmed)) return trimmed;
+  const local = email.split("@")[0].replace(/[^\p{L}\p{N} ._'-]/gu, " ").trim().slice(0, 40);
+  if (DISPLAY_RE.test(local)) return local;
+  return "Google user";
+}
+
+function consumeInviteForNewUser(
+  state: ReturnType<typeof readBetaState>,
+  email: string,
+  inviteCode: string,
+): string {
+  ensureDevInvite(state);
+  if (!inviteCode) throw new AuthError(403, "INVITE_REQUIRED", "A valid Closed Beta invitation is required.");
+  const invite = findUsableInvite(state, inviteCode);
+  if (!invite) throw new AuthError(403, "INVALID_INVITE", "That invitation code is not valid.");
+  if (invite.email && invite.email !== email) {
+    throw new AuthError(403, "INVITE_EMAIL_MISMATCH", "That invitation is assigned to a different email.");
+  }
+  if (invite.usedBy.length >= invite.maxUses) {
+    throw new AuthError(403, "INVITE_USED", "That invitation has already been used.");
+  }
+  const cap = stageCap(state.ops.betaStage);
+  if (liveUserCount(state) >= cap) {
+    throw new AuthError(403, "BETA_CAP", `Stage ${state.ops.betaStage} is full (${cap} users).`);
+  }
+  return invite.code;
+}
+
+export async function completeGoogleAuth(input: GoogleAuthInput): Promise<{
+  user: PublicUser;
+  cookie: string;
+  desktopTicket?: string;
+}> {
+  if (!input.emailVerified) {
+    throw new AuthError(403, "GOOGLE_EMAIL_UNVERIFIED", "Google did not verify that email address.");
+  }
+  const email = normalizeEmail(input.email);
+  const sub = input.sub.trim();
+  if (!sub || !EMAIL_RE.test(email)) {
+    throw new AuthError(400, "GOOGLE_PROFILE_INVALID", "Google did not return a usable account.");
+  }
+
+  return withBetaLock(async () => {
+    return mutateBetaState((state) => {
+      const bySub = state.users.find((row) => row.googleSub === sub) ?? null;
+      const byEmail = findUserByEmail(state, email);
+      let live = bySub;
+
+      if (bySub && byEmail && bySub.id !== byEmail.id) {
+        throw new AuthError(409, "GOOGLE_ACCOUNT_CONFLICT", "That Google account cannot be linked.");
+      }
+      if (bySub && bySub.email !== email) {
+        throw new AuthError(409, "GOOGLE_ACCOUNT_CONFLICT", "That Google account cannot be linked.");
+      }
+
+      if (!live && byEmail) {
+        if (byEmail.googleSub && byEmail.googleSub !== sub) {
+          throw new AuthError(409, "GOOGLE_ACCOUNT_CONFLICT", "That email is already linked to a different Google account.");
+        }
+        if (!byEmail.googleSub) {
+          if (!byEmail.emailVerifiedAt) {
+            throw new AuthError(
+              403,
+              "LINK_REQUIRES_VERIFIED_EMAIL",
+              "Verify this PoolIndex email first, then use Continue with Google to link.",
+            );
+          }
+          byEmail.googleSub = sub;
+          recordSecurity({ type: "google_linked", userId: byEmail.id, email: byEmail.email });
+        }
+        live = byEmail;
+      }
+
+      if (!live) {
+        if (input.intent !== "register") {
+          throw new AuthError(403, "GOOGLE_ACCOUNT_NOT_FOUND", "No PoolIndex account for that Google email. Register with an invitation first.");
+        }
+        if (!input.acceptTerms || !input.acceptPrivacy) {
+          throw new AuthError(400, "TERMS_REQUIRED", "You must accept the Terms of Use and Privacy Notice.");
+        }
+        const inviteCode = consumeInviteForNewUser(state, email, input.inviteCode);
+        const invite = state.invites.find((row) => row.code === inviteCode);
+        const user: UserRecord = {
+          id: newId(),
+          email,
+          displayName: displayFromGoogle(input.name, email),
+          passwordHash: "",
+          status: "active",
+          role: isAdminEmail(email) ? "admin" : "user",
+          plan: "free",
+          wallets: [],
+          inviteCode,
+          emailVerifiedAt: nowIso(),
+          googleSub: sub,
+          termsVersion: TERMS_VERSION,
+          privacyVersion: PRIVACY_VERSION,
+          acceptedAt: nowIso(),
+          createdAt: nowIso(),
+          lastLoginAt: null,
+          lastScanAt: null,
+          firstScanAt: null,
+          scanCounts: emptyScanCounts(),
+          deletionRequestedAt: null,
+          deletionStatus: "none",
+        };
+        state.users.push(user);
+        invite?.usedBy.push(user.id);
+        recordSecurity({ type: "register", userId: user.id, email: user.email, detail: "google" });
+        live = user;
+      }
+
+      if (live.status === "disabled" || live.status === "suspended") {
+        recordSecurity({ type: "login_blocked", userId: live.id, email: live.email, ip: input.ip, detail: live.status });
+        throw new AuthError(403, "ACCOUNT_DISABLED", "This account is not allowed to sign in.");
+      }
+      if (syncAdminRole(live)) recordSecurity({ type: "admin_role_synced", userId: live.id });
+      live.lastLoginAt = nowIso();
+      if (live.status === "pending_verification" && live.googleSub === sub) {
+        live.status = "active";
+        live.emailVerifiedAt = live.emailVerifiedAt || nowIso();
+      }
+      const issued = issueSession(state, live);
+      recordSecurity({ type: "login_success", userId: live.id, email: live.email, ip: input.ip, detail: "google" });
+
+      let desktopTicket: string | undefined;
+      if (input.desktop) {
+        desktopTicket = newId(24);
+        const material = `${desktopTicket}.${input.challengeHash || ""}`;
+        state.tokens.push({
+          id: newId(),
+          type: "google_desktop",
+          userId: live.id,
+          hash: sha256Base64Url(material),
+          expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+          usedAt: null,
+        });
+      }
+      return { user: publicUser(live), cookie: issued.cookie, desktopTicket };
+    });
+  });
+}
+
+export function redeemGoogleDesktopTicket(ticket: string, challenge: string): { cookie: string; user: PublicUser } {
+  const material = `${ticket}.${sha256Base64Url(challenge)}`;
+  const hash = sha256Base64Url(material);
+  return mutateBetaState((state) => {
+    const token = state.tokens.find((row) => row.type === "google_desktop" && row.hash === hash);
+    if (!token) throw new AuthError(401, "INVALID_TOKEN", "That desktop sign-in ticket is not valid.");
+    if (token.usedAt) throw new AuthError(400, "TOKEN_USED", "That desktop sign-in ticket was already used.");
+    if (Date.parse(token.expiresAt) <= Date.now()) throw new AuthError(400, "TOKEN_EXPIRED", "That desktop sign-in ticket has expired.");
+    const live = state.users.find((row) => row.id === token.userId);
+    if (!live) throw new AuthError(401, "INVALID_TOKEN", "That desktop sign-in ticket is not valid.");
+    token.usedAt = nowIso();
+    const issued = issueSession(state, live);
+    return { cookie: issued.cookie, user: publicUser(live) };
   });
 }
 
@@ -404,7 +656,7 @@ export function createInvite(input: {
   return mutateBetaState((state) => {
     const invite: InviteRecord = {
       id: newId(),
-      code: input.code?.trim() || `cs-${newId(6)}`,
+      code: normalizeInviteCode(input.code?.trim() || `cs-${newId(6)}`),
       email: input.email ? normalizeEmail(input.email) : null,
       stage: input.stage ?? state.ops.betaStage,
       maxUses: input.maxUses && input.maxUses > 0 ? input.maxUses : 1,
@@ -414,7 +666,7 @@ export function createInvite(input: {
       createdAt: nowIso(),
       createdBy: input.createdBy,
     };
-    if (state.invites.some((row) => row.code === invite.code)) {
+    if (state.invites.some((row) => normalizeInviteCode(row.code).toLowerCase() === invite.code.toLowerCase())) {
       throw new AuthError(409, "INVITE_EXISTS", "That invitation code already exists.");
     }
     state.invites.push(invite);
@@ -427,6 +679,21 @@ export function listInvites(): InviteRecord[] {
   return mutateBetaState((state) => {
     ensureDevInvite(state);
     return [...state.invites];
+  });
+}
+
+export function revokeUserSessions(userId: string, actorId: string): number {
+  return mutateBetaState((state) => {
+    let revoked = 0;
+    const stamp = nowIso();
+    for (const session of state.sessions) {
+      if (session.userId === userId && !session.revokedAt) {
+        session.revokedAt = stamp;
+        revoked += 1;
+      }
+    }
+    recordSecurity({ type: "sessions_revoked", userId: actorId, detail: `${userId}:${revoked}` });
+    return revoked;
   });
 }
 
