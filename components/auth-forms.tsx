@@ -14,9 +14,7 @@ function nextPath(search: ReturnType<typeof useSearchParams>) {
 }
 
 export function LoginForm() {
-  const router = useRouter();
   const search = useSearchParams();
-  const { refresh } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +32,11 @@ export function LoginForm() {
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(json.error || "Could not sign in");
-      await refresh();
-      router.push(nextPath(search));
-      router.refresh();
+      // Hard navigation on purpose: router.push() + an auth-context refresh can race,
+      // leaving the UI on the login screen even though the server already issued a
+      // valid session cookie. A full document load always re-reads that cookie fresh.
+      window.location.assign(nextPath(search));
+      return;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
     } finally {
