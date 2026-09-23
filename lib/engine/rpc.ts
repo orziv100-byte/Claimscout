@@ -1,6 +1,6 @@
 import { createPublicClient, getAddress, http, type Address } from "viem";
 import { arbitrum, base, mainnet, optimism, polygon } from "viem/chains";
-import { withRpcRetry } from "./rpc-retry.ts";
+import { isRetriableRpcError, withRpcRetry } from "./rpc-retry.ts";
 
 const RPC: Record<number, string> = {
   1: process.env.ETH_RPC_URL || "https://ethereum-rpc.publicnode.com",
@@ -466,38 +466,47 @@ export async function lidoWithdrawalScan(
   queue: Address,
   owner: Address,
 ): Promise<{ requestCount: number; checked: number; leftover: number; amountStEth: bigint }> {
-  return withRpcRetry(async () => {
-    const client = engineClient(1);
-    if (!client) throw new Error("No RPC for chain 1");
-    const queueAddress = checksumAddress(queue);
-    const ownerAddress = checksumAddress(owner);
-    const code = await client.getCode({ address: queueAddress });
-    if (!code || code === "0x") throw new Error(`Lido WithdrawalQueue ${queueAddress} has no contract code`);
-    const ids = await client.readContract({
-      address: queueAddress,
-      abi: LIDO_QUEUE_ABI,
-      functionName: "getWithdrawalRequests",
-      args: [ownerAddress],
-    });
-    const requestCount = ids.length;
-    const checkedIds = ids.slice(0, MAX_LIDO_WITHDRAWALS);
-    if (checkedIds.length === 0) return { requestCount, checked: 0, leftover: 0, amountStEth: 0n };
-    const statuses = await client.readContract({
-      address: queueAddress,
-      abi: LIDO_QUEUE_ABI,
-      functionName: "getWithdrawalStatus",
-      args: [checkedIds],
-    });
-    let leftover = 0;
-    let amountStEth = 0n;
-    for (const row of statuses) {
-      if (row.isFinalized && !row.isClaimed) {
-        leftover += 1;
-        amountStEth += row.amountOfStETH;
-      }
+  const client = engineClient(1);
+  if (!client) throw new Error("No RPC for chain 1");
+  const queueAddress = checksumAddress(queue);
+  const ownerAddress = checksumAddress(owner);
+  const code = await withRpcRetry(
+    () => client.getCode({ address: queueAddress }),
+    `lidoWithdrawalScan.getCode(queue=${queue})`,
+  );
+  if (!code || code === "0x") throw new Error(`Lido WithdrawalQueue ${queueAddress} has no contract code`);
+  const ids = await withRpcRetry(
+    () =>
+      client.readContract({
+        address: queueAddress,
+        abi: LIDO_QUEUE_ABI,
+        functionName: "getWithdrawalRequests",
+        args: [ownerAddress],
+      }),
+    `lidoWithdrawalScan.getWithdrawalRequests(queue=${queue})`,
+  );
+  const requestCount = ids.length;
+  const checkedIds = ids.slice(0, MAX_LIDO_WITHDRAWALS);
+  if (checkedIds.length === 0) return { requestCount, checked: 0, leftover: 0, amountStEth: 0n };
+  const statuses = await withRpcRetry(
+    () =>
+      client.readContract({
+        address: queueAddress,
+        abi: LIDO_QUEUE_ABI,
+        functionName: "getWithdrawalStatus",
+        args: [checkedIds],
+      }),
+    `lidoWithdrawalScan.getWithdrawalStatus(queue=${queue})`,
+  );
+  let leftover = 0;
+  let amountStEth = 0n;
+  for (const row of statuses) {
+    if (row.isFinalized && !row.isClaimed) {
+      leftover += 1;
+      amountStEth += row.amountOfStETH;
     }
-    return { requestCount, checked: checkedIds.length, leftover, amountStEth };
-  }, `lidoWithdrawalScan(queue=${queue})`);
+  }
+  return { requestCount, checked: checkedIds.length, leftover, amountStEth };
 }
 
 const ERC721_ENUM_ABI = [
@@ -583,67 +592,85 @@ export async function uniV3PositionScan(
   owner: Address,
   maxPositions = MAX_UNI_V3_POSITIONS,
 ): Promise<UniV3PositionScan> {
-  return withRpcRetry(async () => {
-    const client = engineClient(1);
-    if (!client) throw new Error("No RPC for chain 1");
-    const code = await client.getCode({ address: npm });
-    if (!code || code === "0x") throw new Error(`Uniswap V3 NPM ${npm} has no contract code`);
-    const nftCount = Number(
-      await client.readContract({
-        address: npm,
-        abi: ERC721_ENUM_ABI,
-        functionName: "balanceOf",
-        args: [owner],
-      }),
-    );
-    if (!Number.isFinite(nftCount) || nftCount <= 0) {
-      return { nftCount: 0, checked: 0, leftover: 0, withLiquidity: 0, withFees: 0 };
-    }
-    const checked = Math.min(nftCount, maxPositions);
-    let leftover = 0;
-    let withLiquidity = 0;
-    let withFees = 0;
-    for (let index = 0; index < checked; index += 1) {
-      const tokenId = await client.readContract({
-        address: npm,
-        abi: ERC721_ENUM_ABI,
-        functionName: "tokenOfOwnerByIndex",
-        args: [owner, BigInt(index)],
-      });
-      const position = await client.readContract({
-        address: npm,
-        abi: UNI_V3_POSITIONS_ABI,
-        functionName: "positions",
-        args: [tokenId],
-      });
-      const liquidity = position[7];
-      const tokensOwed0 = position[10];
-      const tokensOwed1 = position[11];
-      let fees = tokensOwed0 > 0n || tokensOwed1 > 0n;
-      try {
-        const simulated = await client.simulateContract({
+  const client = engineClient(1);
+  if (!client) throw new Error("No RPC for chain 1");
+  const code = await withRpcRetry(
+    () => client.getCode({ address: npm }),
+    `uniV3PositionScan.getCode(npm=${npm})`,
+  );
+  if (!code || code === "0x") throw new Error(`Uniswap V3 NPM ${npm} has no contract code`);
+  const nftCount = Number(
+    await withRpcRetry(
+      () =>
+        client.readContract({
           address: npm,
-          abi: UNI_V3_COLLECT_ABI,
-          functionName: "collect",
-          args: [
-            {
-              tokenId,
-              recipient: owner,
-              amount0Max: MAX_UINT128,
-              amount1Max: MAX_UINT128,
-            },
-          ],
-          account: owner,
-        });
-        fees = simulated.result[0] > 0n || simulated.result[1] > 0n || fees;
-      } catch {
-        // collect() is not view; a revert is not leftover proof. Keep tokensOwed.
-      }
-      const hasLiquidity = liquidity > 0n;
-      if (hasLiquidity) withLiquidity += 1;
-      if (fees) withFees += 1;
-      if (hasLiquidity || fees) leftover += 1;
+          abi: ERC721_ENUM_ABI,
+          functionName: "balanceOf",
+          args: [owner],
+        }),
+      `uniV3PositionScan.balanceOf(npm=${npm})`,
+    ),
+  );
+  if (!Number.isFinite(nftCount) || nftCount <= 0) {
+    return { nftCount: 0, checked: 0, leftover: 0, withLiquidity: 0, withFees: 0 };
+  }
+  const checked = Math.min(nftCount, maxPositions);
+  let leftover = 0;
+  let withLiquidity = 0;
+  let withFees = 0;
+  for (let index = 0; index < checked; index += 1) {
+    const tokenId = await withRpcRetry(
+      () =>
+        client.readContract({
+          address: npm,
+          abi: ERC721_ENUM_ABI,
+          functionName: "tokenOfOwnerByIndex",
+          args: [owner, BigInt(index)],
+        }),
+      `uniV3PositionScan.tokenOfOwnerByIndex(npm=${npm},index=${index})`,
+    );
+    const position = await withRpcRetry(
+      () =>
+        client.readContract({
+          address: npm,
+          abi: UNI_V3_POSITIONS_ABI,
+          functionName: "positions",
+          args: [tokenId],
+        }),
+      `uniV3PositionScan.positions(npm=${npm},tokenId=${tokenId})`,
+    );
+    const liquidity = position[7];
+    const tokensOwed0 = position[10];
+    const tokensOwed1 = position[11];
+    let fees = tokensOwed0 > 0n || tokensOwed1 > 0n;
+    try {
+      const simulated = await withRpcRetry(
+        () =>
+          client.simulateContract({
+            address: npm,
+            abi: UNI_V3_COLLECT_ABI,
+            functionName: "collect",
+            args: [
+              {
+                tokenId,
+                recipient: owner,
+                amount0Max: MAX_UINT128,
+                amount1Max: MAX_UINT128,
+              },
+            ],
+            account: owner,
+          }),
+        `uniV3PositionScan.collect(npm=${npm},tokenId=${tokenId})`,
+      );
+      fees = simulated.result[0] > 0n || simulated.result[1] > 0n || fees;
+    } catch (err) {
+      if (isRetriableRpcError(err)) throw err;
+      // collect() is not view; a revert is not leftover proof. Keep tokensOwed.
     }
-    return { nftCount, checked, leftover, withLiquidity, withFees };
-  }, `uniV3PositionScan(npm=${npm})`);
+    const hasLiquidity = liquidity > 0n;
+    if (hasLiquidity) withLiquidity += 1;
+    if (fees) withFees += 1;
+    if (hasLiquidity || fees) leftover += 1;
+  }
+  return { nftCount, checked, leftover, withLiquidity, withFees };
 }

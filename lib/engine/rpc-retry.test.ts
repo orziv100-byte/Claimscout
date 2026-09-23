@@ -64,3 +64,22 @@ test("isRetriableRpcError classifies transient vs deterministic messages correct
   assert.equal(isRetriableRpcError(new Error("Token has no contract code on chain 1")), false);
   assert.equal(isRetriableRpcError("not an error object"), false);
 });
+
+test("exhausted transient error stays retriable so callers can rethrow past a revert catch", async () => {
+  const err = new Error("request timeout");
+  await assert.rejects(
+    () =>
+      withRpcRetry(
+        async () => {
+          throw err;
+        },
+        "test-exhausted-still-retriable",
+        0,
+      ),
+    (got: unknown) => {
+      assert.equal(got, err);
+      assert.equal(isRetriableRpcError(got), true);
+      return true;
+    },
+  );
+});
