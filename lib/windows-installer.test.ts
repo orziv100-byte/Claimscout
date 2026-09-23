@@ -33,3 +33,31 @@ test("macOS installer stays unpublished until a zip or dmg exists on disk", () =
   assert.equal(published.href, `/downloads/PoolIndex-${APP_VERSION}-mac-arm64.zip`);
   rmSync(root, { recursive: true, force: true });
 });
+
+test("windows installer discovers the newest version even when APP_VERSION has drifted", () => {
+  const root = mkdtempSync(join(tmpdir(), "poolindex-installer-drift-"));
+  const dir = join(root, "public", "downloads");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "PoolIndex-0.1.0-win.exe"), "stub");
+  writeFileSync(join(dir, "PoolIndex-0.1.1-win.exe"), "stub");
+  writeFileSync(join(dir, "PoolIndex-0.1.3-win.exe"), "stub");
+  writeFileSync(join(dir, "PoolIndex-0.1.2-win.exe"), "stub");
+  const result = windowsInstaller(root);
+  assert.equal(result.published, true);
+  assert.equal(result.version, "0.1.3");
+  assert.equal(result.filename, "PoolIndex-0.1.3-win.exe");
+  assert.equal(result.href, "/downloads/PoolIndex-0.1.3-win.exe");
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("macOS installer discovers the newest version across multiple builds", () => {
+  const root = mkdtempSync(join(tmpdir(), "poolindex-mac-drift-"));
+  const dir = join(root, "public", "downloads");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "PoolIndex-0.1.0-mac-x64.zip"), "stub");
+  writeFileSync(join(dir, "PoolIndex-0.1.2-mac-arm64.zip"), "stub");
+  const result = macosInstaller(root);
+  assert.equal(result.published, true);
+  assert.equal(result.version, "0.1.2");
+  assert.equal(result.filename, "PoolIndex-0.1.2-mac-arm64.zip");
+});
