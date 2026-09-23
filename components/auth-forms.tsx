@@ -50,9 +50,7 @@ function fieldValue(form: HTMLFormElement, name: string): string {
 }
 
 export function LoginForm() {
-  const router = useRouter();
   const search = useSearchParams();
-  const { refresh } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -72,9 +70,11 @@ export function LoginForm() {
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
       if (!res.ok) throw new Error(loginErrorMessage(res.status, json));
-      await refresh();
-      router.push(nextPath(search));
-      router.refresh();
+      // Hard navigation on purpose: router.push() + an auth-context refresh can race
+      // inside the Electron desktop webview, leaving the app stuck on the login screen
+      // even though the server already issued a valid session cookie. A full document
+      // load always re-reads that cookie fresh.
+      window.location.assign(nextPath(search));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
     } finally {
