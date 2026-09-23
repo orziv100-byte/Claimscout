@@ -16,10 +16,13 @@ import { useWallet } from "@/components/wallet-provider";
 import { CATALOG } from "@/lib/catalog";
 import { catalogCheckKind, walletEligibilityLabel } from "@/lib/eligibility-status";
 import { isAddressHoldingFinding, isAddressOfferFinding, relatedProgramHints } from "@/lib/engine/profile";
-import { scanHeadline, userCheckLabel } from "@/lib/engine/result-summary";
+import { scanHeadline, userCheckLabel, evidenceLabel, scanCompleteness, scanCompletenessSentence } from "@/lib/engine/result-summary";
 import { catalogIsRelevantToWallet, findingIsRelevantToWallet, walletActivity } from "@/lib/engine/relevance";
+import { useAuth } from "@/components/auth-provider";
 import { usePlan } from "@/components/plan-provider";
 import { formatIsraelDateTime, formatTokenAmount, shortAddress } from "@/lib/labels";
+import { formatWalletCap, monitoringActive } from "@/lib/plan";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CatalogClaim, EligibilityResult } from "@/lib/types";
 import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
@@ -46,6 +49,7 @@ type EngineFindingView = {
   estimatedFeesUsd?: number;
   estimatedNetUsd?: number;
   roiConfidence?: string;
+  chainLabel?: string;
   safetyFlags?: { severity: string; code: string; message: string }[];
 };
 
@@ -119,6 +123,8 @@ type ScanProgressView = {
   sourcesFailed?: number;
   sourcesTimedOut?: number;
   currentSource?: string;
+  checkingLabel?: string;
+  chainLabels?: string[];
   verifiedFindings?: number;
   uncertainFindings?: number;
   potentialFindings?: number;
@@ -164,8 +170,10 @@ function OfferTable({ findings, address }: { findings: EngineFindingView[]; addr
       <TableHeader>
         <TableRow>
           <TableHead>Program</TableHead>
+          <TableHead>Network</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Official / archive</TableHead>
+          <TableHead>Evidence</TableHead>
+          <TableHead>Next</TableHead>
           <TableHead>Estimate</TableHead>
           <TableHead>Deadline</TableHead>
         </TableRow>
@@ -251,7 +259,19 @@ function CatalogClaimRows({
 }
 
 function FindingRows({ findings, address }: { findings: EngineFindingView[]; address: string | null }) {
-  return findings.map((finding) => (
+  return findings.map((finding) => {
+    const evidence = evidenceLabel({
+      verification: (finding.verification as "verified" | "uncertain" | "rejected") ?? "uncertain",
+      sourceStatus: finding.sourceStatus === "failed" ? "failed" : "ok",
+      eligibility: finding.eligibility as
+        | "eligible"
+        | "ineligible"
+        | "already_claimed"
+        | "window_closed"
+        | "unable_to_verify"
+        | undefined,
+    });
+    return (
         <TableRow key={finding.id}>
           <TableCell>
             {address && finding.sourceId ? (
@@ -273,6 +293,7 @@ function FindingRows({ findings, address }: { findings: EngineFindingView[]; add
               ) : null}
             </div>
           </TableCell>
+          <TableCell className="text-xs text-muted-foreground">{finding.chainLabel || "—"}</TableCell>
           <TableCell className="text-xs">
             <div className="font-medium text-foreground">
               {userCheckLabel({
@@ -290,10 +311,22 @@ function FindingRows({ findings, address }: { findings: EngineFindingView[]; add
             </div>
           </TableCell>
           <TableCell className="text-xs">
+            <Tooltip>
+              <TooltipTrigger className="cursor-help underline decoration-dotted underline-offset-2">
+                {evidence}
+              </TooltipTrigger>
+              <TooltipContent>
+                PoolIndex does not label something Verified or Eligible unless the checker ran with sufficient
+                evidence. That is not a promise money is owed.
+              </TooltipContent>
+            </Tooltip>
+          </TableCell>
+          <TableCell className="text-xs">
             <OfficialSourceLinks
               officialUrl={finding.officialUrl}
               flagged={finding.verification === "rejected"}
               showWarning={false}
+              label={finding.eligibility === "eligible" ? "View official claim instructions" : undefined}
             />
             {finding.safetyFlags?.length ? (
               <ul className="mt-1 space-y-0.5 text-amber-800 dark:text-amber-300">
@@ -317,7 +350,8 @@ function FindingRows({ findings, address }: { findings: EngineFindingView[]; add
           </TableCell>
           <TableCell className="text-xs">{finding.deadlineLabel || "—"}</TableCell>
         </TableRow>
-      ));
+    );
+  });
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -337,7 +371,9 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 
 export function WalletDashboard() {
   const { address, mode, connectInjected, setReadonlyAddress, error: walletError, errorUpgradeUrl } = useWallet();
-  const { plan } = usePlan();
+  const { plan, name: planName, wallets, maxWallets } = usePlan();
+  const { user } = useAuth();
+  const monitorOn = monitoringActive(plan, user?.monitorEnabled);
   const [draft, setDraft] = useState("");
   const [rows, setRows] = useState<EligibilityResult[] | null>(null);
   const [engine, setEngine] = useState<EngineView | null>(null);
@@ -432,6 +468,10 @@ export function WalletDashboard() {
           }
           if (pollJson.status === "failed") {
             applyJob(pollJson);
+            if (pollJson.engine || pollJson.progress?.findings?.length) {
+              setError(pollJson.error || "Some checks did not finish.");
+              break;
+            }
             throw new Error(pollJson.error || "Check failed");
           }
           if (!pollRes.ok && pollRes.status !== 202) {
@@ -539,6 +579,16 @@ export function WalletDashboard() {
       sourceStatus: row.sourceStatus === "failed" ? "failed" : "ok",
     })),
   );
+  const adaptersChecked = engine?.summary?.adaptersChecked ?? progress?.sourcesTotal ?? 0;
+  const adaptersSucceeded = engine?.summary?.adaptersSucceeded ?? Math.max(0, (progress?.sourcesChecked ?? 0) - (progress?.sourcesFailed ?? 0));
+  const adaptersFailed = engine?.summary?.adaptersFailed ?? progress?.sourcesFailed ?? 0;
+  const completeness = scanCompleteness({
+    jobFailed: Boolean(error) && adaptersSucceeded === 0 && !loading,
+    adaptersChecked,
+    adaptersSucceeded,
+    adaptersFailed,
+  });
+  const completenessSentence = scanCompletenessSentence(completeness, adaptersChecked, adaptersSucceeded, adaptersFailed);
   const deadlineFindings = relevantOffers.filter((row) => row.deadlineLabel && row.deadlineLabel !== "—");
 
   return (
@@ -577,10 +627,19 @@ export function WalletDashboard() {
                 Optional: connect browser wallet
               </Button>
             </form>
-          <div className="flex gap-2">
+          <p className="text-xs text-muted-foreground">
+            {planName} · {wallets.length}/{formatWalletCap(maxWallets)} wallets on this account. Offer names stay
+            visible on Free. PoolIndex Pro is planned; payment processing is unavailable in this Closed Beta.
+          </p>
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => void run()} disabled={!address || loading}>
               {loading ? <LoaderCircle className="animate-spin" /> : "Scan this address"}
             </Button>
+            {adaptersFailed > 0 && !loading ? (
+              <Button type="button" variant="outline" onClick={() => void run()} disabled={!address}>
+                Retry scan
+              </Button>
+            ) : null}
             <Button type="button" variant="outline" onClick={() => void requestWalletNotifications()}>
               Enable desktop notifications
             </Button>
@@ -599,16 +658,37 @@ export function WalletDashboard() {
               ) : null}
             </p>
           ) : null}
-          {error && error !== walletError ? <p className="text-destructive" role="alert">{error}</p> : null}
+          {error && error !== walletError ? (
+            <p className="text-destructive" role="alert">
+              {error}{" "}
+              <Button type="button" variant="link" className="h-auto p-0" onClick={() => void run()} disabled={!address || loading}>
+                Retry
+              </Button>
+              {" · "}
+              <Button type="button" variant="link" className="h-auto p-0" onClick={() => window.location.reload()}>
+                Refresh
+              </Button>
+              {!user ? (
+                <>
+                  {" · "}
+                  <Link href="/login" className="underline">
+                    Sign in again
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          ) : null}
           {poolError ? <p className="text-xs text-muted-foreground">{poolError} Remaining pool is separate from wallet eligibility.</p> : null}
           {loading ? (
             <div className="rounded-md border p-3 text-xs">
               <p className="font-medium text-foreground">Wallet scan progress</p>
               <p className="mt-1 text-muted-foreground">
                 Scan time follows this wallet’s complexity. A stuck source times out after 30s and the rest continue.
-                Most wallets finish in 15–40 seconds.
                 {progress?.elapsedMs != null ? ` Elapsed ${formatElapsed(progress.elapsedMs)}.` : ""}
               </p>
+              {progress?.checkingLabel ? (
+                <p className="mt-2 font-medium text-foreground">{progress.checkingLabel}</p>
+              ) : null}
               <ol className="mt-3 space-y-2">
                 {(progress?.stages ?? [
                   { id: "profile", label: "Profile", status: "active" as const },
@@ -634,8 +714,22 @@ export function WalletDashboard() {
             </div>
           ) : engine?.summary || engine?.counters ? (
             <div className="rounded-md border p-3 text-xs">
-              <p className="font-medium text-foreground">What we found</p>
+              <p className="font-medium text-foreground">
+                {completeness === "full_success"
+                  ? "Scan complete"
+                  : completeness === "partial_success"
+                    ? "Partial success"
+                    : "Scan did not finish"}
+              </p>
+              <p className="mt-1 text-muted-foreground">{completenessSentence}</p>
               <p className="mt-1 text-foreground">{headline.sentence}</p>
+              {headline.claimNow === 0 && engine.scannedAt ? (
+                <p className="mt-2 text-muted-foreground">
+                  {adaptersSucceeded || adaptersChecked} checks completed
+                  {chainCount ? ` · ${chainCount} networks checked` : ""}
+                  {` · Last checked: ${formatIsraelDateTime(engine.scannedAt)}`}
+                </p>
+              ) : null}
               {engine.summary ? (
                 <>
                   <p className="mt-2 text-muted-foreground">
@@ -670,18 +764,23 @@ export function WalletDashboard() {
                 </p>
               ) : null}
               <div className="mt-3 rounded-md border bg-muted/40 p-3">
-                <p className="font-medium text-foreground">We keep checking this wallet</p>
-                <p className="mt-1 text-muted-foreground">
-                  Next daily monitor: {engine.nextScanAt ?? "daily ~07:00 UTC"}. PoolIndex Pro emails you if a claim
-                  window is closing or a verified finding changes — that is the subscription, not a one-time table.
-                  {plan === "paid" ? " Pro alerts are on for this account." : null}
+                <p className="font-medium text-foreground">
+                  {monitorOn ? "Monitoring is on for this account" : "This wallet is not on a daily monitor"}
                 </p>
+                <p className="mt-1 text-muted-foreground">
+                  {monitorOn
+                    ? "PoolIndex will continue monitoring this wallet and notify you when a verified finding or claim window changes."
+                    : "Free does not run a daily monitor unless an operator enables opt-in. Scan again anytime. PoolIndex Pro (planned) includes daily monitoring and email alerts. Payment processing is unavailable in this Closed Beta."}
+                </p>
+                {monitorOn && engine.nextScanAt ? (
+                  <p className="mt-1 text-muted-foreground">Next daily monitor window: {engine.nextScanAt}.</p>
+                ) : null}
                 {plan !== "paid" ? (
                   <p className="mt-1">
                     <Link href="/upgrade" className="underline">
                       See PoolIndex Pro
                     </Link>
-                    {" "}for email alerts. Free still shows dates and this monitor time.
+                    {" "}for plan details. Nothing extra is hidden behind payment.
                   </p>
                 ) : null}
               </div>
@@ -801,8 +900,10 @@ export function WalletDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Holding</TableHead>
+                  <TableHead>Network</TableHead>
                   <TableHead>Check</TableHead>
-                  <TableHead>Official / archive</TableHead>
+                  <TableHead>Evidence</TableHead>
+                  <TableHead>Next</TableHead>
                   <TableHead>Estimate</TableHead>
                   <TableHead>Deadline</TableHead>
                 </TableRow>

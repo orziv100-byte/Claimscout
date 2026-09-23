@@ -36,11 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me");
+      if (!res.ok && res.status >= 500) return;
       const json = (await res.json().catch(() => ({}))) as { user?: PublicUser | null; ops?: OpsPublic };
+      if (!res.ok && res.status !== 401) return;
       setUser(json.user ?? null);
       setOps(json.ops ?? null);
     } catch {
-      setUser(null);
+      // Keep the last known session on a network blip so the desktop UI is not
+      // forced to a signed-out login screen while the cookie is still valid.
     } finally {
       setLoading(false);
     }

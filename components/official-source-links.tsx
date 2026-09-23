@@ -8,11 +8,13 @@ export function OfficialSourceLinks({
   archiveUrl,
   flagged = false,
   showWarning = true,
+  label,
 }: {
   officialUrl?: string;
   archiveUrl?: string;
   flagged?: boolean;
   showWarning?: boolean;
+  label?: string;
 }) {
   const links = officialLinkSet({ officialUrl, archiveUrl });
   if (!links.officialUrl && !links.archiveUrl) {
@@ -28,7 +30,7 @@ export function OfficialSourceLinks({
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-primary hover:underline"
           >
-            {flagged ? "Flagged URL" : "Official source"} <ArrowUpRight className="size-3.5" />
+            {flagged ? "Flagged URL" : label ?? "Official source"} <ArrowUpRight className="size-3.5" />
           </a>
         ) : null}
         {links.archiveUrl ? (

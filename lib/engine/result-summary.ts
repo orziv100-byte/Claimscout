@@ -86,7 +86,7 @@ export function scanHeadline(findings: readonly Pick<EngineFinding, "category" |
   if (claimNow > 0) {
     bits.push(`Found ${claimNow} official Eligible result${claimNow === 1 ? "" : "s"} to review.`);
   } else {
-    bits.push("Nothing to claim on this address right now.");
+    bits.push("No currently verified claimable assets found.");
   }
   if (holdings > 0) bits.push(`${holdings} balance${holdings === 1 ? "" : "s"} already in this wallet.`);
   if (leftover > 0) bits.push(`${leftover} leftover protocol position${leftover === 1 ? "" : "s"}.`);
@@ -107,4 +107,65 @@ export function scanHeadline(findings: readonly Pick<EngineFinding, "category" |
     failed,
     sentence: bits.join(" "),
   };
+}
+
+export type EvidenceLabel = "Verified" | "Potential / Needs verification" | "Unavailable / Error";
+
+export function evidenceLabel(
+  finding: Pick<EngineFinding, "verification" | "sourceStatus" | "eligibility">,
+): EvidenceLabel {
+  if (finding.sourceStatus === "failed") return "Unavailable / Error";
+  if (finding.verification === "rejected") return "Unavailable / Error";
+  if (finding.eligibility === "unable_to_verify") return "Potential / Needs verification";
+  if (finding.verification === "uncertain") return "Potential / Needs verification";
+  if (finding.verification === "verified") return "Verified";
+  return "Potential / Needs verification";
+}
+
+export type ScanCompleteness = "full_success" | "partial_success" | "failed";
+
+export function scanCompleteness(input: {
+  jobFailed?: boolean;
+  adaptersChecked: number;
+  adaptersSucceeded: number;
+  adaptersFailed: number;
+}): ScanCompleteness {
+  const checked = input.adaptersChecked;
+  const succeeded = input.adaptersSucceeded;
+  const failed = input.adaptersFailed;
+  if (input.jobFailed && succeeded === 0) return "failed";
+  if (failed > 0 || input.jobFailed) return "partial_success";
+  if (checked > 0) return "full_success";
+  return input.jobFailed ? "failed" : "full_success";
+}
+
+export function scanCompletenessSentence(
+  completeness: ScanCompleteness,
+  adaptersChecked: number,
+  adaptersSucceeded: number,
+  adaptersFailed: number,
+): string {
+  if (completeness === "failed") {
+    return "This scan did not finish. Successful findings below, if any, are from earlier checks — not a complete pass.";
+  }
+  if (completeness === "partial_success") {
+    return `${adaptersSucceeded} of ${adaptersChecked} checks completed. ${adaptersFailed} ${
+      adaptersFailed === 1 ? "check was" : "checks were"
+    } temporarily unavailable.`;
+  }
+  return `${adaptersChecked} checks completed.`;
+}
+
+export function findingNextAction(
+  finding: Pick<EngineFinding, "sourceStatus" | "eligibility" | "officialUrl" | "category">,
+): { label: string; href?: string } {
+  if (finding.sourceStatus === "failed") return { label: "Retry scan" };
+  if (finding.eligibility === "eligible" && finding.officialUrl) {
+    return { label: "View official claim instructions", href: finding.officialUrl };
+  }
+  if (finding.officialUrl) return { label: "View official source", href: finding.officialUrl };
+  if (finding.category === "native_balance" || finding.category === "forgotten_token") {
+    return { label: "Review holding" };
+  }
+  return { label: "Review details" };
 }

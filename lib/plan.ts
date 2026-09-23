@@ -156,3 +156,9 @@ export function walletLimitMessage(plan: PlanId, email?: string | null): string 
 export function isPaidPlan(plan: PlanId): boolean {
   return plan === "paid";
 }
+
+/** Daily wallet monitor: Pro always, Free only with explicit opt-in. */
+export function monitoringActive(plan: PlanId, monitorEnabled?: boolean): boolean {
+  if (isPaidPlan(plan)) return true;
+  return monitorEnabled === true;
+}

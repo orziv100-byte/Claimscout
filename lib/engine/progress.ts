@@ -20,6 +20,18 @@ export const SCAN_STAGE_LABELS: Record<ScanStageId, string> = {
 
 export const SOURCE_TIMEOUT_MS = 30_000;
 
+/** Human label for the source currently in flight. Built from real adapter metadata only. */
+export function sourceCheckingLabel(currentSource?: string): string | undefined {
+  if (!currentSource) return undefined;
+  if (currentSource === "catalog overlay") return "Checking catalog overlay…";
+  const id = currentSource.replace(/:nonce$/, "");
+  const source = ENGINE_SOURCES.find((row) => row.id === id);
+  if (!source) return `Checking ${id}…`;
+  if (currentSource.endsWith(":nonce")) return `Checking ${source.chainLabel} activity…`;
+  if (source.category === "native_balance") return `Checking ${source.chainLabel}…`;
+  return `Checking ${source.protocol} on ${source.chainLabel}…`;
+}
+
 export type ScanProgressInput = {
   address: string;
   startedAt: number;
@@ -53,12 +65,20 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
   const failed = input.findings.filter((row) => row.sourceStatus === "failed").length;
   const interesting = input.findings.filter(isInterestingFinding);
   const sourcesTotal = input.selected.length || input.natives.length;
+  const checkingLabel = sourceCheckingLabel(input.currentSource);
   return {
     stage: input.stage,
     stages: SCAN_STAGES.map((id) => {
       const status = stageState(input.stage, id);
       if (id === "profile") {
-        return { id, label: SCAN_STAGE_LABELS[id], status, count: 1, total: 1, detail: input.address };
+        return {
+          id,
+          label: SCAN_STAGE_LABELS[id],
+          status,
+          count: 1,
+          total: 1,
+          detail: status === "active" && checkingLabel ? checkingLabel : input.address,
+        };
       }
       if (id === "chains") {
         return {
@@ -67,7 +87,7 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
           status,
           count: chainFindings.length,
           total: input.natives.length,
-          detail: chainLabels.join(", ") || undefined,
+          detail: status === "active" && checkingLabel ? checkingLabel : chainLabels.join(", ") || undefined,
         };
       }
       if (id === "protocols") {
@@ -96,7 +116,7 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
         status,
         count: checked,
         total: sourcesTotal,
-        detail: input.currentSource ? `Checking ${input.currentSource}` : undefined,
+        detail: checkingLabel,
       };
     }),
     address: input.address,
@@ -112,6 +132,7 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
     sourcesFailed: failed,
     sourcesTimedOut: input.timedOut,
     currentSource: input.currentSource,
+    checkingLabel,
     verifiedFindings: interesting.filter((row) => row.verification === "verified").length,
     uncertainFindings: interesting.filter((row) => row.verification === "uncertain").length,
     potentialFindings: interesting.length,
@@ -128,6 +149,7 @@ export function buildScanProgress(input: ScanProgressInput): ScanProgress {
       catalogId: row.catalogId,
       sourceStatus: row.sourceStatus,
       detail: row.detail,
+      chainLabel: row.chainLabel,
     })),
   };
 }

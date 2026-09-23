@@ -13,7 +13,7 @@ import { isImportantSource, listSourceRecords } from "./source-manager.ts";
 import { nextWalletMonitorAt } from "./schedule.ts";
 import { interpretEnsClaimBody } from "./ens-claim.ts";
 import { publicEngineScan } from "./scan.ts";
-import { scanHeadline, userCheckLabel } from "./result-summary.ts";
+import { evidenceLabel, scanCompleteness, scanCompletenessSentence, scanHeadline, userCheckLabel } from "./result-summary.ts";
 import {
   buildWalletProfile,
   interestingVerificationCounts,
@@ -664,6 +664,8 @@ test("scan progress is Profile → Chains → Protocols → Relevant Sources →
   assert.equal(progress.stages[1]?.count, 1);
   assert.equal(progress.stages[1]?.total, natives.length);
   assert.equal(progress.chainLabels[0], "Ethereum");
+  assert.equal(progress.checkingLabel, "Checking Arbitrum One…");
+  assert.match(progress.stages[1]?.detail ?? "", /Checking Arbitrum One/);
   assert.ok(progress.elapsedMs >= 0);
 });
 
@@ -777,6 +779,34 @@ test("unable_to_verify is never labeled verified, and the headline does not say 
   assert.equal(headline.claimNow, 0);
   assert.equal(headline.notEligible, 1);
   assert.equal(headline.holdings, 1);
-  assert.match(headline.sentence, /Nothing to claim/i);
+  assert.match(headline.sentence, /No currently verified claimable assets found/i);
   assert.doesNotMatch(headline.sentence, /\b63 Verified\b/);
+});
+
+test("scan completeness and evidence labels stay honest on partial failure", () => {
+  assert.equal(
+    scanCompleteness({ adaptersChecked: 68, adaptersSucceeded: 63, adaptersFailed: 5 }),
+    "partial_success",
+  );
+  assert.equal(
+    scanCompletenessSentence("partial_success", 68, 63, 5),
+    "63 of 68 checks completed. 5 checks were temporarily unavailable.",
+  );
+  assert.equal(scanCompleteness({ adaptersChecked: 68, adaptersSucceeded: 68, adaptersFailed: 0 }), "full_success");
+  assert.equal(
+    scanCompleteness({ jobFailed: true, adaptersChecked: 0, adaptersSucceeded: 0, adaptersFailed: 0 }),
+    "failed",
+  );
+  assert.equal(
+    evidenceLabel({ verification: "verified", sourceStatus: "ok", eligibility: "eligible" }),
+    "Verified",
+  );
+  assert.equal(
+    evidenceLabel({ verification: "uncertain", sourceStatus: "ok", eligibility: "unable_to_verify" }),
+    "Potential / Needs verification",
+  );
+  assert.equal(
+    evidenceLabel({ verification: "verified", sourceStatus: "failed", eligibility: "eligible" }),
+    "Unavailable / Error",
+  );
 });

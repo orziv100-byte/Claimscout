@@ -27,6 +27,7 @@ export function LoginForm() {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -38,7 +39,13 @@ export function LoginForm() {
       window.location.assign(nextPath(search));
       return;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign in");
+      const message =
+        err instanceof TypeError
+          ? "Could not reach PoolIndex. Check your connection, then retry."
+          : err instanceof Error
+            ? err.message
+            : "Could not sign in";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -48,19 +55,22 @@ export function LoginForm() {
     <form onSubmit={submit} className="flex max-w-md flex-col gap-3">
       <label className="text-sm">
         Email
-        <Input className="mt-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+        <Input className="mt-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" disabled={loading} />
       </label>
       <label className="text-sm">
         Password
-        <Input className="mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+        <Input className="mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" disabled={loading} />
       </label>
       {error ? (
         <p className="text-sm text-destructive" role="alert">
-          {error}
+          {error}{" "}
+          <button type="submit" className="underline" disabled={loading}>
+            Retry
+          </button>
         </p>
       ) : null}
       <Button type="submit" disabled={loading} aria-busy={loading}>
-        {loading ? "Signing in…" : "Sign in"}
+        {loading ? "Signing you in..." : "Sign in"}
       </Button>
       <p className="text-xs text-muted-foreground">
         <Link href="/forgot" className="hover:text-foreground">Forgot password</Link>

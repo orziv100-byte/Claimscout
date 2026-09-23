@@ -173,6 +173,7 @@ export type ScanProgressFinding = {
   catalogId?: string;
   sourceStatus?: "ok" | "failed" | "skipped";
   detail?: string;
+  chainLabel?: string;
 };
 
 export type ScanProgress = {
@@ -191,6 +192,7 @@ export type ScanProgress = {
   sourcesFailed: number;
   sourcesTimedOut: number;
   currentSource?: string;
+  checkingLabel?: string;
   verifiedFindings: number;
   uncertainFindings: number;
   potentialFindings: number;

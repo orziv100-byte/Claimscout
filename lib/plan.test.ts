@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bindWallet, capSources, formatWalletCap, maxWalletsFor, MONITOR_WALLET_CAP, OPERATOR_WALLET_CHECK_CAP, paidSourceCoverage, PLANS, sourceAccess } from "./plan.ts";
+import { bindWallet, capSources, formatWalletCap, maxWalletsFor, MONITOR_WALLET_CAP, monitoringActive, OPERATOR_WALLET_CHECK_CAP, paidSourceCoverage, PLANS, sourceAccess } from "./plan.ts";
 import { CREDIT_AUTHORITY, dailyMonitorPolicy, PAYMENT_PROVIDER, PLAN_POLICY, PLAN_PRICES } from "./plan-config.ts";
 
 test("free plan is one wallet, catalog + GitHub, and never paywalls names", () => {
@@ -85,4 +85,12 @@ test("operator unlimited-wallet emails raise the check cap without changing prod
     if (bound.ok) wallets = bound.wallets;
   }
   assert.equal(wallets.length, 6);
+});
+
+test("daily monitoring is Pro by default and Free only with explicit opt-in", () => {
+  assert.equal(monitoringActive("free"), false);
+  assert.equal(monitoringActive("free", false), false);
+  assert.equal(monitoringActive("free", true), true);
+  assert.equal(monitoringActive("paid"), true);
+  assert.equal(monitoringActive("paid", false), true);
 });

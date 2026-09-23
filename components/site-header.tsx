@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth-provider";
 import { usePlan } from "@/components/plan-provider";
 import { useWallet } from "@/components/wallet-provider";
-import { BRAND_NAME } from "@/lib/app-info";
+import { APP_VERSION, BRAND_NAME } from "@/lib/app-info";
 import { formatWalletCap } from "@/lib/plan";
 import { walletSubmitIntent } from "@/lib/address";
 import { shortAddress } from "@/lib/labels";
+import { ConnectionStatus } from "@/components/connection-status";
 import { ShieldCheck, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -96,10 +97,14 @@ export function SiteHeader() {
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
           {user ? (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               <Link href="/account" className="text-muted-foreground hover:text-foreground">
                 {user.displayName}
               </Link>
+              <span className="text-muted-foreground">
+                {planName} · v{APP_VERSION}
+              </span>
+              <ConnectionStatus compact />
               {user.role === "admin" ? (
                 <Link href="/admin" className="text-primary hover:underline">
                   Admin
@@ -110,9 +115,12 @@ export function SiteHeader() {
               </Button>
             </div>
           ) : (
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
-              Sign in
-            </Link>
+            <div className="flex items-center gap-2 text-xs">
+              <ConnectionStatus compact />
+              <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
+                Sign in
+              </Link>
+            </div>
           )}
           {address ? (
             <div className="flex items-center gap-2">
