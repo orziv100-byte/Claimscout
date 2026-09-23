@@ -1,5 +1,6 @@
 import { createPublicClient, getAddress, http, type Address } from "viem";
 import { arbitrum, base, mainnet, optimism, polygon } from "viem/chains";
+import { withRpcRetry } from "./rpc-retry.ts";
 
 const RPC: Record<number, string> = {
   1: process.env.ETH_RPC_URL || "https://ethereum-rpc.publicnode.com",
@@ -86,16 +87,20 @@ export const IS_CLAIMED_ABI = [
 ] as const;
 
 export async function nativeBalance(chainId: number, address: Address): Promise<bigint> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  return client.getBalance({ address });
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    return client.getBalance({ address });
+  }, `nativeBalance(chain=${chainId})`);
 }
 
 export async function contractCode(chainId: number, address: Address): Promise<string> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  const code = await client.getCode({ address: checksumAddress(address) });
-  return code && code !== "0x" ? code : "";
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    const code = await client.getCode({ address: checksumAddress(address) });
+    return code && code !== "0x" ? code : "";
+  }, `contractCode(chain=${chainId})`);
 }
 
 function decodeSymbol(value: unknown): string | null {
@@ -136,9 +141,8 @@ async function erc20Meta(
   let symbol = expected?.symbol;
   let symbolError: string | undefined;
   try {
-    symbol = decodeSymbol(
-      await client.readContract({ address: token, abi: ERC20_ABI, functionName: "symbol" }),
-    ) ?? symbol;
+    symbol =
+      decodeSymbol(await client.readContract({ address: token, abi: ERC20_ABI, functionName: "symbol" })) ?? symbol;
   } catch (err) {
     symbolError = err instanceof Error ? err.message : "symbol() failed";
     try {
@@ -167,27 +171,29 @@ export async function erc20Balance(
   address: Address,
   expected?: { symbol?: string; decimals?: number },
 ): Promise<{ raw: bigint; decimals: number; symbol: string }> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  const code = await client.getCode({ address: token });
-  if (!code || code === "0x") {
-    throw new Error(`Token ${token} has no contract code on chain ${chainId}`);
-  }
-  let raw: bigint;
-  try {
-    raw = await client.readContract({
-      address: token,
-      abi: ERC20_ABI,
-      functionName: "balanceOf",
-      args: [address],
-    });
-  } catch (err) {
-    throw new Error(
-      `RPC balanceOf failed for ${token} on chain ${chainId}: ${err instanceof Error ? err.message : "error"}`,
-    );
-  }
-  const meta = await erc20Meta(chainId, token, expected);
-  return { raw, ...meta };
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    const code = await client.getCode({ address: token });
+    if (!code || code === "0x") {
+      throw new Error(`Token ${token} has no contract code on chain ${chainId}`);
+    }
+    let raw: bigint;
+    try {
+      raw = await client.readContract({
+        address: token,
+        abi: ERC20_ABI,
+        functionName: "balanceOf",
+        args: [address],
+      });
+    } catch (err) {
+      throw new Error(
+        `RPC balanceOf failed for ${token} on chain ${chainId}: ${err instanceof Error ? err.message : "error"}`,
+      );
+    }
+    const meta = await erc20Meta(chainId, token, expected);
+    return { raw, ...meta };
+  }, `erc20Balance(chain=${chainId},token=${token})`);
 }
 
 export async function erc20TotalSupply(
@@ -195,26 +201,28 @@ export async function erc20TotalSupply(
   token: Address,
   expected?: { symbol?: string; decimals?: number },
 ): Promise<{ raw: bigint; decimals: number; symbol: string }> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  const code = await client.getCode({ address: token });
-  if (!code || code === "0x") {
-    throw new Error(`Token ${token} has no contract code on chain ${chainId}`);
-  }
-  let raw: bigint;
-  try {
-    raw = await client.readContract({
-      address: token,
-      abi: ERC20_TOTAL_SUPPLY_ABI,
-      functionName: "totalSupply",
-    });
-  } catch (err) {
-    throw new Error(
-      `RPC totalSupply failed for ${token} on chain ${chainId}: ${err instanceof Error ? err.message : "error"}`,
-    );
-  }
-  const meta = await erc20Meta(chainId, token, expected);
-  return { raw, ...meta };
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    const code = await client.getCode({ address: token });
+    if (!code || code === "0x") {
+      throw new Error(`Token ${token} has no contract code on chain ${chainId}`);
+    }
+    let raw: bigint;
+    try {
+      raw = await client.readContract({
+        address: token,
+        abi: ERC20_TOTAL_SUPPLY_ABI,
+        functionName: "totalSupply",
+      });
+    } catch (err) {
+      throw new Error(
+        `RPC totalSupply failed for ${token} on chain ${chainId}: ${err instanceof Error ? err.message : "error"}`,
+      );
+    }
+    const meta = await erc20Meta(chainId, token, expected);
+    return { raw, ...meta };
+  }, `erc20TotalSupply(chain=${chainId},token=${token})`);
 }
 
 const CLAIM_PERIOD_ENDS_ABI = [
@@ -228,30 +236,36 @@ const CLAIM_PERIOD_ENDS_ABI = [
 ] as const;
 
 export async function readClaimPeriodEnds(chainId: number, token: Address): Promise<bigint> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  const code = await client.getCode({ address: token });
-  if (!code || code === "0x") throw new Error(`Token ${token} has no contract code on chain ${chainId}`);
-  return client.readContract({ address: token, abi: CLAIM_PERIOD_ENDS_ABI, functionName: "claimPeriodEnds" });
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    const code = await client.getCode({ address: token });
+    if (!code || code === "0x") throw new Error(`Token ${token} has no contract code on chain ${chainId}`);
+    return client.readContract({ address: token, abi: CLAIM_PERIOD_ENDS_ABI, functionName: "claimPeriodEnds" });
+  }, `readClaimPeriodEnds(chain=${chainId},token=${token})`);
 }
 
 export async function distributorIsClaimed(chainId: number, distributor: Address, index: bigint): Promise<boolean> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  const code = await client.getCode({ address: distributor });
-  if (!code || code === "0x") throw new Error(`Distributor ${distributor} has no contract code on chain ${chainId}`);
-  return client.readContract({
-    address: distributor,
-    abi: IS_CLAIMED_ABI,
-    functionName: "isClaimed",
-    args: [index],
-  });
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    const code = await client.getCode({ address: distributor });
+    if (!code || code === "0x") throw new Error(`Distributor ${distributor} has no contract code on chain ${chainId}`);
+    return client.readContract({
+      address: distributor,
+      abi: IS_CLAIMED_ABI,
+      functionName: "isClaimed",
+      args: [index],
+    });
+  }, `distributorIsClaimed(chain=${chainId},distributor=${distributor})`);
 }
 
 export async function transactionCount(chainId: number, address: Address): Promise<number> {
-  const client = engineClient(chainId);
-  if (!client) throw new Error(`No RPC for chain ${chainId}`);
-  return client.getTransactionCount({ address });
+  return withRpcRetry(async () => {
+    const client = engineClient(chainId);
+    if (!client) throw new Error(`No RPC for chain ${chainId}`);
+    return client.getTransactionCount({ address });
+  }, `transactionCount(chain=${chainId})`);
 }
 
 const COMP_ACCRUED_ABI = [
@@ -265,16 +279,18 @@ const COMP_ACCRUED_ABI = [
 ] as const;
 
 export async function readCompAccrued(comptroller: Address, account: Address): Promise<bigint> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const code = await client.getCode({ address: comptroller });
-  if (!code || code === "0x") throw new Error(`Comptroller ${comptroller} has no contract code`);
-  return client.readContract({
-    address: comptroller,
-    abi: COMP_ACCRUED_ABI,
-    functionName: "compAccrued",
-    args: [account],
-  });
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const code = await client.getCode({ address: comptroller });
+    if (!code || code === "0x") throw new Error(`Comptroller ${comptroller} has no contract code`);
+    return client.readContract({
+      address: comptroller,
+      abi: COMP_ACCRUED_ABI,
+      functionName: "compAccrued",
+      args: [account],
+    });
+  }, `readCompAccrued(comptroller=${comptroller})`);
 }
 
 const STK_REWARDS_ABI = [
@@ -288,16 +304,18 @@ const STK_REWARDS_ABI = [
 ] as const;
 
 export async function readStkAaveRewards(stkAave: Address, staker: Address): Promise<bigint> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const code = await client.getCode({ address: stkAave });
-  if (!code || code === "0x") throw new Error(`stkAAVE ${stkAave} has no contract code`);
-  return client.readContract({
-    address: stkAave,
-    abi: STK_REWARDS_ABI,
-    functionName: "getTotalRewardsBalance",
-    args: [staker],
-  });
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const code = await client.getCode({ address: stkAave });
+    if (!code || code === "0x") throw new Error(`stkAAVE ${stkAave} has no contract code`);
+    return client.readContract({
+      address: stkAave,
+      abi: STK_REWARDS_ABI,
+      functionName: "getTotalRewardsBalance",
+      args: [staker],
+    });
+  }, `readStkAaveRewards(stkAave=${stkAave})`);
 }
 
 const RAY = 10n ** 27n;
@@ -321,23 +339,25 @@ const MAKER_POT_ABI = [
 
 /** DAI in the Maker DSR: pie(usr) * chi() / RAY. */
 export async function readMakerDsrDai(pot: Address, account: Address): Promise<bigint> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const code = await client.getCode({ address: pot });
-  if (!code || code === "0x") throw new Error(`Maker Pot ${pot} has no contract code`);
-  const pie = await client.readContract({
-    address: pot,
-    abi: MAKER_POT_ABI,
-    functionName: "pie",
-    args: [account],
-  });
-  if (pie === 0n) return 0n;
-  const chi = await client.readContract({
-    address: pot,
-    abi: MAKER_POT_ABI,
-    functionName: "chi",
-  });
-  return (pie * chi) / RAY;
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const code = await client.getCode({ address: pot });
+    if (!code || code === "0x") throw new Error(`Maker Pot ${pot} has no contract code`);
+    const pie = await client.readContract({
+      address: pot,
+      abi: MAKER_POT_ABI,
+      functionName: "pie",
+      args: [account],
+    });
+    if (pie === 0n) return 0n;
+    const chi = await client.readContract({
+      address: pot,
+      abi: MAKER_POT_ABI,
+      functionName: "chi",
+    });
+    return (pie * chi) / RAY;
+  }, `readMakerDsrDai(pot=${pot})`);
 }
 
 const VECRV_LOCKED_ABI = [
@@ -358,18 +378,20 @@ export async function readVeCrvLocked(
   escrow: Address,
   account: Address,
 ): Promise<{ amount: bigint; end: bigint }> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const code = await client.getCode({ address: escrow });
-  if (!code || code === "0x") throw new Error(`veCRV ${escrow} has no contract code`);
-  const locked = await client.readContract({
-    address: escrow,
-    abi: VECRV_LOCKED_ABI,
-    functionName: "locked",
-    args: [account],
-  });
-  const raw = locked[0];
-  return { amount: raw < 0n ? 0n : raw, end: locked[1] };
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const code = await client.getCode({ address: escrow });
+    if (!code || code === "0x") throw new Error(`veCRV ${escrow} has no contract code`);
+    const locked = await client.readContract({
+      address: escrow,
+      abi: VECRV_LOCKED_ABI,
+      functionName: "locked",
+      args: [account],
+    });
+    const raw = locked[0];
+    return { amount: raw < 0n ? 0n : raw, end: locked[1] };
+  }, `readVeCrvLocked(escrow=${escrow})`);
 }
 
 const AAVE_V3_ACCOUNT_ABI = [
@@ -394,17 +416,19 @@ export async function readAaveV3Account(
   pool: Address,
   account: Address,
 ): Promise<{ collateralBase: bigint; debtBase: bigint }> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const code = await client.getCode({ address: pool });
-  if (!code || code === "0x") throw new Error(`Aave v3 Pool ${pool} has no contract code`);
-  const data = await client.readContract({
-    address: pool,
-    abi: AAVE_V3_ACCOUNT_ABI,
-    functionName: "getUserAccountData",
-    args: [account],
-  });
-  return { collateralBase: data[0], debtBase: data[1] };
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const code = await client.getCode({ address: pool });
+    if (!code || code === "0x") throw new Error(`Aave v3 Pool ${pool} has no contract code`);
+    const data = await client.readContract({
+      address: pool,
+      abi: AAVE_V3_ACCOUNT_ABI,
+      functionName: "getUserAccountData",
+      args: [account],
+    });
+    return { collateralBase: data[0], debtBase: data[1] };
+  }, `readAaveV3Account(pool=${pool})`);
 }
 
 const LIDO_QUEUE_ABI = [
@@ -442,36 +466,38 @@ export async function lidoWithdrawalScan(
   queue: Address,
   owner: Address,
 ): Promise<{ requestCount: number; checked: number; leftover: number; amountStEth: bigint }> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const queueAddress = checksumAddress(queue);
-  const ownerAddress = checksumAddress(owner);
-  const code = await client.getCode({ address: queueAddress });
-  if (!code || code === "0x") throw new Error(`Lido WithdrawalQueue ${queueAddress} has no contract code`);
-  const ids = await client.readContract({
-    address: queueAddress,
-    abi: LIDO_QUEUE_ABI,
-    functionName: "getWithdrawalRequests",
-    args: [ownerAddress],
-  });
-  const requestCount = ids.length;
-  const checkedIds = ids.slice(0, MAX_LIDO_WITHDRAWALS);
-  if (checkedIds.length === 0) return { requestCount, checked: 0, leftover: 0, amountStEth: 0n };
-  const statuses = await client.readContract({
-    address: queueAddress,
-    abi: LIDO_QUEUE_ABI,
-    functionName: "getWithdrawalStatus",
-    args: [checkedIds],
-  });
-  let leftover = 0;
-  let amountStEth = 0n;
-  for (const row of statuses) {
-    if (row.isFinalized && !row.isClaimed) {
-      leftover += 1;
-      amountStEth += row.amountOfStETH;
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const queueAddress = checksumAddress(queue);
+    const ownerAddress = checksumAddress(owner);
+    const code = await client.getCode({ address: queueAddress });
+    if (!code || code === "0x") throw new Error(`Lido WithdrawalQueue ${queueAddress} has no contract code`);
+    const ids = await client.readContract({
+      address: queueAddress,
+      abi: LIDO_QUEUE_ABI,
+      functionName: "getWithdrawalRequests",
+      args: [ownerAddress],
+    });
+    const requestCount = ids.length;
+    const checkedIds = ids.slice(0, MAX_LIDO_WITHDRAWALS);
+    if (checkedIds.length === 0) return { requestCount, checked: 0, leftover: 0, amountStEth: 0n };
+    const statuses = await client.readContract({
+      address: queueAddress,
+      abi: LIDO_QUEUE_ABI,
+      functionName: "getWithdrawalStatus",
+      args: [checkedIds],
+    });
+    let leftover = 0;
+    let amountStEth = 0n;
+    for (const row of statuses) {
+      if (row.isFinalized && !row.isClaimed) {
+        leftover += 1;
+        amountStEth += row.amountOfStETH;
+      }
     }
-  }
-  return { requestCount, checked: checkedIds.length, leftover, amountStEth };
+    return { requestCount, checked: checkedIds.length, leftover, amountStEth };
+  }, `lidoWithdrawalScan(queue=${queue})`);
 }
 
 const ERC721_ENUM_ABI = [
@@ -557,65 +583,67 @@ export async function uniV3PositionScan(
   owner: Address,
   maxPositions = MAX_UNI_V3_POSITIONS,
 ): Promise<UniV3PositionScan> {
-  const client = engineClient(1);
-  if (!client) throw new Error("No RPC for chain 1");
-  const code = await client.getCode({ address: npm });
-  if (!code || code === "0x") throw new Error(`Uniswap V3 NPM ${npm} has no contract code`);
-  const nftCount = Number(
-    await client.readContract({
-      address: npm,
-      abi: ERC721_ENUM_ABI,
-      functionName: "balanceOf",
-      args: [owner],
-    }),
-  );
-  if (!Number.isFinite(nftCount) || nftCount <= 0) {
-    return { nftCount: 0, checked: 0, leftover: 0, withLiquidity: 0, withFees: 0 };
-  }
-  const checked = Math.min(nftCount, maxPositions);
-  let leftover = 0;
-  let withLiquidity = 0;
-  let withFees = 0;
-  for (let index = 0; index < checked; index += 1) {
-    const tokenId = await client.readContract({
-      address: npm,
-      abi: ERC721_ENUM_ABI,
-      functionName: "tokenOfOwnerByIndex",
-      args: [owner, BigInt(index)],
-    });
-    const position = await client.readContract({
-      address: npm,
-      abi: UNI_V3_POSITIONS_ABI,
-      functionName: "positions",
-      args: [tokenId],
-    });
-    const liquidity = position[7];
-    const tokensOwed0 = position[10];
-    const tokensOwed1 = position[11];
-    let fees = tokensOwed0 > 0n || tokensOwed1 > 0n;
-    try {
-      const simulated = await client.simulateContract({
+  return withRpcRetry(async () => {
+    const client = engineClient(1);
+    if (!client) throw new Error("No RPC for chain 1");
+    const code = await client.getCode({ address: npm });
+    if (!code || code === "0x") throw new Error(`Uniswap V3 NPM ${npm} has no contract code`);
+    const nftCount = Number(
+      await client.readContract({
         address: npm,
-        abi: UNI_V3_COLLECT_ABI,
-        functionName: "collect",
-        args: [
-          {
-            tokenId,
-            recipient: owner,
-            amount0Max: MAX_UINT128,
-            amount1Max: MAX_UINT128,
-          },
-        ],
-        account: owner,
-      });
-      fees = simulated.result[0] > 0n || simulated.result[1] > 0n || fees;
-    } catch {
-      // collect() is not view; a revert is not leftover proof. Keep tokensOwed.
+        abi: ERC721_ENUM_ABI,
+        functionName: "balanceOf",
+        args: [owner],
+      }),
+    );
+    if (!Number.isFinite(nftCount) || nftCount <= 0) {
+      return { nftCount: 0, checked: 0, leftover: 0, withLiquidity: 0, withFees: 0 };
     }
-    const hasLiquidity = liquidity > 0n;
-    if (hasLiquidity) withLiquidity += 1;
-    if (fees) withFees += 1;
-    if (hasLiquidity || fees) leftover += 1;
-  }
-  return { nftCount, checked, leftover, withLiquidity, withFees };
+    const checked = Math.min(nftCount, maxPositions);
+    let leftover = 0;
+    let withLiquidity = 0;
+    let withFees = 0;
+    for (let index = 0; index < checked; index += 1) {
+      const tokenId = await client.readContract({
+        address: npm,
+        abi: ERC721_ENUM_ABI,
+        functionName: "tokenOfOwnerByIndex",
+        args: [owner, BigInt(index)],
+      });
+      const position = await client.readContract({
+        address: npm,
+        abi: UNI_V3_POSITIONS_ABI,
+        functionName: "positions",
+        args: [tokenId],
+      });
+      const liquidity = position[7];
+      const tokensOwed0 = position[10];
+      const tokensOwed1 = position[11];
+      let fees = tokensOwed0 > 0n || tokensOwed1 > 0n;
+      try {
+        const simulated = await client.simulateContract({
+          address: npm,
+          abi: UNI_V3_COLLECT_ABI,
+          functionName: "collect",
+          args: [
+            {
+              tokenId,
+              recipient: owner,
+              amount0Max: MAX_UINT128,
+              amount1Max: MAX_UINT128,
+            },
+          ],
+          account: owner,
+        });
+        fees = simulated.result[0] > 0n || simulated.result[1] > 0n || fees;
+      } catch {
+        // collect() is not view; a revert is not leftover proof. Keep tokensOwed.
+      }
+      const hasLiquidity = liquidity > 0n;
+      if (hasLiquidity) withLiquidity += 1;
+      if (fees) withFees += 1;
+      if (hasLiquidity || fees) leftover += 1;
+    }
+    return { nftCount, checked, leftover, withLiquidity, withFees };
+  }, `uniV3PositionScan(npm=${npm})`);
 }
