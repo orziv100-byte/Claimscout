@@ -1,9 +1,10 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { engineDataRoot } from "./paths.ts";
 import type { SourceHealth } from "./types.ts";
 
 function storePath(): string {
-  return join(process.cwd(), "var/engine/source-health.json");
+  return join(engineDataRoot(), "source-health.json");
 }
 
 export function loadSourceHealth(): Record<string, SourceHealth> {
@@ -36,7 +37,7 @@ export function recordSourceHealth(id: string, ok: boolean, error?: string, at =
         consecutiveFailures: (prev.consecutiveFailures || 0) + 1,
       };
   all[id] = next;
-  mkdirSync(join(process.cwd(), "var/engine"), { recursive: true });
+  mkdirSync(engineDataRoot(), { recursive: true });
   const dest = storePath();
   const tmp = `${dest}.${process.pid}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(all)}\n`);

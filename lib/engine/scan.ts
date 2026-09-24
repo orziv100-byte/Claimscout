@@ -123,6 +123,8 @@ async function inspectSource(
 export type ScanWalletEngineOptions = {
   onProgress?: (progress: ScanProgress) => void;
   sourceTimeoutMs?: number;
+  /** Desktop writes to the user's machine. Server wallet checks must not persist. */
+  persist?: boolean;
 };
 
 export async function scanWalletEngine(
@@ -210,7 +212,7 @@ export async function scanWalletEngine(
     durationMs: Date.now() - startedAt,
   };
   scan.changes = diffScans(previous, scan);
-  saveScan(scan);
+  if (opts.persist !== false) saveScan(scan);
   emit("verification");
   return scan;
 }

@@ -1,11 +1,11 @@
 import { BRAND_NAME, COPYRIGHT, COPYRIGHT_OWNER_NAME, COPYRIGHT_RIGHTS_HOLDER, TRADEMARK_STATUS_NOTE } from "./app-info.ts";
 import { contactLine } from "./contacts.ts";
 
-export const TERMS_VERSION = "beta-2026-09-22.1";
-export const PRIVACY_VERSION = "beta-2026-09-22.1";
-export const ACCESSIBILITY_VERSION = "beta-2026-09-22.1";
+export const TERMS_VERSION = "beta-2026-09-24.1";
+export const PRIVACY_VERSION = "beta-2026-09-24.1";
+export const ACCESSIBILITY_VERSION = "beta-2026-09-24.1";
 export const LEGAL_EFFECTIVE_DATE = "2026-09-20";
-export const LEGAL_UPDATED_DATE = "2026-09-22";
+export const LEGAL_UPDATED_DATE = "2026-09-24";
 
 export const TERMS_TITLE = `${BRAND_NAME} Closed Beta Terms of Use`;
 export const PRIVACY_TITLE = `${BRAND_NAME} Privacy Notice`;
@@ -24,7 +24,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "What PoolIndex is",
-    body: "PoolIndex is a Closed Beta research, discovery, and safety-check tool. It helps invited testers search, organize, and review publicly described claims, airdrops, faucets, and similar offers from public and external sources. It is not a wallet, exchange, broker, custodian, claims processor, payment processor, or investment, legal, or tax adviser. PoolIndex does not execute blockchain transactions for you. Any later signing happens only in your own wallet after you choose to approve it.",
+    body: "PoolIndex is a Closed Beta research, discovery, and safety-check tool. The public website is for invitation, registration, login, verification, password reset, Windows app download, legal documents, account settings, and planned payment. Wallet scanning, monitoring, hunts, catalog browsing, and results run in the desktop app. It is not a wallet, exchange, broker, custodian, claims processor, payment processor, or investment, legal, or tax adviser. PoolIndex does not execute blockchain transactions for you. Any later signing happens only in your own wallet after you choose to approve it.",
   },
   {
     heading: "Closed Beta",
@@ -44,11 +44,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Public wallet addresses only",
-    body: "Wallet features accept public 0x addresses only. The browser may keep the address you are currently checking in session storage. The same public address is stored on your account so Free/Pro wallet limits can be enforced. Free keeps one address; you can replace it yourself by pasting another public 0x address. Pro keeps up to five. Addresses are not private keys. PoolIndex never requests or stores private keys, seed phrases, recovery phrases, or wallet passwords.",
+    body: "Wallet features accept public 0x addresses only. The desktop UI may keep the address you are currently checking in session storage. Wallet checks in a desktop build that includes the local engine run on your PC and store results in that app's user data — not as scan history on the operator host. The public website does not run wallet scans. Older desktop builds may still send a public address to the operator host for a check; the host does not save that check to your account or scan history. Deep Hunt still stores research on the operator host. Addresses are not private keys. PoolIndex never requests or stores private keys, seed phrases, recovery phrases, or wallet passwords.",
   },
   {
     heading: "Deep Hunt and Continuous Hunt",
-    body: "If you start a Deep Hunt, PoolIndex may continue researching public catalog, source, archive, and (on PoolIndex Pro, when enabled) public blockchain information related to your query and any public wallet address you supplied. Continuous Hunt, when available on a planned Pro path, is periodic incremental research of stored public leads — not access to private chain data. You can pause or stop a hunt. Findings are research leads, not money owed to you.",
+    body: "If you start a Deep Hunt, PoolIndex may continue researching public catalog, source, archive, and (on PoolIndex Pro, when enabled) public blockchain information related to your query and any public wallet address you supplied. Those hunt records are stored on the operator host. Continuous Hunt, when available on a planned Pro path, is periodic incremental research of stored public leads — not access to private chain data. You can pause or stop a hunt. Findings are research leads, not money owed to you.",
   },
   {
     heading: "Third-party services and links",
@@ -60,11 +60,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Plans",
-    body: "The Free plan includes one public wallet address, the public catalog, honest eligibility statuses, and URL inspection. Offer names are never hidden behind payment. You may connect your own read-only MCP agent on Free or Pro; you pay for that LLM. PoolIndex does not run a built-in language-model agent. PoolIndex Pro is a planned paid plan (target $20 per month, or $99 per year) for up to five wallets, claim-window and verified-finding email alerts, and Wayback/archive scanning. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Plan limits are enforced on the server.",
+    body: "The Free plan includes the public catalog, honest eligibility statuses, and URL inspection. Offer names are never hidden behind payment. You may connect your own read-only MCP agent on Free or Pro; you pay for that LLM. PoolIndex does not run a built-in language-model agent. PoolIndex Pro is a planned paid plan (target $20 per month, or $99 per year) for additional catalog/alert features and Wayback/archive scanning. Payment processing is not active. You cannot purchase Pro in this Closed Beta. An operator may issue a test license. Account, hunt, and MCP limits are enforced on the operator host. Local desktop wallet checks are stored on your PC.",
   },
   {
     heading: "Connect your agent",
-    body: "You may create a read-only MCP token from your account and connect a client you already pay for (for example Claude Desktop or Cursor). The token is shown once, stored as a hash, and can be revoked immediately. Scopes are read:scans, read:catalog, and read:events. MCP tools cannot sign, send transactions, change account settings, or accept seed phrases or private keys. Addresses not bound to your account are rejected with HTTP 402. Text from GitHub, Wayback, and other external pages is returned as untrusted data, not instructions. PoolIndex does not take your LLM keys and does not call a language model on the server.",
+    body: "You may create a read-only MCP token from your account and connect a client you already pay for (for example Claude Desktop or Cursor). The token is shown once, stored as a hash, and can be revoked immediately. Scopes are read:scans, read:catalog, and read:events. MCP tools cannot sign, send transactions, change account settings, or accept seed phrases or private keys. Wallet-scan MCP reads still use operator-host records; new local desktop wallet checks are not copied there. Text from GitHub, Wayback, and other external pages is returned as untrusted data, not instructions. PoolIndex does not take your LLM keys and does not call a language model on the server.",
   },
   {
     heading: "Availability, errors, and interruption",
@@ -119,7 +119,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Public wallet addresses",
-    body: "WHAT: checksummed public 0x addresses you paste or connect. WHY: read-only eligibility/pool checks you request, and Free/Pro wallet-slot limits. WHERE: (1) browser sessionStorage for the address currently in the UI session; (2) the account record (user.wallets) on the server. RETENTION: on the account until you replace it, request closure, or an operator closes the account. Free testers can replace their one bound address themselves by pasting another public 0x address. WHO: you and operators. PoolIndex does not request or store private keys, seed phrases, recovery phrases, or wallet passwords. Secret-shaped input is rejected.",
+    body: "WHAT: checksummed public 0x addresses you paste in the desktop app. WHY: read-only eligibility/pool checks you request. WHERE: (1) sessionStorage for the address currently in the desktop UI session; (2) wallet check results and history in the desktop app's user data on your PC when the local engine is present; (3) older desktop builds may send a public address to the operator host for a live check, which is not saved to the account or scan history. The public website does not collect wallet scans. RETENTION: local desktop files remain on that PC until you uninstall or delete them. WHO: you, on your PC. Operators do not receive local desktop scan files. PoolIndex does not request or store private keys, seed phrases, recovery phrases, or wallet passwords. Secret-shaped input is rejected.",
   },
   {
     heading: "Sessions and tokens",
@@ -135,7 +135,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "Scan activity and telemetry",
-    body: "WHAT: scan started/completed/failed, query text (truncated), sources used, duration, item counts, blocked counts, source failures, resource-limit events, application errors, app version, user ID. WHY: debug Closed Beta quality and host protection — not advertising. WHERE: isolated operator logs. RETENTION: while needed to operate the Closed Beta. WHO: operators. Queries can be personal; they are stored to investigate failures.",
+    body: "WHAT: hunt/resource events, truncated hunt query text, sources used, duration, item counts, blocked counts, source failures, resource-limit events, application errors, app version, user ID. Wallet checks that run in the local desktop engine are not written as scan history on the operator host. WHY: debug Closed Beta quality and host protection — not advertising. WHERE: isolated operator logs for website, hunts, and crashes you submit; desktop wallet results stay on the PC. RETENTION: operator logs while needed to operate the Closed Beta. WHO: operators for host logs. Queries can be personal; hunt queries are stored to investigate failures.",
   },
   {
     heading: "Deep Hunt and leads",
@@ -174,7 +174,7 @@ export const ACCESSIBILITY_SECTIONS: LegalSection[] = [
   },
   {
     heading: "What we test",
-    body: "Main Closed Beta flows: register, login, password reset, Terms/Privacy, Index, Live scan, Deep Hunt, hunt/lead results, URL Safety Check, wallet check, feedback, and Admin. We look for keyboard use, visible focus, labels, text status (not color alone), page language, and titles.",
+    body: "Main Closed Beta flows: register, login, password reset, Terms/Privacy, Windows download, account, desktop wallet check, Deep Hunt (desktop), URL Safety Check, feedback, and Admin. We look for keyboard use, visible focus, labels, text status (not color alone), page language, and titles.",
   },
   {
     heading: "Known limitations",

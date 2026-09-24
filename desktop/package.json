@@ -1,0 +1,26 @@
+{
+  "name": "poolindex-desktop",
+  "productName": "PoolIndex",
+  "version": "0.1.4",
+  "private": true,
+  "author": "Lior Elbaz, Israel",
+  "license": "UNLICENSED",
+  "description": "PoolIndex desktop client. Wallet checks run on this PC. No server secrets.",
+  "main": "main.cjs",
+  "scripts": {
+    "bundle:engine": "node ../scripts/bundle-desktop-engine.mjs",
+    "start": "npm run bundle:engine && electron .",
+    "dist": "npm run bundle:engine && npm run check-secrets && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --x64 --publish never",
+    "dist:dir": "npm run bundle:engine && npm run check-secrets && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --x64 --dir --publish never",
+    "dist:mac": "npm run bundle:engine && npm run check-secrets && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac zip --x64 --arm64 --publish never",
+    "check-secrets": "node check-secrets.cjs",
+    "icon": "node generate-ico.cjs && node generate-installer-bitmaps.cjs"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.4"
+  },
+  "devDependencies": {
+    "electron": "36.9.5",
+    "electron-builder": "^26.0.12"
+  }
+}

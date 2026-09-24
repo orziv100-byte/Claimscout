@@ -5,10 +5,12 @@ import { ConnectAgentPanel } from "@/components/connect-agent-panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { WALLET_DISCLOSURE } from "@/lib/disclosures";
+import { isBrowserDesktopClient } from "@/lib/site-surface";
 import Link from "next/link";
 
 export default function AccountPage() {
   const { user, logout, loading } = useAuth();
+  const desktop = isBrowserDesktopClient();
   if (loading) return <p className="text-sm text-muted-foreground">Loading account…</p>;
   if (!user) {
     return (
@@ -36,12 +38,11 @@ export default function AccountPage() {
         <dd className="font-mono text-xs">
           {user.wallets.join(", ") || "none stored on this account"}
           <span className="mt-1 block font-sans text-muted-foreground">
-            This is the bound account list. The header pill is the address in this browser session — paste a new public
-            0x to replace the Free slot.
+            New wallet checks in the desktop app stay on this PC. This list is leftover account data, not scan history.
           </span>
         </dd>
-        <dt className="text-muted-foreground">Last scan</dt>
-        <dd>{user.lastScanAt || "none yet"}</dd>
+        <dt className="text-muted-foreground">Last server scan stamp</dt>
+        <dd>{user.lastScanAt || "none — wallet checks are not saved on the operator host"}</dd>
         <dt className="text-muted-foreground">Terms accepted</dt>
         <dd>{user.termsVersion} · {user.acceptedAt}</dd>
         <dt className="text-muted-foreground">Privacy accepted</dt>
@@ -52,22 +53,39 @@ export default function AccountPage() {
         </dd>
       </dl>
       {user.status === "pending_verification" ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300">Verify your email before running scans.</p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          Verify your email before using the desktop app.
+        </p>
       ) : null}
-      <p className="text-xs text-muted-foreground">{WALLET_DISCLOSURE}</p>
-      <p className="text-sm">
-        <Link href="/wallet" className="text-primary hover:underline">
-          Wallet Check
-        </Link>{" "}
-        records last scan, next monitor, Potential, and Verified on each public address.
-      </p>
-      <p className="text-sm">
-        <Link href="/connect" className="text-primary hover:underline">
-          Connect your agent
-        </Link>{" "}
-        is read-only MCP. You pay for your LLM. PoolIndex does not call a language model.
-      </p>
-      <ConnectAgentPanel />
+      {desktop ? (
+        <>
+          <p className="text-xs text-muted-foreground">{WALLET_DISCLOSURE}</p>
+          <p className="text-sm">
+            <Link href="/wallet" className="text-primary hover:underline">
+              Wallet Check
+            </Link>{" "}
+            runs on this PC. Results stay in this app's data folder, not on the operator host.
+          </p>
+          <p className="text-sm">
+            <Link href="/connect" className="text-primary hover:underline">
+              Connect your agent
+            </Link>{" "}
+            is read-only MCP. You pay for your LLM. PoolIndex does not call a language model.
+          </p>
+          <ConnectAgentPanel />
+        </>
+      ) : (
+        <p className="text-sm">
+          Wallet checks run in the Windows app.{" "}
+          <Link href="/download" className="text-primary hover:underline">
+            Download PoolIndex EXE
+          </Link>
+          {" · "}
+          <Link href="/upgrade" className="text-primary hover:underline">
+            PoolIndex Pro (planned)
+          </Link>
+        </p>
+      )}
       <AccountPrivacyControls deletionStatus={user.deletionStatus} />
       <div className="flex gap-2">
         <Button variant="outline" onClick={() => void logout()}>

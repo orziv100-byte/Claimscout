@@ -130,16 +130,19 @@ test("privacy requests are recorded for the authenticated user id only", async (
   assert.equal(row.status, "open");
 });
 
-test("wallet disclosure matches session storage plus account storage and public-address-only rules", () => {
+test("wallet disclosure matches desktop-local wallet checks and public-address-only rules", () => {
   assert.match(WALLET_DISCLOSURE, /public 0x addresses only/i);
   assert.match(WALLET_DISCLOSURE, /session storage/);
-  assert.match(WALLET_DISCLOSURE, /stored on your account/);
+  assert.match(WALLET_DISCLOSURE, /stored on that PC/);
   assert.match(WALLET_DISCLOSURE, /never requests or stores private keys/);
+  assert.match(WALLET_DISCLOSURE, /Deep Hunt still stores research on the operator host/);
   const wallets = TERMS_SECTIONS.find((section) => section.heading === "Public wallet addresses only");
   const privacy = PRIVACY_SECTIONS.find((section) => section.heading === "Public wallet addresses");
   assert.match(wallets?.body ?? "", /session storage/);
-  assert.match(wallets?.body ?? "", /account/);
-  assert.match(privacy?.body ?? "", /user\.wallets/);
+  assert.match(wallets?.body ?? "", /user data/);
+  assert.match(wallets?.body ?? "", /does not run wallet scans/);
+  assert.match(privacy?.body ?? "", /desktop app's user data/);
+  assert.doesNotMatch(privacy?.body ?? "", /user\.wallets/);
   assert.doesNotMatch(WALLET_DISCLOSURE, /session storage only/i);
   assert.doesNotMatch(EXTERNAL_CLAIM_WARNING, /guaranteed safe/i);
   assert.match(EXTERNAL_CLAIM_WARNING, /Never enter a seed phrase/);
@@ -164,9 +167,9 @@ test("legal pages, contacts, and versions are present", () => {
   ]) {
     assert.equal(existsSync(join(root, file)), true, file);
   }
-  assert.equal(TERMS_VERSION, "beta-2026-09-22.1");
-  assert.equal(PRIVACY_VERSION, "beta-2026-09-22.1");
-  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-22.1");
+  assert.equal(TERMS_VERSION, "beta-2026-09-24.1");
+  assert.equal(PRIVACY_VERSION, "beta-2026-09-24.1");
+  assert.equal(ACCESSIBILITY_VERSION, "beta-2026-09-24.1");
   assert.equal(contactEntry("privacy").address, PUBLIC_CONTACT_DEFAULTS.privacy);
   assert.equal(contactEntry("privacy").configured, true);
   assert.equal(contactLine("privacy"), "privacy@poolindex.app");
@@ -260,4 +263,20 @@ test("Closed Beta Terms cover research-only crypto limits", () => {
   assert.doesNotMatch(publicLegal, /POOLINDEX_DOMAIN/);
   assert.doesNotMatch(publicLegal, /var\/beta/);
   assert.doesNotMatch(publicLegal, /TRADEMARK_READINESS\.md/);
+});
+
+test("public website is registration and Windows download, not in-browser scan", () => {
+  const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(home, /HomeAddressHero/);
+  assert.doesNotMatch(home, /Paste a public 0x/);
+  assert.match(home, /Download PoolIndex/);
+  assert.match(home, /Register/);
+  const download = readFileSync(new URL("../app/download/page.tsx", import.meta.url), "utf8");
+  assert.match(download, /Download PoolIndex EXE/);
+  assert.match(download, /does not require payment/);
+  assert.match(download, /does not guarantee/);
+  assert.match(download, /href="\/privacy"/);
+  assert.match(download, /href="\/terms"/);
+  assert.doesNotMatch(download, /\/api\/billing\/checkout/);
+  assert.doesNotMatch(download, /buy now|purchase now|subscribe now/i);
 });

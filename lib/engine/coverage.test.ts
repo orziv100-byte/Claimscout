@@ -38,5 +38,7 @@ test("product copy does not sell fixing broken sources", () => {
   assert.doesNotMatch(page, /Fix broken sources/);
   assert.doesNotMatch(page, /buy now|purchase now|subscribe now/i);
   const proxy = readFileSync(new URL("../../proxy.ts", import.meta.url), "utf8");
-  assert.match(proxy, /"\/coverage"/);
+  const surface = readFileSync(new URL("../site-surface.ts", import.meta.url), "utf8");
+  assert.match(surface, /"\/coverage"/);
+  assert.match(proxy, /isAppPath/);
 });

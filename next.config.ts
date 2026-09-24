@@ -39,6 +39,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/downloads/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store",
+          },
+        ],
+      },
     ];
   },
 };

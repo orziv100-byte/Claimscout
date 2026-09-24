@@ -1,5 +1,4 @@
 import { guardedJson } from "@/lib/api-guard";
-import { updateUser } from "@/lib/auth";
 import { gateWallet, withEntitlementCookie } from "@/lib/entitlement";
 import { checkEligibility, isHexAddress } from "@/lib/onchain";
 import { limitExpensiveEndpoint } from "@/lib/rate-limit";
@@ -32,9 +31,7 @@ export async function GET(request: Request) {
   if (!gated.ok) {
     return NextResponse.json(gated.body, { status: gated.status });
   }
-  if (gated.entitlement.wallets.join(",") !== authed.user.wallets.join(",")) {
-    updateUser(authed.user.id, { wallets: gated.entitlement.wallets }, authed.user.id);
-  }
+  // Do not bind scanned addresses onto the account record. Desktop keeps wallets locally.
 
   const res = await guardedJson(
     request,

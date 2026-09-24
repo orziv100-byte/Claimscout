@@ -1,0 +1,73 @@
+appId: app.poolindex.desktop
+productName: PoolIndex
+copyright: Copyright (c) 2026 Lior Elbaz, Israel. All rights reserved.
+asar: true
+forceCodeSigning: false
+npmRebuild: false
+files:
+  - main.cjs
+  - preload.cjs
+  - origin.cjs
+  - engine-host.cjs
+  - offline.html
+  - icon.ico
+  - icon.png
+  - package.json
+extraResources:
+  - from: engine.cjs
+    to: engine.cjs
+extraMetadata:
+  main: main.cjs
+directories:
+  output: dist
+  buildResources: build
+win:
+  icon: icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: PoolIndex-${version}-win.${ext}
+  # Closed Beta policy: stay unsigned. Do not buy or attach a certificate until public release.
+  signAndEditExecutable: false
+  verifyUpdateCodeSignature: false
+mac:
+  icon: icon.png
+  category: public.app-category.utilities
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  artifactName: PoolIndex-${version}-mac-${arch}.${ext}
+  target:
+    - target: zip
+      arch:
+        - x64
+        - arm64
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  runAfterFinish: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: PoolIndex
+  uninstallDisplayName: PoolIndex
+  installerIcon: icon.ico
+  uninstallerIcon: icon.ico
+  installerHeaderIcon: icon.ico
+  installerHeader: build/installerHeader.bmp
+  installerSidebar: build/installerSidebar.bmp
+  uninstallerSidebar: build/installerSidebar.bmp
+  include: build/installer.nsh
+  installerLanguages:
+    - en_US
+  displayLanguageSelector: false
+  deleteAppDataOnUninstall: false
+protocols:
+  name: PoolIndex
+  schemes:
+    - poolindex
+publish:
+  provider: generic
+  url: https://poolindex.app/downloads
+electronVersion: "36.9.5"

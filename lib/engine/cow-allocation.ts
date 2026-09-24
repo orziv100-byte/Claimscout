@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fetchWithTimeout, readLimitedText } from "../http.ts";
+import { engineDataRoot } from "./paths.ts";
 
 /** Official CoW mainnet allocation (Apache-2.0 / MIT). Fetched at runtime, not vendored. */
 const ALLOCATION_URLS = [
@@ -15,7 +16,7 @@ export type CowAllocation = {
 };
 
 function cachePath(): string {
-  return join(process.cwd(), "var/engine/cache/cow-allocation-mainnet.json");
+  return join(engineDataRoot(), "cache/cow-allocation-mainnet.json");
 }
 
 function parseCsv(text: string): Map<string, CowAllocation> {
@@ -54,7 +55,7 @@ function readDisk(): Map<string, CowAllocation> | null {
 }
 
 function writeDisk(rows: Map<string, CowAllocation>) {
-  mkdirSync(join(process.cwd(), "var/engine/cache"), { recursive: true });
+  mkdirSync(join(engineDataRoot(), "cache"), { recursive: true });
   const dest = cachePath();
   const tmp = `${dest}.${process.pid}.tmp`;
   writeFileSync(

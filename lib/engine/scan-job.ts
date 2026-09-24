@@ -6,9 +6,6 @@ import { buildScanProgress } from "./progress.ts";
 import { ENGINE_SOURCES } from "./sources.ts";
 import type { ScanProgress } from "./types.ts";
 import type { EligibilityResult } from "../types.ts";
-import { getUserById } from "../auth.ts";
-import { trackWalletScan } from "../telemetry.ts";
-import { recordScanMcpEvents } from "./mcp-events.ts";
 
 const JOB_TTL_MS = 30 * 60 * 1000;
 
@@ -82,18 +79,8 @@ export function getWalletScanJob(address: string, userId?: string): WalletScanJo
   return job ? view(job) : null;
 }
 
-function recordJob(job: JobRecord, status: "started" | "completed" | "failed") {
-  if (!job.userId) return;
-  const user = getUserById(job.userId);
-  if (!user) return;
-  trackWalletScan(user, {
-    status,
-    durationMs: (job.finishedAt ?? Date.now()) - job.startedAt,
-    potentialFindings: job.engine?.counters.potentialFindings,
-    verifiedFindings: job.engine?.counters.verifiedFindings,
-    sourcesChecked: job.engine?.counters.sourcesChecked,
-    error: job.error,
-  });
+function recordJob(_job: JobRecord, _status: "started" | "completed" | "failed") {
+  // Wallet checks are not written to the operator host. Desktop stores them locally.
 }
 
 export function startWalletScanJob(address: Address, opts?: { userId?: string }): WalletScanJobView {
@@ -118,6 +105,7 @@ export function startWalletScanJob(address: Address, opts?: { userId?: string })
     "heavy",
     async () => {
       const engine = await scanWalletEngine(address, {
+        persist: false,
         onProgress: (progress) => {
           job.progress = progress;
         },
@@ -130,7 +118,6 @@ export function startWalletScanJob(address: Address, opts?: { userId?: string })
       const eligibility = await scanCatalogEligibility(address, eligibilityOverlay(engine));
       job.eligibility = eligibility;
       job.engine = publicEngineScan(engine);
-      if (job.userId) recordScanMcpEvents(job.userId, engine);
       job.status = "done";
       job.finishedAt = Date.now();
       job.progress = {

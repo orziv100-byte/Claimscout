@@ -24,11 +24,11 @@ PASS as Closed Beta Terms of Use (`beta-2026-09-20.2`) covering operator placeho
 
 ## 5. Privacy status
 
-PASS as an inventory of what the running app stores: account, consent, public wallets (sessionStorage **and** `user.wallets`), sessions, IP on login security events, telemetry/scans, Deep Hunt files, feedback, outbox, admin actions, hosting/API note. Not a GDPR/Israeli-privacy certification.
+PASS as an inventory of what the running app stores: account, consent, sessions, IP on login security events, hunt files, feedback, outbox, admin actions, hosting/API note. Wallet checks in a desktop build with the local engine stay on the PC. Older desktop builds may send a public address to the host for a check that is not saved as scan history. Deep Hunt remains on the operator host. Not a GDPR/Israeli-privacy certification.
 
 ## 6. Wallet disclosure status
 
-PASS (was INCONSISTENT; aligned). UI, Terms, Privacy, and `WALLET_DISCLOSURE` all state: public `0x` only; browser session storage for the current check; **the same public address is stored on the account** for plan limits; never request/store private keys, seed phrases, recovery phrases, or wallet passwords.
+PASS (aligned 2026-09-24). UI, Terms, Privacy, and `WALLET_DISCLOSURE` all state: public `0x` only; desktop session storage for the current check; local-engine results stored on that PC; website does not run wallet scans; older desktop builds may still send a public address to the host without saving scan history; Deep Hunt remains on the operator host; never request/store private keys, seed phrases, recovery phrases, or wallet passwords.
 
 ## 7. Consent / versioning
 

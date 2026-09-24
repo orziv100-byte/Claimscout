@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fetchWithTimeout, readJsonLimited } from "../http.ts";
+import { engineDataRoot } from "./paths.ts";
 
 export type UniClaim = {
   index: number | string;
@@ -23,7 +24,7 @@ function chunkUrl(first: string, host: "github" | "jsdelivr"): string {
 }
 
 function cacheDir(): string {
-  return join(process.cwd(), "var/engine/cache");
+  return join(engineDataRoot(), "cache");
 }
 
 function mappingPath(): string {

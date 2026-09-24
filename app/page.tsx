@@ -1,95 +1,40 @@
-import { CatalogClaimCard } from "@/components/claim-card";
-import { HomeAddressHero } from "@/components/home-address-hero";
-import { Badge } from "@/components/ui/badge";
-import { CATALOG } from "@/lib/catalog";
-import { PLANS } from "@/lib/plan";
-import { Archive, Eye, LockKeyhole, Radio } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-export default function HomePage() {
-  const featured = CATALOG.filter(
-    (c) =>
-      c.id !== "tornado-avoided" &&
-      (c.status === "open" || c.status === "unclaimed_remaining" || c.status === "archived"),
-  ).slice(0, 6);
+export const metadata = {
+  title: "PoolIndex",
+  description:
+    "Closed Beta research tool for public crypto claim sources. Download the desktop app. Register with invite, verify email, then sign in.",
+};
 
+export default function PublicHomePage() {
   return (
-    <div className="flex flex-col gap-12">
-      <section className="flex flex-col gap-6 pt-4">
-        <Badge variant="outline" className="w-fit">
-          Public address only · names never paywalled
-        </Badge>
-        <div className="max-w-3xl">
-          <h1 className="font-heading text-4xl leading-tight tracking-tight md:text-5xl">
-            Paste a public 0x address. See real offer names and honest statuses.
-          </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            PoolIndex checks public Ethereum offers against the address you paste. Eligible, Not eligible, Already
-            claimed, or Unable to verify — never invented from leftover contract balance, and never hidden behind
-            payment. Connect a wallet only if you want to; a seed phrase is rejected.
-          </p>
-        </div>
-        <HomeAddressHero />
-        <p className="text-xs text-muted-foreground">
-          <Link href="/register" className="text-primary hover:underline">
-            Closed Beta
-          </Link>{" "}
-          is invite-only. Free: one wallet, catalog, honest statuses, URL inspect.{" "}
-          <Link href="/upgrade" className="text-primary hover:underline">
-            PoolIndex Pro (planned ${PLANS.paid.priceUsd}/mo or ${PLANS.paid.yearlyUsd}/yr)
-          </Link>
-          : five wallets, claim-window email alerts, Wayback/archive scan.{" "}
-          <Link href="/connect" className="text-primary hover:underline">
-            Connect your own agent
-          </Link>{" "}
-          (read-only MCP; you pay for the LLM). Catalog below is secondary.
+    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+      <div>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Closed Beta</p>
+        <h1 className="mt-2 font-heading text-4xl tracking-tight">PoolIndex</h1>
+        <p className="mt-4 text-lg text-muted-foreground">
+          PoolIndex is a research and safety-check tool for public claim sources. The desktop application is where you
+          check wallets and scan. This website is for download, registration, and account access only. It does not claim
+          tokens or hold funds. It does not guarantee funds or rewards.
         </p>
-      </section>
-
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            icon: Radio,
-            title: "Address check first",
-            body: "Paste 0x. See what this wallet holds and which programs match its activity — not the same 12 names for every address.",
-          },
-          {
-            icon: Eye,
-            title: "Official + archive + inspect",
-            body: "Before every external claim link: official source, archive copy, and a phishing inspect. This is not a guarantee the URL is safe.",
-          },
-          {
-            icon: LockKeyhole,
-            title: "Read-only wallets",
-            body: "Paste an address. Connecting a browser wallet is optional. PoolIndex does not claim tokens for you.",
-          },
-          {
-            icon: Archive,
-            title: "History, not farming",
-            body: "Old faucets and Wayback pages stay as research. Quest/Galxe farming is out of scope.",
-          },
-        ].map((item) => (
-          <div key={item.title} className="rounded-xl border border-border/80 bg-card p-4">
-            <item.icon className="mb-3 size-4 text-primary" />
-            <h2 className="font-medium">{item.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-heading text-2xl">Catalog (secondary)</h2>
-          <Link href="/catalog" className="text-sm text-primary hover:underline">
-            Full catalog
-          </Link>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {featured.map((claim) => (
-            <CatalogClaimCard key={claim.id} claim={claim} />
-          ))}
-        </div>
-      </section>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Link className={cn(buttonVariants())} href="/download">
+          Download PoolIndex
+        </Link>
+        <Link className={cn(buttonVariants({ variant: "outline" }))} href="/register">
+          Register
+        </Link>
+        <Link className={cn(buttonVariants({ variant: "outline" }))} href="/login?next=/download">
+          Sign in
+        </Link>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        After you confirm your email and sign in, you get a download portal — Windows installer, account, and planned
+        payment. Scanning tools are in the desktop application.
+      </p>
     </div>
   );
 }

@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth-provider";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal";
+import { isBrowserDesktopClient, websitePostLoginPath } from "@/lib/site-surface";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 function nextPath(search: ReturnType<typeof useSearchParams>) {
-  const raw = search.get("next") || "/discover";
-  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/discover";
+  return websitePostLoginPath(search.get("next"), isBrowserDesktopClient());
 }
 
 export function LoginForm() {
@@ -108,11 +108,11 @@ export function RegisterForm() {
       const json = (await res.json().catch(() => ({}))) as { error?: string; verifyUrl?: string };
       if (!res.ok) throw new Error(json.error || "Could not register");
       if (json.verifyUrl) {
-        setNotice("Account created. Verify your email to start scanning.");
+        setNotice("Account created. Verify your email, then download the Windows app.");
         router.push(json.verifyUrl);
         return;
       }
-      setNotice("Account created. Check the verification email from your Beta operator, then sign in.");
+      setNotice("Account created. Check the verification email from your Beta operator, then sign in and download the Windows app.");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not register");
@@ -237,7 +237,7 @@ export function ResetForm({ token }: { token: string }) {
       return;
     }
     await refresh();
-    router.push("/discover");
+    router.push(websitePostLoginPath(null, isBrowserDesktopClient()));
     router.refresh();
   }
 

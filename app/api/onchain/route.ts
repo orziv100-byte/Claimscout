@@ -1,5 +1,4 @@
 import { guardedJson } from "@/lib/api-guard";
-import { updateUser } from "@/lib/auth";
 import { parsePublicAddress } from "@/lib/address";
 import { getWalletScanJob, startWalletScanJob } from "@/lib/engine";
 import { gateWallet, withEntitlementCookie } from "@/lib/entitlement";
@@ -52,9 +51,7 @@ export async function GET(request: Request) {
   if (!gated.ok) {
     return NextResponse.json(gated.body, { status: gated.status });
   }
-  if (gated.entitlement.wallets.join(",") !== authed.user.wallets.join(",")) {
-    updateUser(authed.user.id, { wallets: gated.entitlement.wallets }, authed.user.id);
-  }
+  // Do not bind scanned addresses onto the account record. Desktop keeps wallets locally.
 
   if (pollOnly) {
     const limited = limitOnchainPoll(request, authed.user.id);

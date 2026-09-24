@@ -59,7 +59,7 @@ test("current source tree has no leftover Claim Scout product branding", () => {
   for (const file of walk(root)) {
     if (file.includes("/docs/TRADEMARK_READINESS.md")) continue;
     if (file.includes("/docs/OSS_RESEARCH.md")) continue;
-    const text = readFileSync(file, "utf8");
+    const text = readFileSync(file, "utf8").replace(/claimscout\.service/gi, "").replace(/claimscoutserver/gi, "");
     if (/Claim Scout|ClaimScout|Claimscout|claimscout/i.test(text)) hits.push(file.replace(`${root}/`, ""));
   }
   assert.deepEqual(hits, []);

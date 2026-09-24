@@ -16,7 +16,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const NAV = [
-  { href: "/", label: "Index" },
+  { href: "/app", label: "Index" },
   { href: "/wallet", label: "Wallet check" },
   { href: "/discover", label: "Live scan" },
   { href: "/hunts", label: "Hunts" },
@@ -72,7 +72,7 @@ export function SiteHeader() {
     <header className="border-b border-border/80 bg-background/80 backdrop-blur-md sticky top-0 z-40">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center justify-between gap-6">
-          <Link href="/" className="flex items-baseline gap-2">
+          <Link href="/app" className="flex items-baseline gap-2">
             <span className="font-heading text-xl tracking-tight">{BRAND_NAME}</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">Closed Beta · public claims only</span>
           </Link>

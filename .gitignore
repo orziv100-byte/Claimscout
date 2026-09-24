@@ -59,3 +59,12 @@ next-env.d.ts
 
 # local editor / MCP client config (never commit tokens)
 .cursor/
+
+# published desktop installers (copied locally, never committed)
+/public/downloads/*
+!/public/downloads/.gitkeep
+
+# generated local wallet engine (esbuild); never commit
+/desktop/engine.cjs
+/desktop/dist/
+/desktop/node_modules/

@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { notifyWalletScanChange, requestWalletNotifications } from "@/lib/browser-notify";
+import { desktopWalletBridge } from "@/lib/desktop-bridge";
 
 type EngineFindingView = {
   id: string;
@@ -137,6 +138,7 @@ type ScanJobView = {
   error?: string;
   eligibility?: EligibilityResult[];
   engine?: EngineView;
+  _httpStatus?: number;
 };
 
 function formatElapsed(ms: number): string {
@@ -436,31 +438,46 @@ export function WalletDashboard() {
           if (job.eligibility) setRows(job.eligibility);
         };
 
-        const startRes = await fetch(`/api/onchain?address=${encodeURIComponent(target)}`, {
-          signal: ac.signal,
-        });
-        const startJson = (await startRes.json().catch(() => ({}))) as ScanJobView & { error?: string };
-        if (startRes.status === 429) {
+        const desktop = desktopWalletBridge();
+        const startJson = desktop
+          ? ((await desktop.scanWallet(target)) as ScanJobView & { error?: string })
+          : await (async () => {
+              const startRes = await fetch(`/api/onchain?address=${encodeURIComponent(target)}`, {
+                signal: ac.signal,
+              });
+              const json = (await startRes.json().catch(() => ({}))) as ScanJobView & { error?: string };
+              json._httpStatus = startRes.status;
+              return json;
+            })();
+        const startStatus = desktop ? (startJson.status === "failed" ? 503 : startJson.status === "running" ? 202 : 200) : (startJson._httpStatus ?? 200);
+        if (startStatus === 429) {
           throw new Error(startJson.error || "Too many wallet checks. Wait, then try once — do not retry in a loop.");
         }
-        if (startRes.status === 503) {
+        if (startStatus === 503) {
           throw new Error(startJson.error || "Wallet check paused to protect this machine. Wait, then try once.");
         }
         if (startJson.status === "failed") {
           throw new Error(startJson.error || "Check failed");
         }
-        if (!startRes.ok && startRes.status !== 202) {
+        if (!desktop && startStatus !== 200 && startStatus !== 202) {
           throw new Error(startJson.error || "Check failed");
         }
         applyJob(startJson);
         let job = startJson;
         while (job.status === "running") {
           await sleep(1200, ac.signal);
-          const pollRes = await fetch(`/api/onchain?address=${encodeURIComponent(target)}&poll=1`, {
-            signal: ac.signal,
-          });
-          const pollJson = (await pollRes.json().catch(() => ({}))) as ScanJobView & { error?: string };
-          if (pollRes.status === 429) {
+          const pollJson = desktop
+            ? ((await desktop.pollWallet(target)) as ScanJobView & { error?: string })
+            : await (async () => {
+                const pollRes = await fetch(`/api/onchain?address=${encodeURIComponent(target)}&poll=1`, {
+                  signal: ac.signal,
+                });
+                const json = (await pollRes.json().catch(() => ({}))) as ScanJobView & { error?: string };
+                json._httpStatus = pollRes.status;
+                return json;
+              })();
+          const pollStatus = desktop ? (pollJson.status === "failed" ? 503 : pollJson.status === "running" ? 202 : 200) : (pollJson._httpStatus ?? 200);
+          if (pollStatus === 429) {
             throw new Error(pollJson.error || "Too many wallet checks. Wait, then try once — do not retry in a loop.");
           }
           if (pollJson.status === "idle") {
@@ -474,7 +491,7 @@ export function WalletDashboard() {
             }
             throw new Error(pollJson.error || "Check failed");
           }
-          if (!pollRes.ok && pollRes.status !== 202) {
+          if (!desktop && pollStatus !== 200 && pollStatus !== 202) {
             throw new Error(pollJson.error || "Check failed");
           }
           applyJob(pollJson);

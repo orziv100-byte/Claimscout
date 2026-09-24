@@ -9,6 +9,7 @@ import { ADMIN_MFA_COOKIE, adminMfaSatisfied } from "./admin-mfa.ts";
 import { SESSION_COOKIE, sessionCookieOptions } from "./session-cookie.ts";
 import { rateLimitHeaders, type RateLimitResult } from "./rate-limit.ts";
 import { readAgentToken, scopesFromToken, type McpScope } from "./engine/agent-token.ts";
+import { isScanClientAllowed } from "./site-surface.ts";
 
 export type Authed = {
   user: UserRecord;
@@ -101,6 +102,16 @@ export function requireAdmin(request: Request, opts: { allowMissingMfa?: boolean
 export function requireScan(request: Request): Authed | NextResponse {
   const authed = requireUser(request);
   if (authed instanceof NextResponse) return authed;
+  if (authed.authKind !== "agent_token" && !isScanClientAllowed(request)) {
+    return NextResponse.json(
+      {
+        error: "Wallet checks run in the PoolIndex desktop app, not in the browser.",
+        code: "DESKTOP_ONLY",
+        version: APP_VERSION,
+      },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   if (!scansAreOpen()) {
     return NextResponse.json(
       {
